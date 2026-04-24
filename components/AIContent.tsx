@@ -157,9 +157,28 @@ function KeywordTab({ onSave }: { onSave: (item: ContentItem) => void }) {
   const [imageUrl, setImageUrl] = useState("");
   const [genImg, setGenImg]     = useState(false);
   const [copied, setCopied]     = useState(false);
+  const [posting, setPosting]   = useState(false);
+  const [postResult, setPostResult] = useState<"ok"|"error"|null>(null);
 
   const finalKeyword  = custom.trim() || keyword;
   const selectedTone  = TONES.find(t => t.value === tone) ?? TONES[0];
+
+  async function postToFacebook() {
+    if (!result) return;
+    setPosting(true); setPostResult(null);
+    try {
+      const r = await fetch(`${HUB}/action/fb/publish`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: result, source: "ai-content" }),
+      });
+      setPostResult(r.ok ? "ok" : "error");
+    } catch {
+      setPostResult("error");
+    } finally {
+      setPosting(false);
+    }
+  }
 
   async function generate() {
     setLoading(true); setResult(""); setImageUrl("");
@@ -325,6 +344,9 @@ Hashtag 6-8 อัน: ทุกตัวต้องมีความหมา
                     {copied ? "✅ Copied!" : "📋 Copy"}
                   </button>
                   <button onClick={save} style={btnStyle("#10b981")}>💾 Save</button>
+                  <button onClick={postToFacebook} disabled={posting} style={btnStyle(postResult === "ok" ? "#10b981" : postResult === "error" ? "#f43f5e" : "#6366f1")}>
+                    {posting ? "⏳ กำลังโพสต์..." : postResult === "ok" ? "✅ โพสต์แล้ว!" : postResult === "error" ? "❌ ผิดพลาด" : "📤 Post to Facebook"}
+                  </button>
                 </div>
               </div>
               <pre style={{
