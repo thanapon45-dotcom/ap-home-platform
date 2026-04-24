@@ -1,0 +1,320 @@
+"use client";
+import { useState, useEffect, useCallback } from "react";
+
+const HUB = process.env.NEXT_PUBLIC_HUB_URL ?? "http://localhost:4000";
+const POLL_MS = 10_000;
+const CRM_KEY = "finnhouses_leads_v2";
+
+const MOCK = {
+  blog:  { status: "Running", queue: 8,  published: 2, failed: 1 },
+  fb:    { status: "Active",  queue: 12, drafts: 5,   published: 3 },
+  leads: { total: 20, new: 20, byBusiness: { build: 7, reno: 4, list: 9 } },
+  alerts: [
+    { level: "high",   text: "n8n workflow error: image upload needs review" },
+    { level: "medium", text: "Facebook content queue nearly full" },
+    { level: "low",    text: "3 leads still waiting first contact" },
+  ],
+};
+
+// seed data เริ่มต้น — sync กับ INITIAL_LEADS ใน CRM.tsx
+const SEED_LEADS = [
+  { stage: "new",       business_unit: "build" },
+  { stage: "followup",  business_unit: "build" },
+  { stage: "qualified", business_unit: "reno"  },
+  { stage: "new",       business_unit: "list"  },
+  { stage: "closed",    business_unit: "build" },
+];
+
+// อ่าน lead counts จาก CRM localStorage โดยตรง (ไม่ผ่าน Hub)
+function useLeadCounts() {
+  const [counts, setCounts] = useState({ total: 0, new: 0, byBusiness: { build: 0, reno: 0, list: 0 } });
+
+  useEffect(() => {
+    function calc(leads: Array<{ stage?: string; business_unit?: string }>) {
+      const newLeads = leads.filter(l => l.stage === "new").length;
+      // leads ที่ไม่มี business_unit (ข้อมูลเก่า) ให้นับเป็น build
+      const bu = (l: { business_unit?: string }) => l.business_unit ?? "build";
+      const build = leads.filter(l => bu(l) === "build").length;
+      const reno  = leads.filter(l => bu(l) === "reno").length;
+      const list  = leads.filter(l => bu(l) === "list").length;
+      setCounts({ total: leads.length, new: newLeads, byBusiness: { build, reno, list } });
+    }
+
+    function read() {
+      try {
+        const raw = localStorage.getItem(CRM_KEY);
+        if (!raw) {
+          // localStorage ว่าง → ใช้ seed data และ seed ลง CRM ด้วย
+          calc(SEED_LEADS);
+          return;
+        }
+        const leads: Array<{ stage?: string; business_unit?: string }> = JSON.parse(raw);
+        if (!Array.isArray(leads) || leads.length === 0) { calc(SEED_LEADS); return; }
+        calc(leads);
+      } catch { calc(SEED_LEADS); }
+    }
+    read();
+    window.addEventListener("storage", read);
+    const id = setInterval(read, 5000);
+    return () => { window.removeEventListener("storage", read); clearInterval(id); };
+  }, []);
+
+  return counts;
+}
+
+function useLiveData() {
+  const [data, setData]     = useState<typeof MOCK>(MOCK);
+  const [live, setLive]     = useState(false);
+  const [lastSync, setSync] = useState<Date | null>(null);
+
+  const fetch_ = useCallback(async () => {
+    try {
+      const r = await fetch(`${HUB}/api/state`, { signal: AbortSignal.timeout(3000) });
+      if (!r.ok) throw new Error();
+      setData(await r.json()); setLive(true); setSync(new Date());
+    } catch { setLive(false); }
+  }, []);
+
+  useEffect(() => { fetch_(); const id = setInterval(fetch_, POLL_MS); return () => clearInterval(id); }, [fetch_]);
+  return { data, live, lastSync };
+}
+
+function useAnimNum(target: number, dur = 800) {
+  const [n, setN] = useState(0);
+  useEffect(() => {
+    let s: number | null = null;
+    const step = (ts: number) => {
+      if (!s) s = ts;
+      const p = Math.min((ts - s) / dur, 1);
+      setN(Math.round((1 - Math.pow(1 - p, 3)) * target));
+      if (p < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }, [target, dur]);
+  return n;
+}
+
+function Dot({ color }: { color: string }) {
+  return (
+    <span style={{ position: "relative", display: "inline-flex", width: 10, height: 10, alignItems: "center", justifyContent: "center" }}>
+      <span style={{ position: "absolute", width: "100%", height: "100%", borderRadius: "50%", background: color, opacity: .4, animation: "ping 1.4s cubic-bezier(0,0,.2,1) infinite" }} />
+      <span style={{ width: 6, height: 6, borderRadius: "50%", background: color, display: "block" }} />
+    </span>
+  );
+}
+
+function EngineCard({ title, subtitle, statusText, metrics, channel, actions, accent }: {
+  title: string; subtitle: string; statusText: string;
+  metrics: [string, number | string][]; channel: string; actions: string[]; accent: string;
+}) {
+  return (
+    <div style={{ background: "rgba(15,20,40,.85)", border: `1px solid ${accent}22`, borderRadius: 20, padding: 24, display: "flex", flexDirection: "column", gap: 16 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+        <div>
+          <div style={{ fontSize: 10, letterSpacing: ".18em", textTransform: "uppercase", color: accent, fontWeight: 600 }}>{subtitle}</div>
+          <div style={{ fontSize: 18, fontWeight: 700, color: "#f1f5f9", marginTop: 4, fontFamily: "'DM Serif Display',serif" }}>{title}</div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, background: `${accent}15`, border: `1px solid ${accent}30`, borderRadius: 20, padding: "4px 10px" }}>
+          <Dot color={accent} />
+          <span style={{ fontSize: 12, color: accent, fontWeight: 600 }}>{statusText}</span>
+        </div>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+        {metrics.map(([k, v]) => (
+          <div key={k} style={{ background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.06)", borderRadius: 12, padding: "10px 14px" }}>
+            <div style={{ fontSize: 11, color: "#94a3b8", textTransform: "uppercase", letterSpacing: ".1em" }}>{k}</div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: "#f1f5f9", marginTop: 2 }}>{v}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{ background: "rgba(255,255,255,.02)", border: "1px solid rgba(255,255,255,.05)", borderRadius: 12, padding: "10px 14px" }}>
+        <div style={{ fontSize: 11, color: "#64748b", marginBottom: 4 }}>CHANNEL</div>
+        <div style={{ fontSize: 13, color: "#cbd5e1", fontWeight: 500 }}>{channel}</div>
+      </div>
+      <div>
+        <div style={{ fontSize: 11, color: "#64748b", textTransform: "uppercase", letterSpacing: ".12em", marginBottom: 8 }}>Next Actions</div>
+        {actions.map((a, i) => (
+          <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,.02)", border: "1px solid rgba(255,255,255,.05)", borderRadius: 10, padding: "8px 12px", fontSize: 12, color: "#94a3b8", marginBottom: 6 }}>
+            <span style={{ width: 4, height: 4, borderRadius: "50%", background: accent, flexShrink: 0 }} />
+            {a}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+const BIZ_META: Record<string, { title: string; icon: string; color: string; focus: string; tasks: string[] }> = {
+  build: { title: "รับสร้างบ้าน",          icon: "🏗️", color: "#f59e0b", focus: "บ้าน 5–15 ล้านบาท",      tasks: ["ติดตาม lead ด่วน", "สรุป BOQ เบื้องต้น", "นัดคุย 30 นาที"] },
+  reno:  { title: "รีโนเวทบ้านเพื่อขาย",  icon: "🔨", color: "#10b981", focus: "คัดทรัพย์ + ปรับมูลค่า",  tasks: ["ประเมินต้นทุนรีโนเวท", "เช็กมาร์จินขายต่อ", "สรุปทรัพย์น่าสนใจ"] },
+  list:  { title: "รับฝากขายบ้านและที่ดิน", icon: "🏠", color: "#6366f1", focus: "Listing + Buyer Matching", tasks: ["ลงประกาศเพิ่ม", "ติดตาม inquiry", "นัดชมทรัพย์"] },
+};
+
+function BizCard({ id, count }: { id: string; count: number }) {
+  const { title, icon, color, focus, tasks } = BIZ_META[id];
+  const n = useAnimNum(count);
+  return (
+    <div style={{ background: "rgba(15,20,40,.85)", border: `1px solid ${color}18`, borderRadius: 20, padding: 24 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+        <span style={{ fontSize: 28 }}>{icon}</span>
+        <div>
+          <div style={{ fontSize: 15, fontWeight: 700, color: "#f1f5f9" }}>{title}</div>
+          <div style={{ fontSize: 11, color, marginTop: 2 }}>{focus}</div>
+        </div>
+      </div>
+      <div style={{ textAlign: "center", background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.06)", borderRadius: 12, padding: "12px 8px", marginBottom: 16 }}>
+        <div style={{ fontSize: 10, color: "#64748b", textTransform: "uppercase", letterSpacing: ".1em" }}>Leads</div>
+        <div style={{ fontSize: 32, fontWeight: 800, color, marginTop: 4 }}>{n}</div>
+      </div>
+      {tasks.map((t, i) => (
+        <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,.02)", border: "1px solid rgba(255,255,255,.04)", borderRadius: 8, padding: "7px 12px", fontSize: 12, color: "#94a3b8", marginBottom: 5 }}>
+          <span style={{ width: 4, height: 4, borderRadius: "50%", background: color, flexShrink: 0 }} />{t}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export default function DashboardOS() {
+  const { data, live, lastSync } = useLiveData();
+  const leadCounts = useLeadCounts();
+  const [clock, setClock] = useState<Date | null>(null);
+  useEffect(() => {
+    setClock(new Date());
+    const t = setInterval(() => setClock(new Date()), 1000);
+    return () => clearInterval(t);
+  }, []);
+
+  const { blog, fb, alerts } = data as any;
+  // leads มาจาก localStorage (CRM) โดยตรง — ไม่ผ่าน Hub
+  const leads = leadCounts;
+  const totalLeads = useAnimNum(leads.new);
+
+  const pipeline = [
+    { label: "Traffic",   value: 1280,             icon: "📡", color: "#22d3ee" },
+    { label: "Leads",     value: leads.new,         icon: "🎯", color: "#6366f1" },
+    { label: "Appts",     value: 6,                icon: "📅", color: "#f59e0b" },
+    { label: "Proposals", value: 4,                icon: "📋", color: "#10b981" },
+    { label: "Closed",    value: 1,                icon: "✅", color: "#f43f5e" },
+  ];
+
+  return (
+    <div style={{ padding: 24, display: "flex", flexDirection: "column", gap: 20 }}>
+      {/* HEADER */}
+      <div className="animate-fadeUp" style={{ background: "rgba(15,20,40,.85)", border: "1px solid rgba(255,255,255,.07)", borderRadius: 24, padding: "28px 32px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 16 }}>
+          <div>
+            <div style={{ fontSize: 10, letterSpacing: ".3em", textTransform: "uppercase", color: "#22d3ee", fontWeight: 700, display: "flex", alignItems: "center", gap: 6 }}>
+              <Dot color={live ? "#22d3ee" : "#f43f5e"} />
+              <span suppressHydrationWarning>{live ? `LIVE — sync ${lastSync?.toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}` : "OFFLINE — แสดงข้อมูล mock"}</span>
+            </div>
+            <h1 style={{ fontSize: 28, fontWeight: 800, margin: "6px 0 0", fontFamily: "'DM Serif Display',serif", background: "linear-gradient(135deg,#f1f5f9 40%,#94a3b8)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+              Finnhouses Real Estate OS
+            </h1>
+            <p style={{ margin: "6px 0 0", color: "#64748b", fontSize: 13 }}>ศูนย์ควบคุม 2 content engines + 3 ธุรกิจหลัก</p>
+          </div>
+          <div style={{ textAlign: "right" }}>
+            <div style={{ fontSize: 26, fontWeight: 800, color: "#f1f5f9", fontVariantNumeric: "tabular-nums" }} suppressHydrationWarning>
+              {clock ? clock.toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit", second: "2-digit" }) : "—"}
+            </div>
+            <div style={{ fontSize: 12, color: "#475569", marginTop: 2 }} suppressHydrationWarning>
+              {clock ? clock.toLocaleDateString("th-TH", { weekday: "long", month: "long", day: "numeric" }) : "—"}
+            </div>
+          </div>
+        </div>
+        <div style={{ marginTop: 20, display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12 }}>
+          {[
+            { label: "FB Engine",   value: fb?.status  ?? "—", color: "#22d3ee" },
+            { label: "Blog Engine", value: blog?.status ?? "—", color: "#10b981" },
+            { label: "New Leads",   value: String(totalLeads),  color: "#f59e0b" },
+            { label: "Errors",      value: String(blog?.failed ?? 0), color: "#f43f5e" },
+          ].map(c => (
+            <div key={c.label} style={{ background: `${c.color}0f`, border: `1px solid ${c.color}25`, borderRadius: 14, padding: "12px 14px" }}>
+              <div style={{ fontSize: 10, color: c.color, textTransform: "uppercase", letterSpacing: ".12em", fontWeight: 600 }}>{c.label}</div>
+              <div style={{ fontSize: 20, fontWeight: 800, color: c.color, marginTop: 4 }}>{c.value}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ENGINES */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+        <EngineCard
+          title="FB Content Engine" subtitle="Web App / VS Code"
+          statusText={fb?.status ?? "—"}
+          metrics={[["Queue", fb?.queue ?? 0], ["Drafts", fb?.drafts ?? 0], ["Published", fb?.published ?? 0], ["Port", "3001"]]}
+          channel="Facebook Page · localhost:3001"
+          actions={["เตรียมโพสต์ขายบ้าน", "จัดคิว content 7 วัน", "เช็ก CTA ปรึกษาฟรี"]}
+          accent="#22d3ee"
+        />
+        <EngineCard
+          title="Blog Content Engine" subtitle="n8n / finnhouses.com"
+          statusText={blog?.status ?? "—"}
+          metrics={[["Queue", blog?.queue ?? 0], ["Published", blog?.published ?? 0], ["Failed", blog?.failed ?? 0], ["Port", "5678"]]}
+          channel="finnhouses.com via n8n · localhost:5678"
+          actions={["บทความ SEO รอ publish", "ตรวจ featured image flow", "เช็ก internal link"]}
+          accent="#10b981"
+        />
+      </div>
+
+      {/* PIPELINE */}
+      <div style={{ background: "rgba(15,20,40,.85)", border: "1px solid rgba(255,255,255,.06)", borderRadius: 20, padding: 24 }}>
+        <div style={{ fontSize: 11, letterSpacing: ".18em", textTransform: "uppercase", color: "#6366f1", fontWeight: 600, marginBottom: 4 }}>REVENUE PIPELINE</div>
+        <div style={{ fontSize: 16, fontWeight: 700, color: "#f1f5f9", marginBottom: 20 }}>Traffic → Leads → Sales</div>
+        <div style={{ display: "flex", gap: 12, alignItems: "stretch" }}>
+          {pipeline.map(p => (
+            <div key={p.label} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+              <div style={{ fontSize: 20 }}>{p.icon}</div>
+              <div style={{ width: "100%", height: 80, background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.05)", borderRadius: 10, display: "flex", alignItems: "flex-end", overflow: "hidden" }}>
+                <div style={{ width: "100%", height: `${Math.max(8, (p.value / 1280) * 100)}%`, background: `linear-gradient(to top,${p.color},${p.color}88)`, borderRadius: 8 }} />
+              </div>
+              <div style={{ fontSize: 20, fontWeight: 800, color: p.color }}>{p.value}</div>
+              <div style={{ fontSize: 11, color: "#94a3b8" }}>{p.label}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* BIZ CARDS */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 20 }}>
+        <BizCard id="build" count={leads.byBusiness.build} />
+        <BizCard id="reno"  count={leads.byBusiness.reno}  />
+        <BizCard id="list"  count={leads.byBusiness.list}  />
+      </div>
+
+      {/* ALERTS + CONNECTIONS */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+        <div style={{ background: "rgba(15,20,40,.85)", border: "1px solid rgba(255,255,255,.06)", borderRadius: 20, padding: 24 }}>
+          <div style={{ fontSize: 11, letterSpacing: ".18em", textTransform: "uppercase", color: "#f43f5e", fontWeight: 600, marginBottom: 4 }}>ALERTS</div>
+          <div style={{ fontSize: 16, fontWeight: 700, color: "#f1f5f9", marginBottom: 16 }}>สิ่งที่ต้องรีบดู</div>
+          {(alerts ?? []).map((a: any, i: number) => {
+            const c = ({ high: "#f43f5e", medium: "#f59e0b", low: "#22d3ee" } as any)[a.level];
+            return (
+              <div key={i} style={{ padding: "12px 16px", borderRadius: 12, background: `${c}0c`, border: `1px solid ${c}30`, marginBottom: 8, fontSize: 13, color: "#cbd5e1" }}>
+                {a.text}
+              </div>
+            );
+          })}
+        </div>
+        <div style={{ background: "rgba(15,20,40,.85)", border: "1px solid rgba(255,255,255,.06)", borderRadius: 20, padding: 24 }}>
+          <div style={{ fontSize: 11, letterSpacing: ".18em", textTransform: "uppercase", color: "#6366f1", fontWeight: 600, marginBottom: 4 }}>CONNECTIONS</div>
+          <div style={{ fontSize: 16, fontWeight: 700, color: "#f1f5f9", marginBottom: 16 }}>Live Integration Status</div>
+          {[
+            { label: "Backend Hub",    port: ":4000", ok: live,              color: "#22d3ee" },
+            { label: "n8n Webhook",    port: ":5678", ok: !!(blog as any)?.lastUpdate, color: "#10b981" },
+            { label: "FB App Webhook", port: ":3001", ok: !!(fb as any)?.lastUpdate,   color: "#6366f1" },
+            { label: "Lead Sync",      port: "Sheets",ok: !!(leads as any)?.lastUpdate,color: "#f59e0b" },
+          ].map(row => (
+            <div key={row.label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", borderRadius: 12, background: "rgba(255,255,255,.02)", border: "1px solid rgba(255,255,255,.05)", marginBottom: 8 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <Dot color={row.ok ? row.color : "#475569"} />
+                <span style={{ fontSize: 13, color: "#cbd5e1" }}>{row.label}</span>
+              </div>
+              <span style={{ fontSize: 11, color: row.ok ? row.color : "#475569", fontFamily: "monospace" }}>{row.port}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
