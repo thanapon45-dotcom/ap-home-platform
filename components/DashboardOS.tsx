@@ -243,7 +243,7 @@ export default function DashboardOS() {
           title="FB Content Engine" subtitle="Web App / VS Code"
           statusText={fb?.status ?? "—"}
           metrics={[["Queue", fb?.queue ?? 0], ["Drafts", fb?.drafts ?? 0], ["Published", fb?.published ?? 0], ["Port", "3001"]]}
-          channel="Facebook Page · localhost:3001"
+          channel="Facebook Page · Railway (fb-backend)"
           actions={["เตรียมโพสต์ขายบ้าน", "จัดคิว content 7 วัน", "เช็ก CTA ปรึกษาฟรี"]}
           accent="#22d3ee"
         />
@@ -251,7 +251,7 @@ export default function DashboardOS() {
           title="Blog Content Engine" subtitle="n8n / finnhouses.com"
           statusText={blog?.status ?? "—"}
           metrics={[["Queue", blog?.queue ?? 0], ["Published", blog?.published ?? 0], ["Failed", blog?.failed ?? 0], ["Port", "5678"]]}
-          channel="finnhouses.com via n8n · localhost:5678"
+          channel="finnhouses.com via n8n · Railway (primary)"
           actions={["บทความ SEO รอ publish", "ตรวจ featured image flow", "เช็ก internal link"]}
           accent="#10b981"
         />
@@ -300,10 +300,10 @@ export default function DashboardOS() {
           <div style={{ fontSize: 11, letterSpacing: ".18em", textTransform: "uppercase", color: "#6366f1", fontWeight: 600, marginBottom: 4 }}>CONNECTIONS</div>
           <div style={{ fontSize: 16, fontWeight: 700, color: "#f1f5f9", marginBottom: 16 }}>Live Integration Status</div>
           {[
-            { label: "Backend Hub",    port: ":4000", ok: live,              color: "#22d3ee" },
-            { label: "n8n Webhook",    port: ":5678", ok: !!(blog as any)?.lastUpdate, color: "#10b981" },
-            { label: "FB App Webhook", port: ":3001", ok: !!(fb as any)?.lastUpdate,   color: "#6366f1" },
-            { label: "Lead Sync",      port: "Sheets",ok: !!(leads as any)?.lastUpdate,color: "#f59e0b" },
+            { label: "Backend Hub",    port: "Railway", ok: live,                        color: "#22d3ee" },
+            { label: "n8n Webhook",    port: "Railway", ok: live && !!(blog as any)?.updatedAt, color: "#10b981" },
+            { label: "FB App Webhook", port: "Railway", ok: live && !!(fb as any)?.updatedAt,   color: "#6366f1" },
+            { label: "Lead Sync",      port: "Supabase",ok: !!(leads as any)?.total && (leads as any).total > 0, color: "#f59e0b" },
           ].map(row => (
             <div key={row.label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", borderRadius: 12, background: "rgba(255,255,255,.02)", border: "1px solid rgba(255,255,255,.05)", marginBottom: 8 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
