@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 
-const HUB = process.env.NEXT_PUBLIC_HUB_URL ?? "http://localhost:4000";
+const HUB = process.env.NEXT_PUBLIC_HUB_URL ?? "https://ap-home-platform-production.up.railway.app";
 const POLL_MS = 10_000;
 const CRM_KEY = "finnhouses_leads_v2";
 

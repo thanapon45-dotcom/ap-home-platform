@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 
-const HUB = process.env.NEXT_PUBLIC_HUB_URL ?? "http://localhost:4000";
+const HUB = process.env.NEXT_PUBLIC_HUB_URL ?? "https://ap-home-platform-production.up.railway.app";
 const BRAND = "Finnhouses";
 const BRAND_FACTS = `ข้อมูลแบรนด์ที่ต้องใช้เท่านั้น (ห้ามปั้นตัวเลขหรือข้อมูลที่ไม่ได้ระบุ):
 - ชื่อแบรนด์: Finnhouses
