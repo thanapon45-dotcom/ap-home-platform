@@ -683,7 +683,257 @@ const TABS = [
   { key: "keyword", label: "สร้างจาก Keyword", icon: "✨" },
   { key: "blog",    label: "แปลงจาก Blog",      icon: "📰" },
   { key: "history", label: "History & Status",   icon: "📡" },
+  { key: "queue",   label: "Content Queue",      icon: "📅" },
 ];
+
+// ── FB Queue Types & Helpers ───────────────────────────────────────────────────
+type FbQueueItem = {
+  id: string;
+  date: string;
+  content: string;
+  status: "pending" | "running" | "published" | "failed";
+  postUrl: string;
+};
+
+function genId() { return Math.random().toString(36).slice(2, 10); }
+
+const FB_QUEUE_TEMPLATES = [
+  `🏡 สร้างบ้านในฝันกับ Finnhouses\n\n✅ ออกแบบตามไลฟ์สไตล์คุณ\n✅ งบ 5–15 ล้านบาท ควบคุมได้จริง\n✅ ทีมช่างมืออาชีพ พร้อม BOQ ชัดเจน\n\n📞 ปรึกษาฟรี ไม่มีค่าใช้จ่าย\nLine: @finnhouses\n\n#สร้างบ้าน #Finnhouses #บ้านในฝัน`,
+  `🔨 รีโนเวทบ้านเพื่อขาย ทำกำไรได้จริง!\n\n💰 ซื้อทรัพย์ราคาต่ำ → รีโนเวท → ขายต่อมีกำไร\n📊 เราช่วยประเมินต้นทุนและมาร์จิน\n\n📞 สนใจร่วมลงทุน ติดต่อได้เลย\nLine: @finnhouses\n\n#รีโนเวทบ้าน #ลงทุนอสังหา #Finnhouses`,
+  `🏠 ฝากขายบ้านและที่ดิน กับ Finnhouses\n\n✨ ทีม Marketing ช่วยโปรโมทให้ฟรี\n✨ มีฐานลูกค้าพร้อมซื้อรอคิวอยู่\n\n📸 ถ่ายภาพและทำ Listing สวยๆ ให้ฟรี!\nLine: @finnhouses\n\n#ฝากขายบ้าน #Finnhouses`,
+  `💡 รู้หรือเปล่า? BOQ คืออะไร\n\nBOQ (Bill of Quantities) คือเอกสารที่รวมรายการวัสดุ + ค่าแรง ทุกรายการในการสร้างบ้าน\n\n✅ ป้องกันงบบาน\n✅ เปรียบเทียบผู้รับเหมาได้ถูกต้อง\n\nสนใจขอ BOQ ฟรี? ทักมาได้เลย!\nLine: @finnhouses\n\n#BOQ #สร้างบ้าน #Finnhouses`,
+  `🌟 ทำไมต้องเลือก Finnhouses?\n\n🏗️ ประสบการณ์สร้างบ้านกว่า 50 หลัง\n📐 ออกแบบโดยทีมสถาปนิกมืออาชีพ\n💯 รับประกันงาน 2 ปี\n💬 ลูกค้าพึงพอใจ 98%\n\nLine: @finnhouses\n\n#Finnhouses #สร้างบ้าน #บ้านคุณภาพ`,
+  `📊 งบ 5 ล้าน สร้างบ้านได้ขนาดไหน?\n\n🏠 พื้นที่ใช้สอย: 120–150 ตร.ม.\n🛏️ 3 ห้องนอน 2 ห้องน้ำ\n🚗 ที่จอดรถ 2 คัน\n\nรายละเอียดและ BOQ ฟรี!\nLine: @finnhouses\n\n#งบสร้างบ้าน #Finnhouses #บ้าน5ล้าน`,
+  `🌅 เช้าวันนี้ขอแชร์บ้านสวยจาก Finnhouses!\n\nทุกหลังออกแบบให้เหมาะกับสภาพอากาศไทย\n🌿 ระบายอากาศดี\n☀️ แสงธรรมชาติเต็มบ้าน\n💧 วัสดุทนทาน ไม่กลัวฝน\n\nสนใจ? ทักหาเราได้เลย!\nLine: @finnhouses\n\n#บ้านสวย #Finnhouses #ออกแบบบ้าน`,
+];
+
+// ── FB Queue Tab Component ─────────────────────────────────────────────────────
+function FbQueueTab() {
+  const [fbQueue, setFbQueue]       = useState<FbQueueItem[]>([]);
+  const [drafts, setDrafts]         = useState<FbQueueItem[]>([]);
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [busy, setBusy]             = useState(false);
+  const [toast, setToast]           = useState<{ msg: string; ok: boolean } | null>(null);
+
+  function showToast(msg: string, ok: boolean) {
+    setToast({ msg, ok });
+    setTimeout(() => setToast(null), 3000);
+  }
+
+  // Poll Hub for fb_queue state
+  const poll = useCallback(async () => {
+    try {
+      const r = await fetch("/api/blog/state", { signal: AbortSignal.timeout(5000) });
+      if (!r.ok) return;
+      const d = await r.json();
+      setFbQueue(Array.isArray(d.fb_queue) ? d.fb_queue : []);
+    } catch { /* silent */ }
+  }, []);
+
+  useEffect(() => {
+    poll();
+    const iv = setInterval(poll, 5000);
+    return () => clearInterval(iv);
+  }, [poll]);
+
+  function initDrafts(): FbQueueItem[] {
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date();
+      d.setDate(d.getDate() + 1 + i);
+      return {
+        id: genId(),
+        date: d.toISOString().split("T")[0],
+        content: FB_QUEUE_TEMPLATES[i % FB_QUEUE_TEMPLATES.length],
+        status: "pending" as const,
+        postUrl: "",
+      };
+    });
+  }
+
+  function openEditor() {
+    setDrafts(fbQueue.length > 0 ? fbQueue.map(i => ({ ...i })) : initDrafts());
+    setEditorOpen(true);
+  }
+
+  async function handleSave() {
+    try {
+      setBusy(true);
+      const r = await fetch("/api/fb/queue/build", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items: drafts }),
+      });
+      const j = await r.json();
+      if (!j.ok) throw new Error(j.error);
+      showToast(`📅 FB Queue ${j.count} วัน บันทึกสำเร็จ`, true);
+      await poll();
+      setEditorOpen(false);
+    } catch (e: unknown) {
+      showToast(e instanceof Error ? e.message : "Error saving queue", false);
+    } finally { setBusy(false); }
+  }
+
+  async function handleClear() {
+    try {
+      setBusy(true);
+      await fetch("/api/fb/queue/clear", { method: "POST" });
+      showToast("FB Queue ล้างแล้ว ✓", true);
+      await poll();
+    } catch {
+      showToast("Error clearing queue", false);
+    } finally { setBusy(false); }
+  }
+
+  const statusColor: Record<string, string> = { pending: "#64748b", running: "#22d3ee", published: "#1877f2", failed: "#f43f5e" };
+  const statusLabel: Record<string, string> = { pending: "⏳ รอ", running: "▶ Posting", published: "✅ Posted", failed: "❌ Failed" };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      {/* Toast */}
+      {toast && (
+        <div style={{
+          position: "fixed", top: 20, right: 20, zIndex: 999,
+          padding: "12px 20px", borderRadius: 12, fontSize: 13, fontWeight: 600,
+          background: toast.ok ? "rgba(24,119,242,.9)" : "rgba(244,63,94,.9)", color: "#fff",
+        }}>{toast.msg}</div>
+      )}
+
+      {/* Header card */}
+      <div style={{ background: "rgba(15,20,40,.85)", border: "1px solid rgba(24,119,242,.3)", borderRadius: 20, padding: 24 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ width: 40, height: 40, borderRadius: 12, background: "linear-gradient(135deg,#1877f2,#42b0ff)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>📅</div>
+            <div>
+              <div style={{ fontSize: 10, letterSpacing: ".2em", textTransform: "uppercase", color: "#60a5fa", fontWeight: 700 }}>FB CONTENT QUEUE</div>
+              <div style={{ fontSize: 18, fontWeight: 800, color: "#f1f5f9", fontFamily: "'DM Serif Display',serif" }}>วางแผนโพสต์ Facebook 7 วัน</div>
+              <div style={{ fontSize: 11, color: "#475569", marginTop: 2 }}>Auto-post ทุกวัน 09:00 ผ่าน n8n Schedule Trigger</div>
+            </div>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {fbQueue.length > 0 && (
+              <span style={{ fontSize: 12, color: "#60a5fa", background: "rgba(24,119,242,.1)", border: "1px solid rgba(24,119,242,.25)", borderRadius: 20, padding: "3px 12px" }}>
+                {fbQueue.filter(i => i.status === "published").length}/{fbQueue.length} โพสต์แล้ว
+              </span>
+            )}
+            {fbQueue.length > 0 && !editorOpen && (
+              <button onClick={handleClear} disabled={busy} style={{
+                padding: "8px 14px", borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: "pointer",
+                background: "rgba(244,63,94,.08)", border: "1px solid rgba(244,63,94,.25)", color: "#f43f5e",
+              }}>🗑 ล้าง Queue</button>
+            )}
+            <button onClick={editorOpen ? () => setEditorOpen(false) : openEditor} style={{
+              padding: "9px 22px", borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: "pointer",
+              background: editorOpen ? "rgba(255,255,255,.06)" : "linear-gradient(135deg,#1877f2,#42b0ff)",
+              border: editorOpen ? "1px solid rgba(255,255,255,.1)" : "none",
+              color: editorOpen ? "#94a3b8" : "#fff",
+            }}>
+              {editorOpen ? "✕ ปิด" : fbQueue.length > 0 ? "✏️ แก้ไข Queue" : "✨ สร้าง Queue 7 วัน"}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Queue summary cards */}
+      {!editorOpen && fbQueue.length > 0 && (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 10 }}>
+          {fbQueue.map((item, i) => {
+            const c = statusColor[item.status] ?? "#64748b";
+            const dateLabel = new Date(item.date + "T00:00:00").toLocaleDateString("th-TH", { weekday: "short", day: "numeric", month: "short" });
+            return (
+              <div key={item.id} style={{
+                background: item.status === "published" ? "rgba(24,119,242,.08)" : "rgba(255,255,255,.02)",
+                border: `1px solid ${c}33`, borderRadius: 14, padding: "12px 14px",
+              }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8" }}>วันที่ {i + 1} — {dateLabel}</span>
+                  <span style={{ fontSize: 10, color: c, background: `${c}15`, border: `1px solid ${c}30`, borderRadius: 6, padding: "2px 7px", fontWeight: 700 }}>
+                    {statusLabel[item.status] ?? item.status}
+                  </span>
+                </div>
+                <div style={{ fontSize: 11, color: "#64748b", lineHeight: 1.5, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical" }}>
+                  {item.content.slice(0, 100)}…
+                </div>
+                {item.postUrl && (
+                  <a href={item.postUrl} target="_blank" rel="noreferrer" style={{ fontSize: 10, color: "#1877f2", marginTop: 6, display: "block" }}>→ ดูโพสต์บน Facebook</a>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Empty state */}
+      {!editorOpen && fbQueue.length === 0 && (
+        <div style={{ textAlign: "center", padding: "48px 0", color: "#475569" }}>
+          <div style={{ fontSize: 40, marginBottom: 12 }}>📭</div>
+          <div style={{ fontSize: 16, fontWeight: 700, color: "#64748b", marginBottom: 6 }}>ยังไม่มี FB Content Queue</div>
+          <div style={{ fontSize: 12 }}>กด &ldquo;สร้าง Queue 7 วัน&rdquo; เพื่อวางแผนโพสต์ Facebook ล่วงหน้า</div>
+        </div>
+      )}
+
+      {/* Editor */}
+      {editorOpen && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div style={{ fontSize: 12, color: "#64748b" }}>แก้ไขเนื้อหาแต่ละวัน แล้วกด &ldquo;บันทึก Queue&rdquo; — ระบบจะ auto-post ตามวันที่กำหนด</div>
+          {drafts.map((item, i) => {
+            const dateLabel = new Date(item.date + "T00:00:00").toLocaleDateString("th-TH", { weekday: "long", day: "numeric", month: "long" });
+            return (
+              <div key={item.id} style={{ background: "rgba(24,119,242,.04)", border: "1px solid rgba(24,119,242,.15)", borderRadius: 16, padding: "16px 18px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                  <span style={{ width: 26, height: 26, borderRadius: "50%", background: "linear-gradient(135deg,#1877f2,#42b0ff)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800, color: "#fff", flexShrink: 0 }}>{i + 1}</span>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: "#93c5fd" }}>{dateLabel}</span>
+                  <input
+                    type="date" value={item.date}
+                    onChange={e => setDrafts(prev => prev.map((d, di) => di === i ? { ...d, date: e.target.value } : d))}
+                    style={{ marginLeft: "auto", background: "rgba(0,0,0,.3)", border: "1px solid rgba(255,255,255,.1)", borderRadius: 8, padding: "3px 8px", color: "#94a3b8", fontSize: 11 }}
+                  />
+                </div>
+                <textarea
+                  value={item.content}
+                  onChange={e => setDrafts(prev => prev.map((d, di) => di === i ? { ...d, content: e.target.value } : d))}
+                  rows={5}
+                  style={{
+                    width: "100%", background: "rgba(0,0,0,.3)", border: "1px solid rgba(24,119,242,.2)",
+                    borderRadius: 10, padding: "10px 14px", color: "#f1f5f9", fontSize: 12,
+                    lineHeight: 1.7, resize: "vertical", outline: "none", fontFamily: "inherit", boxSizing: "border-box",
+                  }}
+                />
+                <div style={{ fontSize: 10, color: "#334155", marginTop: 4, textAlign: "right" }}>{item.content.length} ตัวอักษร</div>
+              </div>
+            );
+          })}
+
+          <div style={{ display: "flex", gap: 10 }}>
+            <button onClick={() => setEditorOpen(false)} style={{
+              flex: 1, padding: "12px 0", borderRadius: 12, fontSize: 13, cursor: "pointer",
+              background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.1)", color: "#64748b",
+            }}>ยกเลิก</button>
+            <button onClick={handleSave} disabled={busy} style={{
+              flex: 3, padding: "12px 0", borderRadius: 12, fontSize: 14, fontWeight: 700,
+              cursor: busy ? "not-allowed" : "pointer",
+              background: busy ? "rgba(255,255,255,.05)" : "linear-gradient(135deg,#1877f2,#42b0ff)",
+              border: "none", color: busy ? "#475569" : "#fff",
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+            }}>
+              {busy
+                ? <><span style={{ display: "inline-block", width: 14, height: 14, border: "2px solid rgba(255,255,255,.2)", borderTopColor: "#fff", borderRadius: "50%", animation: "spin 1s linear infinite" }} />กำลังบันทึก...</>
+                : "💾 บันทึก Queue 7 วัน"}
+            </button>
+          </div>
+
+          <div style={{ padding: "12px 16px", borderRadius: 12, background: "rgba(24,119,242,.06)", border: "1px solid rgba(24,119,242,.15)" }}>
+            <div style={{ fontSize: 11, color: "#60a5fa", fontWeight: 700, marginBottom: 4 }}>⚡ Auto-run — n8n Schedule Trigger</div>
+            <div style={{ fontSize: 11, color: "#475569", lineHeight: 1.7 }}>
+              n8n: <span style={{ color: "#f1f5f9", fontFamily: "monospace" }}>Schedule Trigger (09:00 daily)</span>
+              {" → "}
+              <span style={{ color: "#f1f5f9", fontFamily: "monospace" }}>HTTP POST /api/fb/queue/run-next</span>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 const LS_KEY = "finnhouses_ai_content_v1";
 
@@ -751,6 +1001,7 @@ export default function AIContent() {
         {tab === "keyword" && <KeywordTab onSave={handleSave} />}
         {tab === "blog"    && <BlogConvertTab onSave={handleSave} />}
         {tab === "history" && <HistoryTab saved={saved} onDelete={handleDelete} />}
+        {tab === "queue"   && <FbQueueTab />}
       </div>
     </div>
   );
