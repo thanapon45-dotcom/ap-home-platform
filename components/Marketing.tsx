@@ -636,9 +636,9 @@ export default function Marketing() {
           <div style={{ fontSize: 11, letterSpacing: ".18em", textTransform: "uppercase", color: "#6366f1", fontWeight: 600, marginBottom: 4 }}>CONNECTION STATUS</div>
           <div style={{ fontSize: 15, fontWeight: 700, color: "#f1f5f9", marginBottom: 14, fontFamily: "'DM Serif Display',serif" }}>Live Integration</div>
           {[
-            { label: "Backend Hub",   port: ":4000", ok: live,               color: "#22d3ee" },
-            { label: "n8n Webhook",   port: ":5678", ok: !!blog.updatedAt,   color: "#10b981" },
-            { label: "WordPress",     port: "REST",  ok: !!blog.postId,      color: "#6366f1" },
+            { label: "Backend Hub",   port: "Railway", ok: live,               color: "#22d3ee" },
+            { label: "n8n Webhook",   port: "Railway", ok: !!blog.updatedAt,   color: "#10b981" },
+            { label: "WordPress",     port: "REST",    ok: !!blog.postId,      color: "#6366f1" },
           ].map(row => (
             <div key={row.label} style={{
               display: "flex", alignItems: "center", justifyContent: "space-between",

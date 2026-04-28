@@ -273,6 +273,7 @@ export default function DashboardOS() {
           metrics={[["Queue", blog?.queue ?? 0], ["Published", blog?.published ?? 0], ["Failed", blog?.failed ?? 0], ["Port", "5678"]]}
           channel="finnhouses.com via n8n · Railway (primary)"
           actions={["บทความ SEO รอ publish", "ตรวจ featured image flow", "เช็ก internal link"]}
+          actionLinks={{ "บทความ SEO รอ publish": "/marketing" }}
           accent="#10b981"
         />
       </div>
