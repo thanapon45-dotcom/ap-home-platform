@@ -263,7 +263,7 @@ export default function DashboardOS() {
           statusText={fb?.status ?? "—"}
           metrics={[["Queue", fb?.queue ?? 0], ["Drafts", fb?.drafts ?? 0], ["Published", fb?.published ?? 0], ["Port", "3001"]]}
           channel="Facebook Page · Railway (fb-backend)"
-          actions={["เตรียมโพสต์ขายบ้าน", "จัดคิว content 7 วัน", "เช็ก CTA ปรึกษาฟรี"]}
+          actions={["เตรียมโพสต์ขายบ้าน", "จัดคิว content 7 วัน", "เช็ก CTA finnhouses.com"]}
           actionLinks={{ "จัดคิว content 7 วัน": "/ai-content" }}
           accent="#22d3ee"
         />

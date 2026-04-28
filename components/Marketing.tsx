@@ -122,18 +122,11 @@ type BlogState = {
   visionRetries?: number;
   publishChecks?: Record<string, boolean>;
 };
-type FbState = {
-  status: string; queue: number; drafts: number; published: number; lastUpdate: string | null;
-  postUrl?: string;
-};
-
 const MOCK_BLOG: BlogState = {
   status: "idle", runId: "", keyword: "", category: 13,
   postId: "", postUrl: "", message: "Ready",
   startedAt: "", updatedAt: "",
 };
-const MOCK_FB: FbState = { status: "unknown", queue: 0, drafts: 0, published: 0, lastUpdate: null };
-
 // ── Sub-components ──────────────────────────────────────────────────────────
 function Dot({ color = "#22d3ee" }: { color?: string }) {
   return (
@@ -198,7 +191,6 @@ function StageRow({ stage, status, retries }: { stage: typeof PIPELINE_STAGES[0]
 // ── Main Component ──────────────────────────────────────────────────────────
 export default function Marketing() {
   const [blog, setBlog]           = useState<BlogState>(MOCK_BLOG);
-  const [fb, setFb]               = useState<FbState>(MOCK_FB);
   const [lastError, setLastError] = useState("");
   const [live, setLive]           = useState(false);
   const [lastSync, setSync]       = useState<Date | null>(null);
@@ -215,10 +207,6 @@ export default function Marketing() {
   const [contentQueue, setContentQueue] = useState<QueueItem[]>([]);
   const [queueBusy, setQueueBusy] = useState(false);
 
-  // FB Composer
-  const [fbContent, setFbContent] = useState("");
-  const [fbBusy, setFbBusy]       = useState(false);
-
   // Auto-select first keyword when category changes
   useEffect(() => {
     const pool = KEYWORD_POOLS[category];
@@ -232,7 +220,6 @@ export default function Marketing() {
       if (!r.ok) throw new Error();
       const d = await r.json();
       setBlog(d.blog ?? MOCK_BLOG);
-      setFb(d.fb ?? MOCK_FB);
       setLastError(d.system?.lastError ?? "");
       setContentQueue(Array.isArray(d.content_queue) ? d.content_queue : []);
       setLive(true);
@@ -342,43 +329,6 @@ export default function Marketing() {
     } catch {
       showToast("Error clearing queue", "error");
     } finally { setQueueBusy(false); }
-  }
-
-  // ── FB Templates ─────────────────────────────────────────────────────────
-  const FB_TEMPLATES = [
-    {
-      label: "🏗️ รับสร้างบ้าน",
-      color: "#f59e0b",
-      text: `🏡 สร้างบ้านในฝันกับ Finnhouses\n\n✅ ออกแบบตามไลฟ์สไตล์คุณ\n✅ งบ 5–15 ล้านบาท ควบคุมได้จริง\n✅ ทีมช่างมืออาชีพ พร้อม BOQ ชัดเจน\n\n📞 ปรึกษาฟรี ไม่มีค่าใช้จ่าย\nLine: @finnhouses หรือโทร 08X-XXX-XXXX\n\n#สร้างบ้าน #Finnhouses #บ้านในฝัน #รับสร้างบ้าน`,
-    },
-    {
-      label: "🔨 รีโนเวทเพื่อขาย",
-      color: "#10b981",
-      text: `🔨 รีโนเวทบ้านเพื่อขาย ทำกำไรได้จริง!\n\n💰 ซื้อทรัพย์ราคาต่ำ → รีโนเวท → ขายต่อมีกำไร\n📊 เราช่วยประเมินต้นทุนและมาร์จิน\n🏠 มีทรัพย์น่าสนใจอัปเดตทุกสัปดาห์\n\n📞 สนใจร่วมลงทุน ติดต่อได้เลย\nLine: @finnhouses\n\n#รีโนเวทบ้าน #ลงทุนอสังหา #Finnhouses #FlipHouse`,
-    },
-    {
-      label: "🏠 ฝากขายบ้าน",
-      color: "#6366f1",
-      text: `🏠 ฝากขายบ้านและที่ดิน กับ Finnhouses\n\n✨ ทีม Marketing ช่วยโปรโมทให้ฟรี\n✨ มีฐานลูกค้าพร้อมซื้อรอคิวอยู่\n✨ ปิดการขายเร็ว ค่าคอมมิชชั่นมาตรฐาน\n\n📸 ถ่ายภาพและทำ Listing สวยๆ ให้ฟรี!\n\n📞 ติดต่อ Line: @finnhouses\n\n#ฝากขายบ้าน #ขายบ้าน #Finnhouses #อสังหาริมทรัพย์`,
-    },
-  ];
-
-  async function handleFbPost() {
-    if (!fbContent.trim()) { showToast("กรุณาเขียนเนื้อหาก่อน", "error"); return; }
-    try {
-      setFbBusy(true);
-      const r = await fetch(`${HUB}/action/fb/publish`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: fbContent.trim(), source: "dashboard-react" }),
-      });
-      const j = await r.json();
-      if (!j.ok) throw new Error(j.error);
-      showToast("โพสต์ FB สำเร็จ ✓", "success");
-      await poll();
-    } catch (e: unknown) {
-      showToast(e instanceof Error ? e.message : "Error", "error");
-    } finally { setFbBusy(false); }
   }
 
   const statusColor: Record<string, string> = {
@@ -650,159 +600,8 @@ export default function Marketing() {
         </div>
       </div>
 
-      {/* ── FB Post Composer ── */}
-      <div style={{ background: "rgba(15,20,40,.85)", border: "1px solid rgba(99,102,241,.25)", borderRadius: 20, padding: 28 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
-          <div style={{
-            width: 36, height: 36, borderRadius: 10,
-            background: "linear-gradient(135deg,#1877f2,#42b0ff)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 18, flexShrink: 0,
-          }}>
-            f
-          </div>
-          <div>
-            <div style={{ fontSize: 11, letterSpacing: ".2em", textTransform: "uppercase", color: "#6366f1", fontWeight: 600 }}>
-              FB POST COMPOSER
-            </div>
-            <div style={{ fontSize: 15, fontWeight: 700, color: "#f1f5f9", fontFamily: "'DM Serif Display',serif" }}>
-              โพสต์ Facebook Page โดยตรง
-            </div>
-          </div>
-          <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6, background: "rgba(24,119,242,.1)", border: "1px solid rgba(24,119,242,.25)", borderRadius: 12, padding: "5px 12px" }}>
-            <Dot color={live ? "#1877f2" : "#334155"} />
-            <span style={{ fontSize: 11, color: live ? "#60a5fa" : "#475569", fontWeight: 600 }}>
-              {live ? "FB Backend Live" : "Offline"}
-            </span>
-          </div>
-        </div>
-
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: 24, alignItems: "start" }}>
-
-          {/* Left: Textarea + templates */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <div style={{ position: "relative" }}>
-              <textarea
-                value={fbContent}
-                onChange={e => setFbContent(e.target.value)}
-                rows={8}
-                placeholder="เขียนข้อความสำหรับ Facebook Page..."
-                style={{
-                  ...inputStyle,
-                  resize: "vertical",
-                  lineHeight: 1.7,
-                  minHeight: 180,
-                }}
-              />
-              <div style={{
-                position: "absolute", bottom: 10, right: 14,
-                fontSize: 10, color: fbContent.length > 2000 ? "#f43f5e" : "#475569",
-                fontFamily: "monospace",
-              }}>
-                {fbContent.length} / 2000
-              </div>
-            </div>
-
-            {/* Template picker */}
-            <div>
-              <div style={{ fontSize: 10, color: "#475569", fontWeight: 600, textTransform: "uppercase", letterSpacing: ".12em", marginBottom: 8 }}>
-                📋 Templates
-              </div>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                {FB_TEMPLATES.map((tpl, i) => (
-                  <button key={i} onClick={() => setFbContent(tpl.text)} style={{
-                    padding: "7px 14px", borderRadius: 10, cursor: "pointer", fontSize: 12, fontWeight: 600,
-                    background: `${tpl.color}12`,
-                    border: `1px solid ${tpl.color}40`,
-                    color: tpl.color,
-                    transition: "all .2s",
-                  }}>
-                    {tpl.label}
-                  </button>
-                ))}
-                {fbContent && (
-                  <button onClick={() => setFbContent("")} style={{
-                    padding: "7px 14px", borderRadius: 10, cursor: "pointer", fontSize: 12, fontWeight: 600,
-                    background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.09)", color: "#64748b",
-                  }}>
-                    ✕ ล้าง
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Right: Post button + status */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <button onClick={handleFbPost} disabled={fbBusy || !fbContent.trim()} style={{
-              width: "100%", padding: "14px 0", borderRadius: 14, fontSize: 15, fontWeight: 700,
-              cursor: fbBusy || !fbContent.trim() ? "not-allowed" : "pointer",
-              background: fbBusy || !fbContent.trim()
-                ? "rgba(255,255,255,.04)"
-                : "linear-gradient(135deg,#1877f2,#42b0ff)",
-              border: "none",
-              color: fbBusy || !fbContent.trim() ? "#475569" : "#fff",
-              display: "flex", alignItems: "center", justifyContent: "center", gap: 9,
-              transition: "all .2s",
-            }}>
-              {fbBusy
-                ? <><span className="animate-spin" style={{ display: "inline-block", width: 16, height: 16, border: "2px solid rgba(255,255,255,.2)", borderTopColor: "#fff", borderRadius: "50%" }} />กำลังโพสต์...</>
-                : "📤 โพสต์ลง Facebook"}
-            </button>
-
-            {/* FB state panel */}
-            <div style={{ background: "rgba(255,255,255,.02)", border: "1px solid rgba(255,255,255,.06)", borderRadius: 14, padding: "16px 18px", display: "flex", flexDirection: "column", gap: 10 }}>
-              <div style={{ fontSize: 10, color: "#475569", fontWeight: 600, textTransform: "uppercase", letterSpacing: ".12em" }}>สถานะ FB Engine</div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 6 }}>
-                {[["Queue", fb.queue, "#f59e0b"], ["Drafts", fb.drafts, "#6366f1"], ["Published", fb.published, "#10b981"]].map(([k, v, c]) => (
-                  <div key={String(k)} style={{ textAlign: "center", background: "rgba(255,255,255,.02)", border: "1px solid rgba(255,255,255,.05)", borderRadius: 10, padding: "8px 4px" }}>
-                    <div style={{ fontSize: 9, color: "#475569", textTransform: "uppercase" }}>{k}</div>
-                    <div style={{ fontSize: 20, fontWeight: 800, color: String(c), marginTop: 2 }}>{v}</div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Status badge */}
-              <div style={{
-                display: "flex", alignItems: "center", gap: 7,
-                padding: "8px 12px", borderRadius: 10,
-                background: fb.status === "published" ? "rgba(16,185,129,.07)" : "rgba(255,255,255,.02)",
-                border: `1px solid ${fb.status === "published" ? "rgba(16,185,129,.25)" : "rgba(255,255,255,.06)"}`,
-              }}>
-                <Dot color={
-                  fb.status === "published" ? "#10b981" :
-                  fb.status === "failed" ? "#f43f5e" :
-                  fb.status === "running" ? "#22d3ee" : "#334155"
-                } />
-                <span style={{ fontSize: 12, fontWeight: 600, color: "#94a3b8", textTransform: "capitalize" }}>
-                  {fb.status ?? "unknown"}
-                </span>
-              </div>
-
-              {/* Post URL if available */}
-              {fb.postUrl && (
-                <div style={{ background: "rgba(24,119,242,.06)", border: "1px solid rgba(24,119,242,.2)", borderRadius: 10, padding: "9px 12px" }}>
-                  <div style={{ fontSize: 9, color: "#60a5fa", marginBottom: 4, textTransform: "uppercase", letterSpacing: ".1em" }}>✅ โพสต์ล่าสุด</div>
-                  <a href={fb.postUrl} target="_blank" rel="noreferrer"
-                    style={{ fontSize: 10, color: "#93c5fd", wordBreak: "break-all", textDecoration: "none" }}>
-                    {fb.postUrl}
-                  </a>
-                </div>
-              )}
-
-              {fb.lastUpdate && (
-                <div style={{ fontSize: 10, color: "#334155" }}>
-                  Last update: {new Date(fb.lastUpdate).toLocaleTimeString("th-TH")}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Bottom row: Publish Guard + FB + Connection ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr 1fr", gap: 20 }}>
+      {/* ── Bottom row: Publish Guard + Connection ── */}
+      <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: 20 }}>
 
         {/* Publish Guard checks */}
         <div style={{ background: "rgba(15,20,40,.85)", border: "1px solid rgba(99,102,241,.2)", borderRadius: 20, padding: 22 }}>
@@ -830,25 +629,6 @@ export default function Marketing() {
               );
             })}
           </div>
-        </div>
-
-        {/* FB Engine */}
-        <div style={{ background: "rgba(15,20,40,.85)", border: "1px solid rgba(99,102,241,.18)", borderRadius: 20, padding: 22 }}>
-          <div style={{ fontSize: 11, letterSpacing: ".18em", textTransform: "uppercase", color: "#6366f1", fontWeight: 600, marginBottom: 4 }}>FB CONTENT ENGINE</div>
-          <div style={{ fontSize: 16, fontWeight: 700, color: "#f1f5f9", marginBottom: 14, fontFamily: "'DM Serif Display',serif" }}>Facebook Page</div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8 }}>
-            {[["Queue", fb.queue], ["Drafts", fb.drafts], ["Published", fb.published]].map(([k, v]) => (
-              <div key={String(k)} style={{ background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.06)", borderRadius: 12, padding: "10px 12px", textAlign: "center" }}>
-                <div style={{ fontSize: 10, color: "#64748b", textTransform: "uppercase" }}>{k}</div>
-                <div style={{ fontSize: 22, fontWeight: 800, color: "#6366f1", marginTop: 4 }}>{v}</div>
-              </div>
-            ))}
-          </div>
-          {fb.lastUpdate && (
-            <div style={{ fontSize: 11, color: "#334155", marginTop: 10 }}>
-              Last update: {new Date(fb.lastUpdate).toLocaleTimeString("th-TH")}
-            </div>
-          )}
         </div>
 
         {/* Connection status */}
