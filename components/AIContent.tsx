@@ -806,7 +806,6 @@ function FbQueueTab() {
             <div>
               <div style={{ fontSize: 10, letterSpacing: ".2em", textTransform: "uppercase", color: "#60a5fa", fontWeight: 700 }}>FB CONTENT QUEUE</div>
               <div style={{ fontSize: 18, fontWeight: 800, color: "#f1f5f9", fontFamily: "'DM Serif Display',serif" }}>วางแผนโพสต์ Facebook 7 วัน</div>
-              <div style={{ fontSize: 11, color: "#475569", marginTop: 2 }}>Auto-post ทุกวัน 09:00 ผ่าน n8n Schedule Trigger</div>
             </div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -874,7 +873,6 @@ function FbQueueTab() {
       {/* Editor */}
       {editorOpen && (
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          <div style={{ fontSize: 12, color: "#64748b" }}>แก้ไขเนื้อหาแต่ละวัน แล้วกด &ldquo;บันทึก Queue&rdquo; — ระบบจะ auto-post ตามวันที่กำหนด</div>
           {drafts.map((item, i) => {
             const dateLabel = new Date(item.date + "T00:00:00").toLocaleDateString("th-TH", { weekday: "long", day: "numeric", month: "long" });
             return (
