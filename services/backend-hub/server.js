@@ -135,11 +135,15 @@ app.post('/webhook/blog', (req, res) => {
 });
 
 // ─────────────────────────────────────────
+// FB Backend URL (with production fallback)
+// ─────────────────────────────────────────
+const FB_BACKEND = process.env.FB_BACKEND_URL ?? 'https://easygoing-friendship-production-e663.up.railway.app';
+
+// ─────────────────────────────────────────
 // GET /api/fb/state  — Proxy to FB backend
 // ─────────────────────────────────────────
 app.get('/api/fb/state', async (_req, res) => {
-  const fbUrl = process.env.FB_BACKEND_URL;
-  if (!fbUrl) return res.json({ queue: 0, drafts: 0, published: 0 });
+  const fbUrl = FB_BACKEND;
 
   try {
     const r = await fetchFn(`${fbUrl}/api/state`);
@@ -155,8 +159,7 @@ app.get('/api/fb/state', async (_req, res) => {
 // POST /action/fb/publish  — Proxy to FB backend
 // ─────────────────────────────────────────
 app.post('/action/fb/publish', async (req, res) => {
-  const fbUrl = process.env.FB_BACKEND_URL;
-  if (!fbUrl) return res.status(500).json({ ok: false, error: 'FB_BACKEND_URL not set' });
+  const fbUrl = FB_BACKEND;
 
   try {
     const r = await fetchFn(`${fbUrl}/api/fb/publish`, {
