@@ -1,7 +1,8 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 
-const HUB = process.env.NEXT_PUBLIC_HUB_URL ?? "https://ap-home-platform-production.up.railway.app";
+// Use Vercel server-side routes to avoid CORS/browser→Railway issues
+const HUB = "";
 const POLL_MS = 5_000;
 
 // ── Topic Engine PRO — 32 Keywords ─────────────────────────────────────────
@@ -209,7 +210,7 @@ export default function Marketing() {
   // ── Poll Backend Hub ──────────────────────────────────────────────────────
   const poll = useCallback(async () => {
     try {
-      const r = await fetch(`${HUB}/api/state`, { signal: AbortSignal.timeout(3000) });
+      const r = await fetch(`/api/blog/state`, { signal: AbortSignal.timeout(5000) });
       if (!r.ok) throw new Error();
       const d = await r.json();
       setBlog(d.blog ?? MOCK_BLOG);
@@ -236,7 +237,7 @@ export default function Marketing() {
     if (!keyword.trim()) { showToast("เลือก keyword ก่อน", "error"); return; }
     try {
       setBusy(true);
-      const r = await fetch(`${HUB}/action/blog/run`, {
+      const r = await fetch(`/api/blog/run`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -258,7 +259,7 @@ export default function Marketing() {
   async function handleReset() {
     try {
       setBusy(true);
-      const r = await fetch(`${HUB}/action/blog/reset`, { method: "POST" });
+      const r = await fetch(`/api/blog/reset`, { method: "POST" });
       const j = await r.json();
       if (!j.ok) throw new Error(j.error);
       showToast("Reset แล้ว ✓", "success");
