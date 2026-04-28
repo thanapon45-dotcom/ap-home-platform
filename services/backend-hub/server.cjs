@@ -241,54 +241,58 @@ app.post("/action/blog/run", async (req, res) => {
   });
   writeState(state);
 
-  try {
-    const payload = {
-      keyword,
-      category,
-      slot,
-      visual_hint,
-      source: req.body.source || "dashboard-react",
-      utm_source: req.body.utm_source || "dashboard",
-      utm_medium: req.body.utm_medium || "manual",
-      utm_campaign: req.body.utm_campaign || "finnhouses-dashboard",
-      runId,
-      hub_callback_url: callbackUrl,
-    };
+  const payload = {
+    keyword,
+    category,
+    slot,
+    visual_hint,
+    source: req.body.source || "dashboard-react",
+    utm_source: req.body.utm_source || "dashboard",
+    utm_medium: req.body.utm_medium || "manual",
+    utm_campaign: req.body.utm_campaign || "finnhouses-dashboard",
+    runId,
+    hub_callback_url: callbackUrl,
+  };
 
-    const r = await fetch(N8N_BLOG_WEBHOOK_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
+  // Return immediately — don't wait for n8n to respond
+  res.json({ ok: true, runId, category, accepted: true });
 
+  // Fire-and-forget: trigger n8n in background
+  fetch(N8N_BLOG_WEBHOOK_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  }).then(async (r) => {
     if (!r.ok) {
-      const text = await r.text();
-      throw new Error(`n8n webhook returned HTTP ${r.status}${text ? ` ${text}` : ""}`);
+      const text = await r.text().catch(() => "");
+      const errMsg = `n8n webhook returned HTTP ${r.status}${text ? `: ${text}` : ""}`;
+      console.error("[hub] n8n trigger failed:", errMsg);
+      const s = readState();
+      s.blog.status = "failed";
+      s.blog.failed = 1;
+      s.blog.message = errMsg;
+      s.blog.finishedAt = nowIso();
+      s.blog.updatedAt = nowIso();
+      s.system.lastError = errMsg;
+      pushHistory(s, { type: "blog_run_failed_at_dispatch", engine: "blog", runId, keyword, status: "failed", message: errMsg });
+      writeState(s);
+      sendTelegram(formatBlogMessage(s.blog)).catch(() => {});
+    } else {
+      console.log("[hub] n8n triggered OK — runId:", runId);
     }
-
-    const bodyText = await r.text().catch(() => "");
-    res.json({ ok: true, runId, category, accepted: true, upstream: bodyText || "accepted" });
-  } catch (error) {
-    state.system.lastError = error.message;
-    state.blog.status = "failed";
-    state.blog.failed = 1;
-    state.blog.message = error.message;
-    state.blog.finishedAt = nowIso();
-    state.blog.updatedAt = nowIso();
-    pushHistory(state, {
-      type: "blog_run_failed_at_dispatch",
-      engine: "blog",
-      runId,
-      keyword,
-      status: "failed",
-      message: error.message,
-    });
-    writeState(state);
-    try {
-      await sendTelegram(formatBlogMessage(state.blog));
-    } catch {}
-    res.status(500).json({ ok: false, error: error.message });
-  }
+  }).catch((err) => {
+    console.error("[hub] n8n fetch error:", err.message);
+    const s = readState();
+    s.blog.status = "failed";
+    s.blog.failed = 1;
+    s.blog.message = `n8n unreachable: ${err.message}`;
+    s.blog.finishedAt = nowIso();
+    s.blog.updatedAt = nowIso();
+    s.system.lastError = err.message;
+    pushHistory(s, { type: "blog_run_failed_at_dispatch", engine: "blog", runId, keyword, status: "failed", message: err.message });
+    writeState(s);
+    sendTelegram(formatBlogMessage(s.blog)).catch(() => {});
+  });
 });
 
 app.post("/webhook/n8n", async (req, res) => {
