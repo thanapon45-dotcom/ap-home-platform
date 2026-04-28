@@ -100,6 +100,28 @@ const PUBLISH_CHECKS = [
 type StageStatus = "idle" | "running" | "success" | "failed" | "skipped";
 type PipelineState = Record<string, StageStatus>;
 
+type FbQueueItem = {
+  id: string;
+  date: string;
+  content: string;
+  status: "pending" | "running" | "published" | "failed";
+  postUrl: string;
+};
+
+type QueueItem = {
+  id: string;
+  date: string;
+  slot: "morning" | "evening";
+  keyword: string;
+  category: number;
+  visual_hint: string;
+  status: "pending" | "running" | "published" | "failed";
+  runId: string;
+  postUrl: string;
+};
+
+function genId() { return Math.random().toString(36).slice(2) + Date.now().toString(36); }
+
 type BlogState = {
   status: string; runId: string; keyword: string; category: number;
   postId: string; postUrl: string; message: string;
@@ -197,6 +219,16 @@ export default function Marketing() {
   const [busy, setBusy]           = useState(false);
   const [toast, setToast]         = useState<{ msg: string; type: string } | null>(null);
 
+  // FB Queue
+  const [fbQueue, setFbQueue] = useState<FbQueueItem[]>([]);
+  const [fbQueueDrafts, setFbQueueDrafts] = useState<FbQueueItem[]>([]);
+  const [fbQueueBusy, setFbQueueBusy] = useState(false);
+  const [fbQueueOpen, setFbQueueOpen] = useState(false);
+
+  // Content Queue
+  const [contentQueue, setContentQueue] = useState<QueueItem[]>([]);
+  const [queueBusy, setQueueBusy] = useState(false);
+
   // FB Composer
   const [fbContent, setFbContent] = useState("");
   const [fbBusy, setFbBusy]       = useState(false);
@@ -216,6 +248,8 @@ export default function Marketing() {
       setBlog(d.blog ?? MOCK_BLOG);
       setFb(d.fb ?? MOCK_FB);
       setLastError(d.system?.lastError ?? "");
+      setContentQueue(Array.isArray(d.content_queue) ? d.content_queue : []);
+      setFbQueue(Array.isArray(d.fb_queue) ? d.fb_queue : []);
       setLive(true);
       setSync(new Date());
     } catch { setLive(false); }
@@ -267,6 +301,127 @@ export default function Marketing() {
     } catch (e: unknown) {
       showToast(e instanceof Error ? e.message : "Error", "error");
     } finally { setBusy(false); }
+  }
+
+  // ── Content Queue ─────────────────────────────────────────────────────────
+  function generateQueueItems(): QueueItem[] {
+    // Collect all keywords from all pools
+    const all: { keyword: string; category: number; visual_hint: string }[] = [];
+    Object.entries(KEYWORD_POOLS).forEach(([catId, cat]) => {
+      cat.keywords.forEach(kw => all.push({
+        keyword: kw, category: Number(catId), visual_hint: "contemporary",
+      }));
+    });
+    // Shuffle and pick 7
+    const shuffled = [...all].sort(() => Math.random() - 0.5).slice(0, 7);
+    return shuffled.map((item, i) => {
+      const d = new Date();
+      d.setDate(d.getDate() + 1 + i); // start tomorrow
+      return {
+        id: genId(),
+        date: d.toISOString().split("T")[0],
+        slot: "morning" as const,
+        keyword: item.keyword,
+        category: item.category,
+        visual_hint: item.visual_hint,
+        status: "pending" as const,
+        runId: "", postUrl: "",
+      };
+    });
+  }
+
+  async function handleBuildQueue() {
+    try {
+      setQueueBusy(true);
+      const items = generateQueueItems();
+      const r = await fetch("/api/blog/queue/build", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items }),
+      });
+      const j = await r.json();
+      if (!j.ok) throw new Error(j.error);
+      showToast(`📅 Queue ${j.count} วัน สร้างสำเร็จ`, "success");
+      await poll();
+    } catch (e: unknown) {
+      showToast(e instanceof Error ? e.message : "Error", "error");
+    } finally { setQueueBusy(false); }
+  }
+
+  async function handleClearQueue() {
+    try {
+      setQueueBusy(true);
+      await fetch("/api/blog/queue/clear", { method: "POST" });
+      showToast("Queue ล้างแล้ว ✓", "success");
+      await poll();
+    } catch {
+      showToast("Error clearing queue", "error");
+    } finally { setQueueBusy(false); }
+  }
+
+  // ── FB Queue ──────────────────────────────────────────────────────────────
+  const FB_QUEUE_TEMPLATES = [
+    `🏡 สร้างบ้านในฝันกับ Finnhouses\n\n✅ ออกแบบตามไลฟ์สไตล์คุณ\n✅ งบ 5–15 ล้านบาท ควบคุมได้จริง\n✅ ทีมช่างมืออาชีพ พร้อม BOQ ชัดเจน\n\n📞 ปรึกษาฟรี ไม่มีค่าใช้จ่าย\nLine: @finnhouses\n\n#สร้างบ้าน #Finnhouses #บ้านในฝัน`,
+    `🔨 รีโนเวทบ้านเพื่อขาย ทำกำไรได้จริง!\n\n💰 ซื้อทรัพย์ราคาต่ำ → รีโนเวท → ขายต่อมีกำไร\n📊 เราช่วยประเมินต้นทุนและมาร์จิน\n\n📞 สนใจร่วมลงทุน ติดต่อได้เลย\nLine: @finnhouses\n\n#รีโนเวทบ้าน #ลงทุนอสังหา #Finnhouses`,
+    `🏠 ฝากขายบ้านและที่ดิน กับ Finnhouses\n\n✨ ทีม Marketing ช่วยโปรโมทให้ฟรี\n✨ มีฐานลูกค้าพร้อมซื้อรอคิวอยู่\n\n📸 ถ่ายภาพและทำ Listing สวยๆ ให้ฟรี!\nLine: @finnhouses\n\n#ฝากขายบ้าน #Finnhouses`,
+    `💡 รู้หรือเปล่า? BOQ คืออะไร\n\nBOQ (Bill of Quantities) คือเอกสารที่รวม รายการวัสดุ + ค่าแรง ทุกรายการในการสร้างบ้าน\n\n✅ ป้องกันงบบาน\n✅ เปรียบเทียบผู้รับเหมาได้ถูกต้อง\n\nสนใจขอ BOQ ฟรี? ทักมาได้เลย!\nLine: @finnhouses\n\n#BOQ #สร้างบ้าน #Finnhouses`,
+    `🌟 ทำไมต้องเลือก Finnhouses?\n\n🏗️ ประสบการณ์สร้างบ้านกว่า 50 หลัง\n📐 ออกแบบโดยทีมสถาปนิกมืออาชีพ\n💯 รับประกันงาน 2 ปี\n💬 ลูกค้าพึงพอใจ 98%\n\n📞 โทร 062-7946152\nLine: @finnhouses\n\n#Finnhouses #สร้างบ้าน #บ้านคุณภาพ`,
+    `📊 งบ 5 ล้าน สร้างบ้านได้ขนาดไหน?\n\n🏠 พื้นที่ใช้สอย: 120–150 ตร.ม.\n🛏️ 3 ห้องนอน 2 ห้องน้ำ\n🚗 ที่จอดรถ 2 คัน\n\nรายละเอียดและ BOQ ฟรี!\nLine: @finnhouses\n\n#งบสร้างบ้าน #Finnhouses #บ้าน5ล้าน`,
+    `🌅 เช้าวันนี้ขอแชร์บ้านสวยจาก Finnhouses!\n\nทุกหลังออกแบบให้เหมาะกับสภาพอากาศไทย\n🌿 ระบายอากาศดี\n☀️ แสงธรรมชาติเต็มบ้าน\n💧 วัสดุทนทาน ไม่กลัวฝน\n\nสนใจ? ทักหาเราได้เลย!\nLine: @finnhouses\n\n#บ้านสวย #Finnhouses #ออกแบบบ้าน`,
+  ];
+
+  function initFbQueueDrafts(): FbQueueItem[] {
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date();
+      d.setDate(d.getDate() + 1 + i);
+      return {
+        id: genId(),
+        date: d.toISOString().split("T")[0],
+        content: FB_QUEUE_TEMPLATES[i % FB_QUEUE_TEMPLATES.length],
+        status: "pending" as const,
+        postUrl: "",
+      };
+    });
+  }
+
+  function openFbQueue() {
+    // If queue exists use it, otherwise init drafts
+    if (fbQueue.length > 0) {
+      setFbQueueDrafts(fbQueue.map(i => ({ ...i })));
+    } else {
+      setFbQueueDrafts(initFbQueueDrafts());
+    }
+    setFbQueueOpen(true);
+  }
+
+  async function handleSaveFbQueue() {
+    try {
+      setFbQueueBusy(true);
+      const r = await fetch("/api/fb/queue/build", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items: fbQueueDrafts }),
+      });
+      const j = await r.json();
+      if (!j.ok) throw new Error(j.error);
+      showToast(`📅 FB Queue ${j.count} วัน บันทึกสำเร็จ`, "success");
+      await poll();
+      setFbQueueOpen(false);
+    } catch (e: unknown) {
+      showToast(e instanceof Error ? e.message : "Error", "error");
+    } finally { setFbQueueBusy(false); }
+  }
+
+  async function handleClearFbQueue() {
+    try {
+      setFbQueueBusy(true);
+      await fetch("/api/fb/queue/clear", { method: "POST" });
+      showToast("FB Queue ล้างแล้ว ✓", "success");
+      await poll();
+      setFbQueueOpen(false);
+    } catch {
+      showToast("Error clearing FB queue", "error");
+    } finally { setFbQueueBusy(false); }
   }
 
   // ── FB Templates ─────────────────────────────────────────────────────────
@@ -800,6 +955,244 @@ export default function Marketing() {
           ))}
           <div style={{ marginTop: 4, padding: "9px 12px", borderRadius: 10, background: "rgba(255,255,255,.02)", border: "1px solid rgba(255,255,255,.04)", fontSize: 10, color: "#334155" }}>
             Poll: 5s · Hub: {HUB}
+          </div>
+        </div>
+      </div>
+
+      {/* ── FB Queue — 7 วัน ── */}
+      <div id="fb-queue" style={{ background: "rgba(15,20,40,.85)", border: "1px solid rgba(24,119,242,.3)", borderRadius: 20, padding: 28 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: fbQueueOpen ? 20 : 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ width: 36, height: 36, borderRadius: 10, background: "linear-gradient(135deg,#1877f2,#42b0ff)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>
+              📅
+            </div>
+            <div>
+              <div style={{ fontSize: 11, letterSpacing: ".2em", textTransform: "uppercase", color: "#60a5fa", fontWeight: 600 }}>
+                FB CONTENT QUEUE
+              </div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: "#f1f5f9", fontFamily: "'DM Serif Display',serif" }}>
+                วางแผนโพสต์ Facebook 7 วัน
+              </div>
+            </div>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {fbQueue.length > 0 && (
+              <span style={{ fontSize: 12, color: "#60a5fa", background: "rgba(24,119,242,.1)", border: "1px solid rgba(24,119,242,.25)", borderRadius: 20, padding: "3px 10px" }}>
+                {fbQueue.filter(i => i.status === "published").length}/{fbQueue.length} โพสต์แล้ว
+              </span>
+            )}
+            {fbQueue.length > 0 && !fbQueueOpen && (
+              <button onClick={handleClearFbQueue} disabled={fbQueueBusy} style={{
+                padding: "7px 14px", borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: "pointer",
+                background: "rgba(244,63,94,.08)", border: "1px solid rgba(244,63,94,.25)", color: "#f43f5e",
+              }}>
+                🗑 ล้าง
+              </button>
+            )}
+            <button onClick={fbQueueOpen ? () => setFbQueueOpen(false) : openFbQueue} style={{
+              padding: "8px 20px", borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: "pointer",
+              background: fbQueueOpen ? "rgba(255,255,255,.06)" : "linear-gradient(135deg,#1877f2,#42b0ff)",
+              border: fbQueueOpen ? "1px solid rgba(255,255,255,.1)" : "none",
+              color: fbQueueOpen ? "#94a3b8" : "#fff",
+            }}>
+              {fbQueueOpen ? "✕ ปิด" : fbQueue.length > 0 ? "✏️ แก้ไข Queue" : "✨ สร้าง Queue 7 วัน"}
+            </button>
+          </div>
+        </div>
+
+        {/* Collapsed summary */}
+        {!fbQueueOpen && fbQueue.length > 0 && (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 8, marginTop: 16 }}>
+            {fbQueue.map((item, i) => {
+              const fsc: Record<string, string> = { pending: "#64748b", running: "#22d3ee", published: "#1877f2", failed: "#f43f5e" };
+              const fsl: Record<string, string> = { pending: "⏳ รอ", running: "▶ Posting", published: "✅ Posted", failed: "❌ Failed" };
+              const c = fsc[item.status] ?? "#64748b";
+              const dateLabel = new Date(item.date + "T00:00:00").toLocaleDateString("th-TH", { weekday: "short", day: "numeric", month: "short" });
+              return (
+                <div key={item.id} style={{
+                  background: item.status === "published" ? "rgba(24,119,242,.08)" : "rgba(255,255,255,.02)",
+                  border: `1px solid ${c}33`, borderRadius: 12, padding: "10px 12px",
+                }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8" }}>วันที่ {i + 1} — {dateLabel}</span>
+                    <span style={{ fontSize: 10, color: c, background: `${c}15`, border: `1px solid ${c}30`, borderRadius: 6, padding: "2px 6px", fontWeight: 700 }}>
+                      {fsl[item.status] ?? item.status}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: 11, color: "#64748b", lineHeight: 1.4, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
+                    {item.content.slice(0, 80)}…
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Editor panel */}
+        {fbQueueOpen && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div style={{ fontSize: 12, color: "#64748b" }}>แก้ไขเนื้อหาแต่ละวัน แล้วกด "บันทึก Queue" — ระบบจะ auto-post ตามวันที่กำหนด</div>
+            {fbQueueDrafts.map((item, i) => {
+              const dateLabel = new Date(item.date + "T00:00:00").toLocaleDateString("th-TH", { weekday: "long", day: "numeric", month: "long" });
+              return (
+                <div key={item.id} style={{ background: "rgba(24,119,242,.04)", border: "1px solid rgba(24,119,242,.15)", borderRadius: 16, padding: "16px 18px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                    <span style={{ width: 26, height: 26, borderRadius: "50%", background: "linear-gradient(135deg,#1877f2,#42b0ff)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800, color: "#fff", flexShrink: 0 }}>
+                      {i + 1}
+                    </span>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: "#93c5fd" }}>{dateLabel}</span>
+                  </div>
+                  <textarea
+                    value={item.content}
+                    onChange={e => setFbQueueDrafts(prev => prev.map((d, di) => di === i ? { ...d, content: e.target.value } : d))}
+                    rows={6}
+                    style={{
+                      width: "100%", background: "rgba(0,0,0,.3)", border: "1px solid rgba(24,119,242,.2)",
+                      borderRadius: 10, padding: "10px 14px", color: "#f1f5f9", fontSize: 12,
+                      lineHeight: 1.7, resize: "vertical", outline: "none", fontFamily: "inherit", boxSizing: "border-box",
+                    }}
+                  />
+                  <div style={{ fontSize: 10, color: "#334155", marginTop: 4, textAlign: "right" }}>{item.content.length} ตัวอักษร</div>
+                </div>
+              );
+            })}
+
+            <div style={{ display: "flex", gap: 10 }}>
+              <button onClick={() => setFbQueueOpen(false)} style={{
+                flex: 1, padding: "11px 0", borderRadius: 12, fontSize: 13, cursor: "pointer",
+                background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.1)", color: "#64748b",
+              }}>ยกเลิก</button>
+              <button onClick={handleSaveFbQueue} disabled={fbQueueBusy} style={{
+                flex: 3, padding: "11px 0", borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: fbQueueBusy ? "not-allowed" : "pointer",
+                background: fbQueueBusy ? "rgba(255,255,255,.05)" : "linear-gradient(135deg,#1877f2,#42b0ff)",
+                border: "none", color: fbQueueBusy ? "#475569" : "#fff",
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+              }}>
+                {fbQueueBusy
+                  ? <><span className="animate-spin" style={{ display: "inline-block", width: 14, height: 14, border: "2px solid rgba(255,255,255,.2)", borderTopColor: "#fff", borderRadius: "50%" }} />กำลังบันทึก...</>
+                  : "💾 บันทึก Queue 7 วัน"}
+              </button>
+            </div>
+
+            <div style={{ padding: "10px 14px", borderRadius: 12, background: "rgba(24,119,242,.06)", border: "1px solid rgba(24,119,242,.15)" }}>
+              <div style={{ fontSize: 11, color: "#60a5fa", fontWeight: 600, marginBottom: 4 }}>⚡ Auto-run — n8n Schedule Trigger</div>
+              <div style={{ fontSize: 11, color: "#475569", lineHeight: 1.6 }}>
+                n8n: <span style={{ color: "#f1f5f9", fontFamily: "monospace" }}>Schedule Trigger (09:00 daily)</span>
+                {" → "}
+                <span style={{ color: "#f1f5f9", fontFamily: "monospace" }}>HTTP POST /api/fb/queue/run-next</span>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── Content Queue — 7 วัน ── */}
+      <div style={{ background: "rgba(15,20,40,.85)", border: "1px solid rgba(245,158,11,.25)", borderRadius: 20, padding: 28 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 20 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ width: 36, height: 36, borderRadius: 10, background: "linear-gradient(135deg,#f59e0b,#d97706)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>
+              📅
+            </div>
+            <div>
+              <div style={{ fontSize: 11, letterSpacing: ".2em", textTransform: "uppercase", color: "#f59e0b", fontWeight: 600 }}>
+                CONTENT QUEUE
+              </div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: "#f1f5f9", fontFamily: "'DM Serif Display',serif" }}>
+                วางแผน Content ล่วงหน้า 7 วัน
+              </div>
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            {contentQueue.length > 0 && (
+              <button onClick={handleClearQueue} disabled={queueBusy} style={{
+                padding: "8px 16px", borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: queueBusy ? "not-allowed" : "pointer",
+                background: "rgba(244,63,94,.08)", border: "1px solid rgba(244,63,94,.25)", color: "#f43f5e",
+              }}>
+                🗑 ล้าง Queue
+              </button>
+            )}
+            <button onClick={handleBuildQueue} disabled={queueBusy} style={{
+              padding: "8px 20px", borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: queueBusy ? "not-allowed" : "pointer",
+              background: queueBusy ? "rgba(255,255,255,.05)" : "linear-gradient(135deg,#f59e0b,#d97706)",
+              border: "none", color: queueBusy ? "#475569" : "#fff",
+              display: "flex", alignItems: "center", gap: 8,
+            }}>
+              {queueBusy
+                ? <><span className="animate-spin" style={{ display: "inline-block", width: 14, height: 14, border: "2px solid rgba(255,255,255,.2)", borderTopColor: "#fff", borderRadius: "50%" }} />กำลังสร้าง...</>
+                : contentQueue.length > 0 ? "🔄 สร้าง Queue ใหม่" : "✨ สร้าง Queue 7 วัน"}
+            </button>
+          </div>
+        </div>
+
+        {contentQueue.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "32px 0", color: "#475569", fontSize: 14 }}>
+            <div style={{ fontSize: 32, marginBottom: 10 }}>📭</div>
+            <div style={{ fontWeight: 600, color: "#64748b", marginBottom: 4 }}>ยังไม่มี Content Queue</div>
+            <div style={{ fontSize: 12 }}>กด &quot;สร้าง Queue 7 วัน&quot; เพื่อวางแผน content อัตโนมัติจาก Keyword Pool</div>
+          </div>
+        ) : (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 12 }}>
+            {contentQueue.map((item, i) => {
+              const qStatusColor: Record<string, string> = {
+                pending: "#64748b", running: "#22d3ee", published: "#10b981", failed: "#f43f5e",
+              };
+              const qStatusLabel: Record<string, string> = {
+                pending: "⏳ รอ", running: "▶ Running", published: "✅ Published", failed: "❌ Failed",
+              };
+              const catInfo = KEYWORD_POOLS[item.category];
+              const qSc = qStatusColor[item.status] ?? "#64748b";
+              const dateLabel = new Date(item.date + "T00:00:00").toLocaleDateString("th-TH", { weekday: "short", day: "numeric", month: "short" });
+              return (
+                <div key={item.id} style={{
+                  background: item.status === "published" ? "rgba(16,185,129,.06)" : "rgba(255,255,255,.02)",
+                  border: `1px solid ${qSc}33`,
+                  borderRadius: 14, padding: "14px 16px",
+                  display: "flex", flexDirection: "column", gap: 8,
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontSize: 18, width: 28, textAlign: "center" }}>{catInfo?.emoji ?? "📝"}</span>
+                      <div>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: "#f1f5f9" }}>วันที่ {i + 1} — {dateLabel}</div>
+                        <div style={{ fontSize: 10, color: "#475569" }}>{item.slot === "morning" ? "🌅 Morning" : "🌙 Evening"} · {catInfo?.label ?? `Cat ${item.category}`}</div>
+                      </div>
+                    </div>
+                    <span style={{
+                      fontSize: 10, fontWeight: 700, color: qSc,
+                      background: `${qSc}15`, border: `1px solid ${qSc}30`,
+                      borderRadius: 8, padding: "3px 8px",
+                    }}>
+                      {qStatusLabel[item.status] ?? item.status}
+                    </span>
+                  </div>
+                  <div style={{
+                    fontSize: 12, color: item.status === "published" ? "#6ee7b7" : "#94a3b8",
+                    background: "rgba(0,0,0,.2)", borderRadius: 8, padding: "8px 10px", lineHeight: 1.5,
+                  }}>
+                    {item.keyword}
+                  </div>
+                  {item.postUrl && (
+                    <a href={item.postUrl} target="_blank" rel="noreferrer" style={{
+                      fontSize: 10, color: "#10b981", textDecoration: "none",
+                      overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                    }}>
+                      🔗 {item.postUrl}
+                    </a>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        <div style={{ marginTop: 16, padding: "12px 16px", borderRadius: 12, background: "rgba(245,158,11,.06)", border: "1px solid rgba(245,158,11,.15)" }}>
+          <div style={{ fontSize: 11, color: "#f59e0b", fontWeight: 600, marginBottom: 4 }}>⚡ Auto-run — n8n Schedule Trigger</div>
+          <div style={{ fontSize: 11, color: "#78716c", lineHeight: 1.6 }}>
+            สร้าง n8n workflow ใหม่:{" "}
+            <span style={{ color: "#f1f5f9", fontFamily: "monospace" }}>Schedule Trigger (09:00 daily)</span>
+            {" → "}
+            <span style={{ color: "#f1f5f9", fontFamily: "monospace" }}>HTTP POST /api/blog/queue/run-next</span>
+            {" "}— ระบบจะ run keyword ถัดไปในคิวอัตโนมัติทุกวัน
           </div>
         </div>
       </div>

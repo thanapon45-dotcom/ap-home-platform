@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 
 const HUB = process.env.NEXT_PUBLIC_HUB_URL ?? "https://ap-home-platform-production.up.railway.app";
 const POLL_MS = 10_000;
@@ -103,10 +104,12 @@ function Dot({ color }: { color: string }) {
   );
 }
 
-function EngineCard({ title, subtitle, statusText, metrics, channel, actions, accent }: {
+function EngineCard({ title, subtitle, statusText, metrics, channel, actions, accent, actionLinks }: {
   title: string; subtitle: string; statusText: string;
   metrics: [string, number | string][]; channel: string; actions: string[]; accent: string;
+  actionLinks?: Record<string, string>;
 }) {
+  const router = useRouter();
   return (
     <div style={{ background: "rgba(15,20,40,.85)", border: `1px solid ${accent}22`, borderRadius: 20, padding: 24, display: "flex", flexDirection: "column", gap: 16 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
@@ -133,12 +136,28 @@ function EngineCard({ title, subtitle, statusText, metrics, channel, actions, ac
       </div>
       <div>
         <div style={{ fontSize: 11, color: "#64748b", textTransform: "uppercase", letterSpacing: ".12em", marginBottom: 8 }}>Next Actions</div>
-        {actions.map((a, i) => (
-          <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,.02)", border: "1px solid rgba(255,255,255,.05)", borderRadius: 10, padding: "8px 12px", fontSize: 12, color: "#94a3b8", marginBottom: 6 }}>
-            <span style={{ width: 4, height: 4, borderRadius: "50%", background: accent, flexShrink: 0 }} />
-            {a}
-          </div>
-        ))}
+        {actions.map((a, i) => {
+          const link = actionLinks?.[a];
+          return (
+            <div
+              key={i}
+              onClick={link ? () => router.push(link) : undefined}
+              style={{
+                display: "flex", alignItems: "center", gap: 8,
+                background: link ? `${accent}0a` : "rgba(255,255,255,.02)",
+                border: `1px solid ${link ? accent + "30" : "rgba(255,255,255,.05)"}`,
+                borderRadius: 10, padding: "8px 12px", fontSize: 12,
+                color: link ? accent : "#94a3b8", marginBottom: 6,
+                cursor: link ? "pointer" : "default",
+                transition: "all .2s",
+              }}
+            >
+              <span style={{ width: 4, height: 4, borderRadius: "50%", background: accent, flexShrink: 0 }} />
+              {a}
+              {link && <span style={{ marginLeft: "auto", fontSize: 10, opacity: 0.6 }}>→</span>}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -245,6 +264,7 @@ export default function DashboardOS() {
           metrics={[["Queue", fb?.queue ?? 0], ["Drafts", fb?.drafts ?? 0], ["Published", fb?.published ?? 0], ["Port", "3001"]]}
           channel="Facebook Page · Railway (fb-backend)"
           actions={["เตรียมโพสต์ขายบ้าน", "จัดคิว content 7 วัน", "เช็ก CTA ปรึกษาฟรี"]}
+          actionLinks={{ "จัดคิว content 7 วัน": "/marketing" }}
           accent="#22d3ee"
         />
         <EngineCard

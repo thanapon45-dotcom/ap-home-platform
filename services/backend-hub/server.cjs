@@ -74,6 +74,8 @@ function baseState() {
       updatedAt: nowIso(),
     },
     history: [],
+    content_queue: [],
+    fb_queue: [],
   };
 }
 
@@ -87,6 +89,8 @@ function normalizeState(raw) {
     blog: { ...base.blog, ...(state.blog || {}) },
     fb: { ...base.fb, ...(state.fb || {}) },
     history: Array.isArray(state.history) ? state.history : base.history,
+    content_queue: Array.isArray(state.content_queue) ? state.content_queue : [],
+    fb_queue: Array.isArray(state.fb_queue) ? state.fb_queue : [],
   };
 }
 
@@ -327,6 +331,17 @@ app.post("/webhook/n8n", async (req, res) => {
   };
   state.system.lastError = normalizedStatus === "failed" ? state.blog.message : "";
 
+  // Update queue item if this callback came from a queued run
+  if (payload.queue_item_id && Array.isArray(state.content_queue)) {
+    const qi = state.content_queue.find(i => i.id === payload.queue_item_id);
+    if (qi) {
+      qi.status = normalizedStatus;
+      qi.postUrl = String(payload.postUrl || "");
+      qi.runId = String(payload.runId || qi.runId || "");
+      qi.updatedAt = nowIso();
+    }
+  }
+
   pushHistory(state, {
     type: "blog_callback_received",
     engine: "blog",
@@ -461,6 +476,228 @@ app.post("/action/fb/publish", async (req, res) => {
     writeState(state);
     res.status(500).json({ ok: false, error: error.message });
   }
+});
+
+// ── FB Queue endpoints ────────────────────────────────────────────────────────
+
+app.post("/action/fb/queue/build", (req, res) => {
+  const items = req.body.items;
+  if (!Array.isArray(items) || items.length === 0) {
+    return res.status(400).json({ ok: false, error: "items array required" });
+  }
+  const state = readState();
+  state.fb_queue = items.map(item => ({
+    id: String(item.id || crypto.randomUUID()),
+    date: String(item.date || ""),
+    content: String(item.content || ""),
+    status: "pending",
+    postUrl: "",
+    createdAt: nowIso(),
+    updatedAt: nowIso(),
+  }));
+  writeState(state);
+  res.json({ ok: true, count: state.fb_queue.length, queue: state.fb_queue });
+});
+
+app.post("/action/fb/queue/clear", (req, res) => {
+  const state = readState();
+  state.fb_queue = [];
+  writeState(state);
+  res.json({ ok: true });
+});
+
+app.post("/action/fb/queue/run-next", async (req, res) => {
+  const state = readState();
+  if (!Array.isArray(state.fb_queue) || state.fb_queue.length === 0) {
+    return res.json({ ok: true, skipped: true, message: "FB queue is empty" });
+  }
+  const todayStr = new Date().toISOString().split("T")[0];
+  const nextItem = state.fb_queue.find(
+    item => item.status === "pending" && item.date <= todayStr
+  );
+  if (!nextItem) {
+    return res.json({ ok: true, skipped: true, message: "No FB posts due today or earlier" });
+  }
+
+  const runId = makeId("fb");
+  nextItem.status = "running";
+  nextItem.updatedAt = nowIso();
+
+  state.fb = {
+    ...state.fb,
+    engine: "fb",
+    runId,
+    status: "running",
+    message: "FB Queue: dispatching post",
+    lastAction: "queue-publish",
+    lastUpdate: nowIso(),
+    startedAt: nowIso(),
+    finishedAt: "",
+    updatedAt: nowIso(),
+  };
+  pushHistory(state, {
+    type: "fb_queue_item_started",
+    engine: "fb",
+    runId,
+    status: "running",
+    message: `FB Queue: ${nextItem.date} item started`,
+  });
+  writeState(state);
+
+  try {
+    const response = await fetch(`${FB_BACKEND_URL}/api/fb/publish`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json; charset=utf-8" },
+      body: JSON.stringify({ runId, source: "fb-queue", content: nextItem.content }),
+    });
+    const bodyText = await response.text();
+    if (!response.ok) {
+      throw new Error(`fb-backend returned HTTP ${response.status}${bodyText ? ` ${bodyText}` : ""}`);
+    }
+
+    const s = readState();
+    const qi = s.fb_queue?.find(i => i.id === nextItem.id);
+    if (qi) { qi.status = "published"; qi.updatedAt = nowIso(); }
+    s.fb = { ...s.fb, runId, status: "published", published: (s.fb.published || 0) + 1,
+      message: "FB Queue post published", lastUpdate: nowIso(), finishedAt: nowIso(), updatedAt: nowIso() };
+    pushHistory(s, { type: "fb_queue_item_published", engine: "fb", runId, status: "published",
+      message: `FB Queue: ${nextItem.date} published` });
+    writeState(s);
+    res.json({ ok: true, runId, item: nextItem });
+  } catch (error) {
+    const s = readState();
+    const qi = s.fb_queue?.find(i => i.id === nextItem.id);
+    if (qi) { qi.status = "failed"; qi.updatedAt = nowIso(); }
+    s.fb = { ...s.fb, runId, status: "failed", failed: (s.fb.failed || 0) + 1,
+      message: error.message, lastUpdate: nowIso(), finishedAt: nowIso(), updatedAt: nowIso() };
+    s.system.lastError = error.message;
+    pushHistory(s, { type: "fb_queue_item_failed", engine: "fb", runId, status: "failed",
+      message: error.message });
+    writeState(s);
+    res.status(500).json({ ok: false, error: error.message });
+  }
+});
+
+// ── Content Queue endpoints ───────────────────────────────────────────────────
+
+app.post("/action/blog/queue/build", (req, res) => {
+  const items = req.body.items;
+  if (!Array.isArray(items) || items.length === 0) {
+    return res.status(400).json({ ok: false, error: "items array required" });
+  }
+  const state = readState();
+  state.content_queue = items.map(item => ({
+    id: String(item.id || crypto.randomUUID()),
+    date: String(item.date || ""),
+    slot: String(item.slot || "morning"),
+    keyword: String(item.keyword || ""),
+    category: Number(item.category || 13),
+    visual_hint: String(item.visual_hint || "contemporary"),
+    status: "pending",
+    runId: "",
+    postUrl: "",
+    createdAt: nowIso(),
+    updatedAt: nowIso(),
+  }));
+  writeState(state);
+  res.json({ ok: true, count: state.content_queue.length, queue: state.content_queue });
+});
+
+app.post("/action/blog/queue/clear", (req, res) => {
+  const state = readState();
+  state.content_queue = [];
+  writeState(state);
+  res.json({ ok: true });
+});
+
+app.post("/action/blog/queue/run-next", async (req, res) => {
+  const state = readState();
+  if (!Array.isArray(state.content_queue) || state.content_queue.length === 0) {
+    return res.json({ ok: true, skipped: true, message: "Queue is empty" });
+  }
+  const todayStr = new Date().toISOString().split("T")[0];
+  const nextItem = state.content_queue.find(
+    item => item.status === "pending" && item.date <= todayStr
+  );
+  if (!nextItem) {
+    return res.json({ ok: true, skipped: true, message: "No pending items due today or earlier" });
+  }
+
+  const runId = makeId("blog");
+  const callbackUrl = `${HUB_PUBLIC_BASE_URL}/webhook/n8n`;
+
+  nextItem.status = "running";
+  nextItem.runId = runId;
+  nextItem.updatedAt = nowIso();
+
+  state.blog = {
+    ...state.blog,
+    engine: "blog",
+    runId,
+    status: "running",
+    queue: 0, published: 0, failed: 0,
+    postId: "", postUrl: "",
+    keyword: nextItem.keyword,
+    normalizedKeyword: nextItem.keyword,
+    category: nextItem.category,
+    slot: nextItem.slot,
+    visual_hint: nextItem.visual_hint,
+    message: "Queue: dispatched to n8n",
+    source: "content-queue",
+    startedAt: nowIso(), finishedAt: "",
+    updatedAt: nowIso(),
+    pipeline: {}, visionRetries: 0, publishChecks: {},
+  };
+  state.system.lastError = "";
+  pushHistory(state, {
+    type: "queue_item_started", engine: "blog",
+    runId, keyword: nextItem.keyword,
+    status: "running", message: `Queue: ${nextItem.date} item started`,
+  });
+  writeState(state);
+
+  res.json({ ok: true, runId, item: nextItem });
+
+  const payload = {
+    keyword: nextItem.keyword,
+    category: nextItem.category,
+    slot: nextItem.slot,
+    visual_hint: nextItem.visual_hint,
+    source: "content-queue",
+    utm_source: "queue", utm_medium: "auto", utm_campaign: "finnhouses-queue",
+    runId,
+    hub_callback_url: callbackUrl,
+    queue_item_id: nextItem.id,
+  };
+
+  fetch(N8N_BLOG_WEBHOOK_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  }).then(async (r) => {
+    if (!r.ok) {
+      const text = await r.text().catch(() => "");
+      const errMsg = `n8n returned HTTP ${r.status}${text ? `: ${text}` : ""}`;
+      console.error("[hub] queue run-next n8n failed:", errMsg);
+      const s = readState();
+      const qi = s.content_queue?.find(i => i.id === nextItem.id);
+      if (qi) { qi.status = "failed"; qi.updatedAt = nowIso(); }
+      s.blog.status = "failed"; s.blog.failed = 1;
+      s.blog.message = errMsg; s.blog.finishedAt = nowIso(); s.blog.updatedAt = nowIso();
+      s.system.lastError = errMsg;
+      writeState(s);
+    } else {
+      console.log("[hub] queue run-next n8n OK — runId:", runId);
+    }
+  }).catch((err) => {
+    const s = readState();
+    const qi = s.content_queue?.find(i => i.id === nextItem.id);
+    if (qi) { qi.status = "failed"; qi.updatedAt = nowIso(); }
+    s.blog.status = "failed"; s.blog.message = `n8n unreachable: ${err.message}`;
+    s.blog.finishedAt = nowIso(); s.blog.updatedAt = nowIso();
+    s.system.lastError = err.message;
+    writeState(s);
+  });
 });
 
 app.listen(PORT, HUB_HOST, () => {
