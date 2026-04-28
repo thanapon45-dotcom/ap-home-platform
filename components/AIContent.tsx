@@ -167,12 +167,14 @@ function KeywordTab({ onSave }: { onSave: (item: ContentItem) => void }) {
     if (!result) return;
     setPosting(true); setPostResult(null);
     try {
-      const r = await fetch(`${HUB}/action/fb/publish`, {
+      // Use Vercel server-side route — bypasses Hub & CORS issues
+      const r = await fetch(`/api/fb/publish`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ content: result, source: "ai-content" }),
       });
-      setPostResult(r.ok ? "ok" : "error");
+      const data = await r.json();
+      setPostResult(r.ok && data.ok !== false ? "ok" : "error");
     } catch {
       setPostResult("error");
     } finally {
