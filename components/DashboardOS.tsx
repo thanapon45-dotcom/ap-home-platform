@@ -261,7 +261,7 @@ export default function DashboardOS() {
         <EngineCard
           title="FB Content Engine" subtitle="Web App / VS Code"
           statusText={fb?.status ?? "—"}
-          metrics={[["Queue", fb?.queue ?? 0], ["Drafts", fb?.drafts ?? 0], ["Published", fb?.published ?? 0], ["Port", "3001"]]}
+          metrics={[["Queue", fb?.queue ?? 0], ["Drafts", fb?.drafts ?? 0], ["Published", fb?.published ?? 0], ["Host", "Railway"]]}
           channel="Facebook Page · Railway (fb-backend)"
           actions={["เตรียมโพสต์ขายบ้าน", "จัดคิว content 7 วัน", "เช็ก CTA finnhouses.com"]}
           actionLinks={{ "จัดคิว content 7 วัน": "/ai-content" }}
@@ -270,7 +270,7 @@ export default function DashboardOS() {
         <EngineCard
           title="Blog Content Engine" subtitle="n8n / finnhouses.com"
           statusText={blog?.status ?? "—"}
-          metrics={[["Queue", blog?.queue ?? 0], ["Published", blog?.published ?? 0], ["Failed", blog?.failed ?? 0], ["Port", "5678"]]}
+          metrics={[["Queue", blog?.queue ?? 0], ["Published", blog?.published ?? 0], ["Failed", blog?.failed ?? 0], ["Host", "Railway"]]}
           channel="finnhouses.com via n8n · Railway (primary)"
           actions={["บทความ SEO รอ publish", "ตรวจ featured image flow", "เช็ก internal link"]}
           actionLinks={{ "บทความ SEO รอ publish": "/marketing" }}
