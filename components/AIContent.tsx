@@ -109,20 +109,42 @@ async function callClaude(system: string, prompt: string): Promise<string> {
   return data.text ?? "";
 }
 
+// Step 1: Generate focused image concept via Claude (mirrors n8n's image_style_base step)
+// Claude creates a 2-sentence concept specific to keyword+style → sharper, less token waste
+async function generateImageConcept(keyword: string, styleLabel: string): Promise<string> {
+  try {
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        system: "You are an architectural visualization director for Finnhouses, a luxury home builder in Thailand. Write a focused 2-sentence image concept for an architectural pencil sketch. Under 45 words. English only. Be specific and visual — describe what this house looks like and the mood.",
+        prompt: `House style: ${styleLabel}\nContent topic: "${keyword}"\n\nWrite exactly 2 sentences:\n1. Specific architectural character of this ${styleLabel} house (roof form, key material, hero element)\n2. How the scene or mood connects to "${keyword}"`,
+        maxTokens: 75,
+      }),
+    });
+    const data = await res.json();
+    return data.text ?? "";
+  } catch { return ""; }
+}
+
+// Step 2: Send concept + style to image API — server auto-fallbacks OpenAI→Gemini on any error
 async function generateImage(topic: string, style: string): Promise<string | null> {
-  // Try OpenAI first (matches n8n blog style), fallback to Gemini
-  for (const model of ["openai", "gemini"]) {
-    try {
-      const res = await fetch("/api/image", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topic, style, model }),
-      });
-      const data = await res.json();
-      if (data.ok && data.url) return data.url;
-      console.warn(`[Image] ${model} failed:`, data.error);
-    } catch (e) { console.error(`[Image] ${model}:`, e); }
-  }
+  const styleLabel = STYLES.find(s => s.value === style)?.label ?? style;
+
+  // Generate focused concept first (same pattern as n8n image_style_base node)
+  const concept = await generateImageConcept(topic, styleLabel);
+  console.log("[Image] concept:", concept);
+
+  try {
+    const res = await fetch("/api/image", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ topic, style, concept, model: "openai" }),
+    });
+    const data = await res.json();
+    if (data.ok && data.url) return data.url;
+    console.warn("[Image] failed:", data.error);
+  } catch (e) { console.error("[Image]:", e); }
   return null;
 }
 
