@@ -172,25 +172,29 @@ STYLE DEFINITIONS:
 
 STRICT REQUIREMENTS:
 - premium hand-rendered architectural sketch
-- refined ink linework with soft marker or watercolor accents
-- must feel like an architect's concept presentation for a high-end developer
-- modern architecture only
-- FULL BUILDING visible — show entire house from foundation to roofline
-- front or three-quarter front perspective
-- eye-level camera — not zoomed in, not cropped
-- wide balanced composition showing full facade + landscaping + garden
-- elegant landscaping with trees framing both sides
+- refined ink linework with soft pencil shading and subtle watercolor/marker accents
+- must feel like an architect's concept presentation board for a high-end developer
+- CAMERA: street-level, 25–30 metres from building — wide establishing shot, NOT zoomed in
+- FULL BUILDING visible from foundation to roofline — two-storey main volume + lower wing on right side (NOT a garage — a secondary living wing, same clean modern style)
+- three-quarter front perspective — slight angle showing both front and side facade
+- sky (white/off-white paper) visible in upper 15% of frame
+- FOREGROUND: multi-level terraced stone steps with low shrubs planted between each level — this is the defining ground element
+- shallow pool or water feature visible at very bottom edge of foreground
+- small ornamental trees (cloud-pruned or bonsai-style) placed in foreground garden beds
+- trees framing both sides: one tall deciduous tree left, one right — fine branch strokes, mostly graphite
+- INTERIOR through glass: warm amber glow, furniture silhouettes (sofa, pendant lamp, low table) faintly visible
+- COLOUR: almost entirely monochrome graphite — only two soft accents: warm amber interior glow through glass + faint grey-green on foliage
+- wide landscape composition — horizontal format
 - clean white or off-white presentation paper background
-- subtle drafting or blueprint guide lines are allowed
+- subtle drafting construction lines acceptable
 - no visible text, no logo, no label
 
 NEGATIVE CONSTRAINTS (CRITICAL):
-- NO Thai style architecture
-- NO Thai roof, NO Thai gable roof, NO temple roof, NO curved roof ornaments
-- NO traditional Asian house, NO steep pitched traditional roof
-- NO cartoon, NO fantasy house, NO exaggerated ornaments
+- NO Thai style architecture, NO Thai roof, NO temple roof, NO curved ornamental roof
+- NO traditional Asian house, NO cartoon, NO fantasy house
 - NO photo-real people focus
-- NO close-up or zoomed-in crop — must show FULL building
+- NO close-up, NO zoomed-in crop — must show COMPLETE building with foreground and sky
+- NO coloured walls or coloured facade — keep it graphite monochrome with only the two accents listed above
 
 Architectural direction:
 ${styleBase}
@@ -310,11 +314,12 @@ async function generateOpenAI(prompt: string, apiKey: string) {
   }
 
   // Fallback: dall-e-3 (stable, no org verification needed)
+  // size: "1792x1024" = landscape — forces wide composition, shows full house + landscaping
   console.log("[Image API] gpt-image-1 failed, falling back to dall-e-3:", data1.error?.message);
   const res2 = await fetch("https://api.openai.com/v1/images/generations", {
     method: "POST",
     headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ model: "dall-e-3", prompt, n: 1, size: "1024x1792", quality: "hd" }),
+    body: JSON.stringify({ model: "dall-e-3", prompt, n: 1, size: "1792x1024", quality: "hd" }),
   });
   const data2 = await res2.json();
   if (!res2.ok || !data2.data?.[0]) throw new Error(data2.error?.message ?? "OpenAI generation failed");
@@ -473,9 +478,12 @@ Architectural description: ${essence}
 STRICT REQUIREMENTS:
 - premium hand-rendered architectural sketch
 - refined ink linework with soft marker or watercolor accents
-- must feel like an architect's concept presentation for a high-end developer
-- modern architecture only — front or three-quarter front perspective, eye-level camera
-- balanced composition with elegant landscaping
+- CAMERA: street-level, 25–30 metres from building — wide establishing shot
+- FULL BUILDING visible from foundation to roofline — building in centre of frame
+- three-quarter front perspective, slight angle
+- sky visible in upper portion, ground/driveway visible in lower portion
+- trees and landscaping visible on both sides of building
+- wide landscape orientation — horizontal composition
 - clean white or off-white presentation paper background
 - subtle drafting guide lines are acceptable
 
@@ -484,9 +492,10 @@ NEGATIVE CONSTRAINTS (CRITICAL):
 - NO cartoon, NO fantasy house, NO exaggerated ornaments
 - NO photo-real people focus
 - ZERO visible text, letters, numbers, logos, watermarks
+- NO close-up, NO zoomed-in crop — must show complete building from distance
 
 FINAL RULE:
-This image must look like a premium architectural sketch for Finnhouses — the ${label} style must be clearly recognisable. Suitable as a featured image for a luxury real-estate post.`;
+This image must look like a premium architectural sketch for Finnhouses — wide view, full building, ${label} style clearly recognisable. Suitable as a featured image for a luxury real-estate post.`;
 }
 
 // ─── Ideogram v2 (with optional style reference) ─────────────────────────────

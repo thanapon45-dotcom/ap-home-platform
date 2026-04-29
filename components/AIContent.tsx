@@ -175,10 +175,13 @@ function KeywordTab({ onSave }: { onSave: (item: ContentItem) => void }) {
     setPosting(true); setPostResult(null);
     try {
       // Use Vercel server-side route — bypasses Hub & CORS issues
+      // Send imageUrl only if it's a public https:// URL (OpenAI)
+      // base64 data URLs are skipped — FB can't fetch them
+      const publicImageUrl = imageUrl && imageUrl.startsWith("https://") ? imageUrl : undefined;
       const r = await fetch(`/api/fb/publish`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: result, source: "ai-content" }),
+        body: JSON.stringify({ content: result, imageUrl: publicImageUrl, source: "ai-content" }),
       });
       const data = await r.json();
       setPostResult(r.ok && data.ok !== false ? "ok" : "error");
@@ -587,6 +590,33 @@ ${blogText.slice(0, 2000)}
   );
 }
 
+// ── Reusable copy button with feedback ───────────────────────────────────────
+function CopyBtn({ text, label = "📋 Copy" }: { text: string; label?: string }) {
+  const [ok, setOk] = useState(false);
+  function doCopy() {
+    // Try modern clipboard API first
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(text).then(() => {
+        setOk(true); setTimeout(() => setOk(false), 2000);
+      }).catch(() => fallback());
+    } else { fallback(); }
+  }
+  function fallback() {
+    // execCommand fallback for browsers blocking clipboard API
+    const el = document.createElement("textarea");
+    el.value = text;
+    el.style.position = "fixed"; el.style.opacity = "0";
+    document.body.appendChild(el); el.select();
+    try { document.execCommand("copy"); setOk(true); setTimeout(() => setOk(false), 2000); } catch {}
+    document.body.removeChild(el);
+  }
+  return (
+    <button onClick={doCopy} style={{ marginTop: 8, background: "none", border: "none", color: ok ? "#10b981" : "#22d3ee", cursor: "pointer", fontSize: 11, fontWeight: 600 }}>
+      {ok ? "✅ Copied!" : label}
+    </button>
+  );
+}
+
 // ── Tab: Saved & FB Status ────────────────────────────────────────────────────
 function HistoryTab({ saved, onDelete }: { saved: ContentItem[]; onDelete: (id: number) => void }) {
   const [fb, setFb] = useState<FbState>({ status: "unknown", queue: 0, drafts: 0, published: 0, lastUpdate: null });
@@ -662,10 +692,7 @@ function HistoryTab({ saved, onDelete }: { saved: ContentItem[]; onDelete: (id: 
                 <pre style={{ fontSize: 11, color: "#94a3b8", margin: 0, whiteSpace: "pre-wrap", maxHeight: 80, overflow: "hidden", fontFamily: "inherit" }}>
                   {item.content.slice(0, 200)}{item.content.length > 200 ? "..." : ""}
                 </pre>
-                <button
-                  onClick={() => navigator.clipboard.writeText(item.content)}
-                  style={{ marginTop: 8, background: "none", border: "none", color: "#22d3ee", cursor: "pointer", fontSize: 11 }}
-                >📋 Copy</button>
+                <CopyBtn text={item.content} />
               </Card>
             ))}
           </div>

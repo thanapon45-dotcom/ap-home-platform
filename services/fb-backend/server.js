@@ -30,11 +30,33 @@ async function pushStatus(payload) {
 }
 
 // โพสต์ไปยัง Facebook Page จริง ผ่าน Graph API
-async function postToFacebook(message) {
+// imageUrl: public https:// URL → post with photo | base64/null → text only
+async function postToFacebook(message, imageUrl) {
   if (!FB_PAGE_ACCESS_TOKEN || !FB_PAGE_ID) {
     throw new Error("FB_PAGE_ACCESS_TOKEN หรือ FB_PAGE_ID ยังไม่ได้ตั้งค่าใน .env");
   }
 
+  const isPublicUrl = imageUrl && typeof imageUrl === "string" && imageUrl.startsWith("https://");
+
+  if (isPublicUrl) {
+    // Post as photo with caption — shows image + text on timeline
+    const url = `https://graph.facebook.com/${FB_API_VERSION}/${FB_PAGE_ID}/photos`;
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        url: imageUrl,
+        caption: message,
+        access_token: FB_PAGE_ACCESS_TOKEN,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok || data.error) throw new Error(data.error?.message || `Graph API HTTP ${res.status}`);
+    // photos endpoint returns post_id
+    return data.post_id || data.id;
+  }
+
+  // Text-only post (no image, or image is base64 which FB can't fetch)
   const url = `https://graph.facebook.com/${FB_API_VERSION}/${FB_PAGE_ID}/feed`;
   const res = await fetch(url, {
     method: "POST",
@@ -46,13 +68,7 @@ async function postToFacebook(message) {
   });
 
   const data = await res.json();
-
-  if (!res.ok || data.error) {
-    const errMsg = data.error?.message || `Graph API HTTP ${res.status}`;
-    throw new Error(errMsg);
-  }
-
-  // data.id = "PAGE_ID_POST_ID" เช่น "123456_789012"
+  if (!res.ok || data.error) throw new Error(data.error?.message || `Graph API HTTP ${res.status}`);
   return data.id;
 }
 
@@ -68,8 +84,9 @@ app.get("/health", (req, res) => {
 });
 
 app.post("/api/fb/publish", async (req, res) => {
-  const runId = String(req.body?.runId || "");
-  const content = String(req.body?.content || "");
+  const runId    = String(req.body?.runId || "");
+  const content  = String(req.body?.content || "");
+  const imageUrl = req.body?.imageUrl || null;  // optional public image URL
 
   console.log("\n==============================");
   console.log("FB PUBLISH REQUEST");
@@ -99,7 +116,7 @@ app.post("/api/fb/publish", async (req, res) => {
 
   // LIVE mode: โพสต์จริง
   try {
-    const postId = await postToFacebook(safeText(content));
+    const postId = await postToFacebook(safeText(content), imageUrl);
     const postUrl = `https://www.facebook.com/${postId.replace("_", "/posts/")}`;
 
     console.log(`[FB] Posted OK → Post ID: ${postId}`);
