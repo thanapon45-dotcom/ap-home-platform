@@ -703,7 +703,8 @@ app.post("/action/blog/queue/run-next", async (req, res) => {
 app.listen(PORT, HUB_HOST, () => {
   const state = readState();
   writeState(state);
-  console.log(`Backend Hub running at ${HUB_PUBLIC_BASE_URL}`);
+  console.log(`Backend Hub v2 running at ${HUB_PUBLIC_BASE_URL}`);
+  console.log(`Routes: /action/blog/queue/build|clear|run-next + /action/fb/queue/build|clear|run-next`);
   console.log(`n8n blog webhook: ${N8N_BLOG_WEBHOOK_URL}`);
   console.log(`fb backend: ${FB_BACKEND_URL}`);
   console.log(`State file: ${STATE_FILE}`);
