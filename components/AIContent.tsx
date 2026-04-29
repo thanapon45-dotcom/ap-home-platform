@@ -158,8 +158,9 @@ function KeywordTab({ onSave }: { onSave: (item: ContentItem) => void }) {
   const [result, setResult]     = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [genImg, setGenImg]     = useState(false);
-  const [copied, setCopied]     = useState(false);
-  const [posting, setPosting]   = useState(false);
+  const [copied, setCopied]         = useState(false);
+  const [savedOk, setSavedOk]       = useState(false);
+  const [posting, setPosting]       = useState(false);
   const [postResult, setPostResult] = useState<"ok"|"error"|null>(null);
 
   const finalKeyword  = custom.trim() || keyword;
@@ -243,6 +244,8 @@ Hashtag 6-8 อัน: ทุกตัวต้องมีความหมา
       content: result, imageUrl, date: new Date().toLocaleDateString("th-TH"),
       source: "keyword",
     });
+    setSavedOk(true);
+    setTimeout(() => setSavedOk(false), 2000);
   }
 
   return (
@@ -351,7 +354,9 @@ Hashtag 6-8 อัน: ทุกตัวต้องมีความหมา
                   <button onClick={copy} style={btnStyle("#22d3ee")}>
                     {copied ? "✅ Copied!" : "📋 Copy"}
                   </button>
-                  <button onClick={save} style={btnStyle("#10b981")}>💾 Save</button>
+                  <button onClick={save} style={btnStyle(savedOk ? "#10b981" : "#10b981")} disabled={savedOk}>
+                    {savedOk ? "✅ Saved!" : "💾 Save"}
+                  </button>
                   <button onClick={postToFacebook} disabled={posting} style={btnStyle(postResult === "ok" ? "#10b981" : postResult === "error" ? "#f43f5e" : "#6366f1")}>
                     {posting ? "⏳ กำลังโพสต์..." : postResult === "ok" ? "✅ โพสต์แล้ว!" : postResult === "error" ? "❌ ผิดพลาด" : "📤 Post to Facebook"}
                   </button>

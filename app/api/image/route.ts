@@ -382,15 +382,21 @@ const GEMINI_STYLE_LABEL: Record<string, string> = {
   "modern_tropical": "Tropical Modern",
 };
 
-function buildPromptGemini(style: string): string {
+function buildPromptGemini(style: string, topic?: string): string {
   // Normalize: accept both "nordic" and "Nordic" etc.
   const key     = style.toLowerCase().replace(/[\s-]/g, "_");
   const essence = GEMINI_STYLE_ESSENCE[key] ?? GEMINI_STYLE_ESSENCE["contemporary"];
   const label   = GEMINI_STYLE_LABEL[key]   ?? style;
+
+  // Derive a contextual scene hint from the topic keyword if provided
+  const sceneHint = topic
+    ? `CONTENT CONTEXT: This image illustrates a Facebook post about "${topic}". The architectural scene should visually align with this theme — e.g. if the topic is about budget planning, show a clear finished home; if about design style, emphasise the signature architectural feature of this style.`
+    : "";
+
   return `Architectural pencil sketch illustration.
 
 SUBJECT: ${essence}
-
+${sceneHint ? `\n${sceneHint}\n` : ""}
 RENDERING STYLE:
 Hand-drawn architect's pencil sketch on pure bright white paper. Three-quarter street-level perspective, slight upward tilt. Confident medium-weight pencil outlines on building. Light parallel hatching on walls. Cross-hatching only in deepest shadow zones. Airy, spacious feel — linework density 20% lighter than typical.
 
@@ -461,7 +467,7 @@ export async function POST(req: NextRequest) {
   const prompt     = model === "ideogram"
     ? buildPromptIdeogram(topic, style, styleBase)
     : model === "gemini"
-      ? buildPromptGemini(style)
+      ? buildPromptGemini(style, topic)
       : buildPromptOpenAI(topic, style, styleBase);
 
   // Detect OpenAI billing / quota errors — triggers Gemini fallback
