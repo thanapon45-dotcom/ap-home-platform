@@ -45,7 +45,7 @@ The cantilever flat roof is the hero. It extends boldly 3 metres out. SOFFIT UND
 CENTRE VOLUME — ENTRANCE BLOCK:
 Stone cladding accent wall, bold cross-hatch texture. Tall timber entrance door. Terraced approach: four levels of wide flat stone steps, low shrubs planted between each level — COLOUR ACCENT THREE.
 
-RIGHT VOLUME — GARAGE WING, SINGLE STOREY:
+RIGHT VOLUME — SECONDARY LIVING WING, SINGLE STOREY:
 Lower flat-roof garage. White roller door. Partially cropped at frame right.`,
     accent1Label: "Cantilever soffit underside",
     accent1Desc: "warm teak timber brown — rich, fully saturated coloured pencil across full soffit area",
@@ -61,7 +61,7 @@ The pitched gabled roof is the hero element — steep Nordic profile, deep gener
 CENTRE VOLUME — COVERED ENTRY PORCH:
 Low-pitched canopy over the entrance, slim timber posts. Solid timber front door. Three wide flat stone steps rising to entrance, low ground-cover shrubs at base — COLOUR ACCENT THREE.
 
-RIGHT VOLUME — GARAGE WING, SINGLE STOREY:
+RIGHT VOLUME — SECONDARY LIVING WING, SINGLE STOREY:
 Lower flat or gently pitched roof. White roller door. Partially cropped at frame right. Lighter pencil strokes, reads as receding.`,
     accent1Label: "Upper facade timber cladding",
     accent1Desc: "warm honey-brown horizontal timber boards — rich saturated coloured pencil on full upper storey",
@@ -77,7 +77,7 @@ Grand cantilevered flat roof is the hero — extends 4 metres, razor-thin edge w
 CENTRE VOLUME — FORMAL ENTRANCE:
 Tall stone feature wall. Grand entrance canopy on slim steel columns. Wide stone approach steps — four levels, manicured low hedges — COLOUR ACCENT THREE.
 
-RIGHT VOLUME — GARAGE WING, SINGLE STOREY:
+RIGHT VOLUME — SECONDARY LIVING WING, SINGLE STOREY:
 Premium garage, clean flat roof. Dark roller door or hidden door. Partially cropped at frame right.`,
     accent1Label: "Stone/marble facade cladding",
     accent1Desc: "warm cream/ivory travertine stone — soft warm tone, coloured pencil on facade panels",
@@ -93,7 +93,7 @@ Flat roof with minimal overhang — pure clean edge, no cantilever. White smooth
 CENTRE VOLUME — MINIMAL ENTRANCE:
 Flush concrete entrance wall. Timber pivot door. Three clean flat stone steps. Slim low hedge — COLOUR ACCENT THREE.
 
-RIGHT VOLUME — GARAGE WING, SINGLE STOREY:
+RIGHT VOLUME — SECONDARY LIVING WING, SINGLE STOREY:
 Clean flat-roof garage. Flush white roller door. Partially cropped at frame right.`,
     accent1Label: "Timber entrance door or accent panel",
     accent1Desc: "warm teak brown — single focal accent, coloured pencil",
@@ -109,7 +109,7 @@ Flat industrial roof — bold dark pencil edge. RAW CONCRETE facade: cross-hatch
 CENTRE VOLUME — INDUSTRIAL ENTRANCE:
 Concrete entrance wall with raw texture. Heavy steel-framed door. Flat concrete approach steps. Minimal ground-level plants — COLOUR ACCENT THREE.
 
-RIGHT VOLUME — GARAGE WING, SINGLE STOREY:
+RIGHT VOLUME — SECONDARY LIVING WING, SINGLE STOREY:
 Industrial flat roof. Exposed concrete walls. Large roll-up metal door. Partially cropped at frame right.`,
     accent1Label: "Exposed steel beams and structural frames",
     accent1Desc: "warm rust-brown weathered steel — coloured pencil on visible structural elements",
@@ -125,7 +125,7 @@ Wide flat roof with 2-metre overhang for sun shading. UPPER FACADE: full-height 
 CENTRE VOLUME — ENTRANCE BLOCK:
 Concrete column entrance frame. Timber pivot door. Low raised platform steps. Low ground-cover shrubs — COLOUR ACCENT THREE.
 
-RIGHT VOLUME — GARAGE WING, SINGLE STOREY:
+RIGHT VOLUME — SECONDARY LIVING WING, SINGLE STOREY:
 Flat roof, white walls. Roller door. Partially cropped at frame right.`,
     accent1Label: "Vertical timber louvre screens on upper facade",
     accent1Desc: "warm teak brown — strong consistent tone on louvre panels",
@@ -138,12 +138,12 @@ Flat roof, white walls. Roller door. Partially cropped at frame right.`,
 
 // Style base descriptions (mirrors what n8n's AI generates as image_style_base)
 const FINNHOUSES_STYLE_BASE: Record<string, string> = {
-  "contemporary":    "premium contemporary residence, dramatic flat cantilever roof, floor-to-ceiling glass, warm timber and stone facade, refined upscale massing, elegant terrace with slim steel railing",
-  "nordic":          "Nordic Scandinavian residence, steeply pitched gabled roof with deep timber eaves, warm honey timber cladding on upper storey, natural stone base, large picture windows, cozy hygge character",
-  "luxury":          "grand luxury modern residence, soaring marble and travertine stone facade, cantilevered flat roof, double-height glass curtain wall, manicured formal garden, prestigious five-star aesthetic",
-  "minimal":         "modern minimal residence, pure flat roof with zero overhang, smooth white stucco facade, deep-set recessed windows, single warm timber pivot door accent, absolute geometric serenity",
-  "loft":            "industrial loft residence, exposed raw board-formed concrete walls, weathered steel structural frame, oversized multi-pane factory windows, flat roof, urban-luxury character",
-  "modern_tropical": "tropical modern residence, wide deep overhanging flat roof on slender columns, full-height vertical timber louvre screens, open semi-outdoor living ground floor, lush tropical greenery framing the facade",
+  "contemporary":    "premium contemporary two-storey residence, flat cantilever roof, floor-to-ceiling glass curtain wall with dark steel frames, warm amber interior glow and furniture silhouettes visible through glass, stone and concrete facade, secondary lower wing extending to the right — wide multi-level stone terrace steps in foreground with low ornamental shrubs planted between each level, small cloud-pruned garden trees flanking the steps, narrow reflecting pool at base of steps, one tall deciduous tree left background one right",
+  "nordic":          "Nordic Scandinavian two-storey residence, steeply pitched gabled roof with deep overhanging timber eaves, warm honey timber cladding upper storey, natural stone base, large picture windows with warm amber interior glow visible, secondary lower wing to the right — wide stepped stone approach in foreground with ground-cover planting, small ornamental birch trees flanking entrance, tall slender deciduous trees framing both sides",
+  "luxury":          "grand luxury two-storey modern residence, soaring marble and travertine stone facade, razor-thin cantilevered flat roof, double-height glass curtain wall with warm amber interior glow, secondary wing to the right — grand multi-level formal stone terrace in foreground with sculpted hedge planters, ornamental trees flanking approach, long narrow reflecting pool at foreground base, tall deciduous trees framing both sides",
+  "minimal":         "modern minimal two-storey residence, pure flat roof zero overhang, smooth white stucco facade, deep-set recessed windows, single warm timber pivot door, warm amber interior glow through glass panels, lower secondary wing to the right — clean stone approach steps in foreground with very minimal low planting, single small cloud-pruned tree left, bare-branch trees framing both sides",
+  "loft":            "industrial loft two-storey residence, exposed raw concrete walls, weathered steel frame visible, oversized factory windows with warm amber interior glow, flat roof, lower secondary structure to the right — wide concrete steps in foreground with sparse industrial planting, ornamental grasses, deciduous trees both sides",
+  "modern_tropical": "tropical modern two-storey residence on slender concrete columns, wide deep overhanging flat shade roof, full-height vertical timber louvre screens, open semi-outdoor ground floor, warm amber interior glow visible, lower secondary living wing to the right — wide multi-level stone terrace steps in foreground with low compact ornamental shrubs between each level, small cloud-pruned garden trees flanking the steps, narrow reflecting pool at base of steps, tall deciduous trees both sides with full leaf canopy — NO palm trees, NO banana leaves, NO tropical plants",
 };
 
 // Mirror n8n's exact prompt structure — produces the same style as blog images
@@ -195,6 +195,8 @@ NEGATIVE CONSTRAINTS (CRITICAL):
 - NO photo-real people focus
 - NO close-up, NO zoomed-in crop — must show COMPLETE building with foreground and sky
 - NO coloured walls or coloured facade — keep it graphite monochrome with only the two accents listed above
+- NO bare winter trees with no leaves — trees must have foliage (leaves, canopy) in warm season
+- NO palm trees — NO banana leaves — NO bamboo — NO tropical plants (applies to ALL styles including Tropical Modern)
 
 Architectural direction:
 ${styleBase}
@@ -305,7 +307,7 @@ async function generateOpenAI(prompt: string, apiKey: string) {
   const res1 = await fetch("https://api.openai.com/v1/images/generations", {
     method: "POST",
     headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ model: "gpt-image-1", prompt, n: 1, size: "1024x1024", quality: "high" }),
+    body: JSON.stringify({ model: "gpt-image-1", prompt, n: 1, size: "1536x1024", quality: "high" }),
   });
   const data1 = await res1.json();
   if (res1.ok && data1.data?.[0]) {
@@ -458,44 +460,89 @@ const GEMINI_STYLE_LABEL: Record<string, string> = {
 };
 
 function buildPromptGemini(style: string, topic?: string): string {
-  // Normalize: accept both "nordic" and "Nordic" etc.
-  const key     = style.toLowerCase().replace(/[\s-]/g, "_");
-  const essence = GEMINI_STYLE_ESSENCE[key] ?? GEMINI_STYLE_ESSENCE["contemporary"];
-  const label   = GEMINI_STYLE_LABEL[key]   ?? style;
+  const key   = style.toLowerCase().replace(/[\s-]/g, "_");
+  const label = GEMINI_STYLE_LABEL[key] ?? style;
+  const topicLine = topic ? `Context: Facebook post about "${topic}".` : "";
 
-  // Contextual hint from FB post keyword
-  const topicLine = topic
-    ? `Content context: This image supports a Facebook post about "${topic}".`
-    : "";
+  // Architecture essences — structural description only, no color adjectives that trigger color rendering
+  const archEssence: Record<string, string> = {
+    "contemporary":    "two-storey contemporary residence — dramatic flat cantilever roof extending 3m beyond facade, floor-to-ceiling glass curtain wall with dark steel grid, layered stone and timber facade, strong horizontal lines, premium proportions",
+    "nordic":          "two-storey Nordic Scandinavian residence — steeply pitched gabled roof with deep overhanging timber eaves, large Scandinavian picture windows, upper storey timber cladding, natural stone base plinth, cozy character",
+    "luxury":          "grand two-storey luxury modern residence — soaring stone and marble facade, razor-thin cantilevered flat roof, double-height glass curtain wall, manicured formal garden approach, prestigious aesthetic",
+    "minimal":         "two-storey modern minimal residence — ultra-clean flat roof with zero overhang, smooth stucco concrete facade, deep-set recessed windows, single timber pivot door, pure geometric serenity",
+    "loft":            "two-storey industrial loft residence — exposed raw board-formed concrete walls, visible structural steel frame, oversized multi-pane factory-style steel windows, clean flat roof, urban character",
+    "modern_tropical": "two-storey modern residence — wide deep flat roof on slender concrete columns, full-height vertical timber louvre screens, open semi-outdoor ground floor behind louvres, clean concrete and timber, generous shade",
+  };
 
-  return `Create a premium architectural sketch featured image for the Finnhouses brand.
+  const arch = archEssence[key] ?? archEssence["contemporary"];
 
-Selected style: ${label}
+  return `Create a premium architectural pencil sketch illustration for Finnhouses brand.
+
+STYLE: ${label} house
 ${topicLine}
+Architecture: ${arch}
 
-Architectural description: ${essence}
+━━━ RENDERING STYLE — NON-NEGOTIABLE ━━━
+THIS IS A BLACK-AND-WHITE PENCIL SKETCH ON WHITE PAPER.
+NOT a watercolor painting. NOT a colored illustration. NOT a photo-realistic image.
 
-STRICT REQUIREMENTS:
-- premium hand-rendered architectural sketch
-- refined ink linework with soft marker or watercolor accents
-- CAMERA: street-level, 25–30 metres from building — wide establishing shot
-- FULL BUILDING visible from foundation to roofline — building in centre of frame
-- three-quarter front perspective, slight angle
-- sky visible in upper portion, ground/driveway visible in lower portion
-- trees and landscaping visible on both sides of building
-- wide landscape orientation — horizontal composition
-- clean white or off-white presentation paper background
-- subtle drafting guide lines are acceptable
+Pencil technique:
+• Refined ink linework defining building edges and window frames
+• Light-to-medium graphite hatching on walls (parallel diagonal strokes)
+• Cross-hatching only in deep shadow zones (roof underside, window reveals)
+• All strokes are graphite grey — zero brown, zero blue, zero warm tone
 
-NEGATIVE CONSTRAINTS (CRITICAL):
-- NO Thai style architecture, NO Thai roof, NO temple roof, NO curved ornamental roof
-- NO cartoon, NO fantasy house, NO exaggerated ornaments
-- NO photo-real people focus
-- ZERO visible text, letters, numbers, logos, watermarks
-- NO close-up, NO zoomed-in crop — must show complete building from distance
+COLOR RULE — ONLY THESE TWO IN THE ENTIRE IMAGE:
+1. Warm amber/orange glow ONLY visible through interior window glass — soft, luminous, contained within the glass pane only
+2. Very faint grey-green pencil tint ONLY on leaf foliage — barely perceptible, almost invisible
+Every other area = graphite pencil strokes or pure white paper. No exceptions.
 
-FINAL RULE:
-This image must look like a premium architectural sketch for Finnhouses — wide view, full building, ${label} style clearly recognisable. Suitable as a featured image for a luxury real-estate post.`;
+━━━ SKY — ABSOLUTE RULE ━━━
+SKY = PURE WHITE OR OFF-WHITE PAPER ONLY. NOTHING ELSE.
+• ZERO blue in the sky area
+• ZERO clouds of any color
+• ZERO sky wash, ZERO sky gradient, ZERO watercolor in sky
+• The sky shows only the white paper surface — completely empty
+
+━━━ COMPOSITION ━━━
+• Camera: street level, 25–30 metres distance — wide establishing shot
+• FULL BUILDING visible from foundation to roofline — NOT cropped, NOT zoomed in
+• Three-quarter front perspective — slight angle showing front and side facade
+• Sky in upper 15% of frame (white paper only)
+• Foreground in lower 25% of frame
+
+━━━ FOREGROUND — REQUIRED ━━━
+• Multi-level stone terrace steps descending toward the viewer (3–4 levels)
+• Low compact ornamental shrubs planted between each stone step level
+• Narrow reflecting pool or water feature at the very bottom edge
+• Ground plane = light graphite pencil hatching only — no green grass color
+
+━━━ TREES ━━━
+• One tall deciduous broadleaf tree on LEFT side, one on RIGHT side
+• Full summer leaf canopy — fine graphite branch strokes with foliage mass
+• Trees in graphite ONLY with barely-perceptible faint grey-green hint on leaves
+• NO palm trees — NO banana leaves — NO bamboo — NO tropical plants
+
+━━━ SECONDARY WING ━━━
+• RIGHT side: lower secondary living wing, single storey — same modern style as main house
+• Partially visible, slightly receding into frame right
+
+━━━ ABSOLUTELY FORBIDDEN ━━━
+• NO blue sky — NO clouds — NO sky color — NO sky wash of any kind
+• NO colored walls — NO colored facade — NO colored concrete — NO colored roof
+• NO colored ground — NO green grass color — NO colored driveway
+• NO palm trees — NO banana leaves — NO bamboo — NO tropical plants
+• NO watercolor wash style — NO digital painting style — NO colorful illustration
+• NO Thai traditional roof — NO temple roof — NO curved ornamental roof
+• NO text — NO letters — NO numbers — NO logo — NO watermark — NO annotation
+• NO close-up — full building must be visible in wide shot
+• NO colored trees — trees must be graphite with only faint green hint
+
+FINAL OUTPUT:
+Premium hand-drawn architectural pencil sketch on white paper.
+Horizontal landscape format. Graphite monochrome.
+White paper sky. Stone foreground steps. Amber window glow only.
+Full building, wide establishing shot, ${label} style clearly recognisable.`;
 }
 
 // ─── Ideogram v2 (with optional style reference) ─────────────────────────────
@@ -587,17 +634,14 @@ export async function POST(req: NextRequest) {
         url = await generateOpenAI(prompt, openaiKey);
       } catch (openaiErr: unknown) {
         const openaiMsg = openaiErr instanceof Error ? openaiErr.message : String(openaiErr);
+        console.log("[Image API] OpenAI failed:", openaiMsg, "— auto-fallback to Gemini");
 
-        // Auto-fallback: try Gemini when OpenAI billing/quota is exhausted
-        if (isBillingError(openaiMsg)) {
-          const geminiKey = process.env.GEMINI_API_KEY;
-          if (!geminiKey) throw new Error(`OpenAI billing limit reached และ GEMINI_API_KEY ยังไม่ได้ตั้งค่า`);
-          console.log("[Image API] OpenAI billing limit — auto-fallback to Gemini");
-          url = await generateGemini(prompt, geminiKey);
-          usedModel = "gemini-fallback";
-        } else {
-          throw openaiErr;
-        }
+        // Auto-fallback: try Gemini for ANY OpenAI failure (billing, quota, permissions, etc.)
+        // Uses the same n8n-mirror prompt for best sketch quality
+        const geminiKey = process.env.GEMINI_API_KEY;
+        if (!geminiKey) throw new Error(`OpenAI failed (${openaiMsg}) และ GEMINI_API_KEY ยังไม่ได้ตั้งค่า`);
+        url = await generateGemini(prompt, geminiKey);
+        usedModel = "gemini-fallback";
       }
     }
 
