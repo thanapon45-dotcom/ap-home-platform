@@ -110,16 +110,20 @@ async function callClaude(system: string, prompt: string): Promise<string> {
 }
 
 async function generateImage(topic: string, style: string): Promise<string | null> {
-  try {
-    const res = await fetch("/api/image", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ topic, style, model: "gemini" }),
-    });
-    const data = await res.json();
-    if (!data.ok) { console.error("[Image]", data.error); return null; }
-    return data.url ?? null;
-  } catch (e) { console.error("[Image]", e); return null; }
+  // Try OpenAI first (matches n8n blog style), fallback to Gemini
+  for (const model of ["openai", "gemini"]) {
+    try {
+      const res = await fetch("/api/image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ topic, style, model }),
+      });
+      const data = await res.json();
+      if (data.ok && data.url) return data.url;
+      console.warn(`[Image] ${model} failed:`, data.error);
+    } catch (e) { console.error(`[Image] ${model}:`, e); }
+  }
+  return null;
 }
 
 // ── Mini Components ───────────────────────────────────────────────────────────
@@ -972,6 +976,9 @@ export default function AIContent() {
 
   function handleSave(item: ContentItem) {
     setSaved(prev => {
+      // Dedup: ถ้า content เดิมมีอยู่แล้ว ไม่ save ซ้ำ
+      const isDuplicate = prev.some(i => i.content.trim() === item.content.trim());
+      if (isDuplicate) return prev;
       const next = [item, ...prev].slice(0, 50);
       persistSaved(next);
       return next;

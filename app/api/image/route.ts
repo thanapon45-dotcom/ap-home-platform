@@ -388,36 +388,35 @@ function buildPromptGemini(style: string, topic?: string): string {
   const essence = GEMINI_STYLE_ESSENCE[key] ?? GEMINI_STYLE_ESSENCE["contemporary"];
   const label   = GEMINI_STYLE_LABEL[key]   ?? style;
 
-  // Derive a contextual scene hint from the topic keyword if provided
-  const sceneHint = topic
-    ? `CONTENT CONTEXT: This image illustrates a Facebook post about "${topic}". The architectural scene should visually align with this theme — e.g. if the topic is about budget planning, show a clear finished home; if about design style, emphasise the signature architectural feature of this style.`
+  // Contextual hint from FB post keyword
+  const topicLine = topic
+    ? `Content context: This image supports a Facebook post about "${topic}".`
     : "";
 
-  return `Architectural pencil sketch illustration.
+  return `Create a premium architectural sketch featured image for the Finnhouses brand.
 
-SUBJECT: ${essence}
-${sceneHint ? `\n${sceneHint}\n` : ""}
-RENDERING STYLE:
-Hand-drawn architect's pencil sketch on pure bright white paper. Three-quarter street-level perspective, slight upward tilt. Confident medium-weight pencil outlines on building. Light parallel hatching on walls. Cross-hatching only in deepest shadow zones. Airy, spacious feel — linework density 20% lighter than typical.
+Selected style: ${label}
+${topicLine}
 
-COLOUR — EXACTLY THREE ACCENTS, EVERYTHING ELSE GRAPHITE OR WHITE:
-1. Primary material accent: warm teak / timber brown — applied to the single most distinctive material feature of this style
-2. Interior glow: soft amber-cream warmth visible through glass panels
-3. Foliage: faint grey-green — barely perceptible, trees only
+Architectural description: ${essence}
 
-TREES: Two broad deciduous trees (NOT palms) in grey graphite with subtle 5% green tint, framing the house left and right. Fine loose branch strokes.
+STRICT REQUIREMENTS:
+- premium hand-rendered architectural sketch
+- refined ink linework with soft marker or watercolor accents
+- must feel like an architect's concept presentation for a high-end developer
+- modern architecture only — front or three-quarter front perspective, eye-level camera
+- balanced composition with elegant landscaping
+- clean white or off-white presentation paper background
+- subtle drafting guide lines are acceptable
 
-GROUND: Very light grey pencil hatching for driveway and lawn. Perspective lines converging naturally.
+NEGATIVE CONSTRAINTS (CRITICAL):
+- NO Thai style architecture, NO Thai roof, NO temple roof, NO curved ornamental roof
+- NO cartoon, NO fantasy house, NO exaggerated ornaments
+- NO photo-real people focus
+- ZERO visible text, letters, numbers, logos, watermarks
 
-BACKGROUND: White paper sky. Faint distant neighbourhood in lightest pencil.
-
-ABSOLUTE RULES:
-- Pure bright white paper background — not cream, not off-white
-- ZERO text, letters, numbers, annotations, labels, watermarks of any kind
-- No Thai traditional roof, no temple silhouette, no curved ornamental roof
-- No cartoon proportions, no flat vector style
-- No palm trees in foreground
-- The house architecture must unmistakably represent the ${label} style — this is non-negotiable`;
+FINAL RULE:
+This image must look like a premium architectural sketch for Finnhouses — the ${label} style must be clearly recognisable. Suitable as a featured image for a luxury real-estate post.`;
 }
 
 // ─── Ideogram v2 (with optional style reference) ─────────────────────────────
