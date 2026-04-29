@@ -580,7 +580,8 @@ function HistoryTab({ saved, onDelete }: { saved: ContentItem[]; onDelete: (id: 
 
   const poll = useCallback(async () => {
     try {
-      const r = await fetch(`${HUB}/api/state`, { signal: AbortSignal.timeout(3000) });
+      const r = await fetch("/api/blog/state", { signal: AbortSignal.timeout(5000) });
+      if (!r.ok) return;
       const d = await r.json();
       if (d.fb) setFb(d.fb);
     } catch { /* silent */ }
@@ -765,7 +766,8 @@ function FbQueueTab() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ items: drafts }),
       });
-      const j = await r.json();
+      if (!r.ok) throw new Error(`Hub ไม่ตอบสนอง (${r.status}) — Railway อาจกำลัง wake up`);
+      const j = await r.json().catch(() => { throw new Error("Server ตอบกลับผิดรูปแบบ — ลองใหม่อีกครั้ง"); });
       if (!j.ok) throw new Error(j.error);
       showToast(`📅 FB Queue ${j.count} วัน บันทึกสำเร็จ`, true);
       await poll();
@@ -778,11 +780,12 @@ function FbQueueTab() {
   async function handleClear() {
     try {
       setBusy(true);
-      await fetch("/api/fb/queue/clear", { method: "POST" });
+      const r = await fetch("/api/fb/queue/clear", { method: "POST" });
+      if (!r.ok) throw new Error(`Hub ไม่ตอบสนอง (${r.status})`);
       showToast("FB Queue ล้างแล้ว ✓", true);
       await poll();
-    } catch {
-      showToast("Error clearing queue", false);
+    } catch (e: unknown) {
+      showToast(e instanceof Error ? e.message : "Error clearing queue", false);
     } finally { setBusy(false); }
   }
 
