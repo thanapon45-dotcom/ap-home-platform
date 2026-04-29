@@ -157,58 +157,105 @@ function buildPromptN8nMirror(topic: string, style: string): string {
 
   const topicLine = topic ? `Content topic: ${topic}` : "";
 
+  // ── Style-specific camera, light, shadow ──────────────────────────────────
+  const STYLE_CAM: Record<string, string> = {
+    "contemporary":
+      "Three-quarter front perspective · camera at kerb height · 25–30m distance · AFTERNOON GOLDEN HOUR: low sun from left, long horizontal shadow cast by cantilever soffit underside — this shadow line is the HERO SHADOW of this sketch. The cantilever creates a bold dark band across the top of the facade.",
+    "nordic":
+      "Gentle frontal or very slight three-quarter · eye level showing full gable height · 25–30m · SOFT DIFFUSED MORNING LIGHT: gentle, even, no harsh shadows — gable symmetry and roofline read clearly against white sky. The warm interior glow through large windows is the dominant focal warmth.",
+    "luxury":
+      "Three-quarter front · camera LOW — angled gently upward to emphasise grandeur and monumental scale · 25–30m · LATE AFTERNOON GOLDEN LIGHT: dramatic long shadows, cantilever casts bold dark line on facade below, stone facade catches warm late-day glow. Everything conveys opulence.",
+    "minimal":
+      "Straight frontal perspective · perfectly centred · eye level · 25–30m · CRISP MIDDAY LIGHT: bright, sharp, high contrast. The only shadows are the deep dark recesses of the set-back windows — these are the HERO SHADOWS. Vast white areas of facade and sky dominate. Composition is spare.",
+    "loft":
+      "Three-quarter front · eye level · 25–30m · OVERCAST OR LATE AFTERNOON FLAT LIGHT: even illumination reveals raw concrete board-form texture across the full facade. Exposed steel beams catch a slight warm highlight. Urban industrial atmosphere — no dramatic highlights or shadows.",
+    "modern_tropical":
+      "Wide three-quarter front · camera slightly further back (28–32m) to capture full depth of roof overhang · MIDDAY BRIGHT: the strong DEEP SHADOW ZONE beneath the wide flat overhang is the HERO SHADOW — a broad dark band contrasting with the bright sky above. Vertical louvre screens cast parallel stripe shadows on the glass behind them.",
+  };
+
+  // ── Style-specific mood / atmosphere ─────────────────────────────────────
+  const STYLE_MOOD: Record<string, string> = {
+    "contemporary":    "Confident and refined — the sketch should feel like a premium property developer's presentation board. Balanced prestige.",
+    "nordic":          "Cozy warmth (hygge) and calm natural elegance — Scandinavian understatement. The sketch should feel inviting and serene.",
+    "luxury":          "Grand, prestigious, monumental — the sketch should make the viewer feel the building is larger and more impressive than expected.",
+    "minimal":         "Meditative and zen — beauty in emptiness and restraint. The sketch should feel like it has REMOVED everything unnecessary. White paper is part of the composition.",
+    "loft":            "Raw urban-luxury — the sketch should feel like an architect's honest study of industrial materials elevated to residential use.",
+    "modern_tropical": "Breezy relaxed luxury, climate-responsive — the sketch should convey that this house breathes, stays cool, and feels perfectly suited for Thailand.",
+  };
+
+  // ── Style-specific colour accents (all within graphite monochrome) ────────
+  const STYLE_ACCENTS: Record<string, string> = {
+    "contemporary":
+      "COLOUR ACCENTS — exactly three, everything else graphite or white paper:\n1. Warm teak-brown on cantilever soffit underside — rich fully saturated coloured pencil across full soffit area\n2. Warm amber glow through interior glass — soft luminous light, furniture silhouettes visible\n3. Very faint grey-green on ornamental shrubs between terrace steps — subtle, lightly applied",
+    "nordic":
+      "COLOUR ACCENTS — exactly three, everything else graphite or white paper:\n1. Warm honey-brown horizontal timber boards on full upper storey — rich consistent colour, strongest accent\n2. Warm amber glow through interior windows — PROMINENT, hygge warmth is the emotional core\n3. Barely-perceptible grey-green on base ground-cover plants — almost invisible, just a hint",
+    "luxury":
+      "COLOUR ACCENTS — exactly three, everything else graphite or white paper:\n1. Warm cream/ivory travertine stone on facade panels — soft warm tone, coloured pencil on cladding\n2. Warm amber glow through double-height glass — STRONGEST of all styles, luminous interior\n3. Very faint grey-green on formal sculpted hedges — subtle, trimmed formal shapes",
+    "minimal":
+      "COLOUR ACCENTS — exactly two only, everything else graphite and white paper:\n1. Single warm teak pivot door — one precise focal accent, nothing else on the facade\n2. Very subtle amber glow through glass — barely perceptible, present but not prominent\nNO third accent — zero green planting colour. Maximum restraint.",
+    "loft":
+      "COLOUR ACCENTS — exactly three, everything else graphite or white paper:\n1. Warm rust-brown on exposed steel beams and structural frame elements — visible structural members only\n2. Warm amber glow through oversized factory-style windows\n3. Very sparse faint grey-green on minimal ground-level planting",
+    "modern_tropical":
+      "COLOUR ACCENTS — exactly three, everything else graphite or white paper:\n1. Warm teak-brown on full-height vertical louvre screens — strong consistent vertical bands, dominant accent\n2. Warm amber glow through glass behind louvres — visible in the shaded zone\n3. Barely-perceptible grey-green on ornamental trees and foreground shrubs",
+  };
+
+  // ── Style-specific foreground treatment ───────────────────────────────────
+  const STYLE_FOREGROUND: Record<string, string> = {
+    "contemporary":    "Multi-level stone terrace steps (4 levels) with low ornamental shrubs between each level · narrow reflecting pool at base of steps",
+    "nordic":          "Three wide flat stone steps · very low ground-cover planting at base · simple and restrained, Nordic minimalism in the garden",
+    "luxury":          "Grand multi-level formal stone terrace (4–5 wide levels) · sculpted manicured hedges in planters at each level · long narrow formal reflecting pool at base",
+    "minimal":         "Two or three clean flat stone steps only · single small cloud-pruned tree on LEFT side only · vast empty ground plane, mostly white paper",
+    "loft":            "Flat concrete approach with one or two concrete steps · sparse ornamental grasses in concrete planters · minimal industrial planting",
+    "modern_tropical": "Wide multi-level stone terrace steps (3–4 levels) with low compact shrubs between levels · small cloud-pruned ornamental trees flanking · narrow pool at base",
+  };
+
+  const camLight   = STYLE_CAM[key]        ?? STYLE_CAM["contemporary"];
+  const mood       = STYLE_MOOD[key]       ?? STYLE_MOOD["contemporary"];
+  const accents    = STYLE_ACCENTS[key]    ?? STYLE_ACCENTS["contemporary"];
+  const foreground = STYLE_FOREGROUND[key] ?? STYLE_FOREGROUND["contemporary"];
+
   return `Create a premium architectural sketch featured image for the Finnhouses brand.
 
 Selected style: ${styleLabel}
-Render mode: architectural sketch
+Render mode: architectural pencil sketch — monochrome graphite on white paper
 ${topicLine}
 
-STYLE DEFINITIONS:
-- minimal: flat or simple roof, clean geometry, white or soft neutral palette, restrained facade detail, elegant simplicity
-- contemporary: balanced geometry, modern luxury proportions, glass + stone + wood composition, upscale developer aesthetic
-- modern tropical: deep overhangs, shaded terraces, climate-responsive design, airy openings, greenery integration, warm materials
-- nordic: steeply pitched gabled roof, deep timber eaves, warm honey timber cladding, natural stone base, Scandinavian cozy character
-- luxury: grand marble stone facade, cantilevered flat roof, double-height glass curtain wall, manicured formal garden, prestigious aesthetic
+MOOD: ${mood}
 
 STRICT REQUIREMENTS:
-- premium hand-rendered architectural sketch
-- refined ink linework with soft pencil shading and subtle watercolor/marker accents
-- must feel like an architect's concept presentation board for a high-end developer
-- CAMERA: street-level, 25–30 metres from building — wide establishing shot, NOT zoomed in
-- FULL BUILDING visible from foundation to roofline — two-storey main volume + lower wing on right side (NOT a garage — a secondary living wing, same clean modern style)
-- three-quarter front perspective — slight angle showing both front and side facade
-- sky (white/off-white paper) visible in upper 15% of frame
-- FOREGROUND: multi-level terraced stone steps with low shrubs planted between each level — this is the defining ground element
-- shallow pool or water feature visible at very bottom edge of foreground
-- small ornamental trees (cloud-pruned or bonsai-style) placed in foreground garden beds
-- trees framing both sides: one tall deciduous tree left, one right — fine branch strokes, mostly graphite
+- premium hand-rendered architectural pencil sketch on white presentation paper
+- refined ink linework with soft pencil hatching and shading
+- must feel like an architect's concept presentation board for a high-end Thai real estate developer
+- FULL BUILDING visible from foundation to roofline — two-storey main volume + lower secondary living wing on right side
+- sky (white/off-white paper) visible in upper 15% of frame — NO blue sky, NO clouds
+- small ornamental deciduous trees framing both sides — fine branch strokes, graphite only
 - INTERIOR through glass: warm amber glow, furniture silhouettes (sofa, pendant lamp, low table) faintly visible
-- COLOUR: almost entirely monochrome graphite — only two soft accents: warm amber interior glow through glass + faint grey-green on foliage
-- wide landscape composition — horizontal format
-- clean white or off-white presentation paper background
-- subtle drafting construction lines acceptable
-- no visible text, no logo, no label
+- wide landscape composition — horizontal format 16:9
+
+CAMERA AND LIGHT:
+${camLight}
+
+FOREGROUND:
+${foreground}
+
+${accents}
 
 NEGATIVE CONSTRAINTS (CRITICAL):
 - NO Thai style architecture, NO Thai roof, NO temple roof, NO curved ornamental roof
 - NO traditional Asian house, NO cartoon, NO fantasy house
 - NO photo-real people focus
 - NO close-up, NO zoomed-in crop — must show COMPLETE building with foreground and sky
-- NO coloured walls or coloured facade — keep it graphite monochrome with only the two accents listed above
-- NO bare winter trees with no leaves — trees must have foliage (leaves, canopy) in warm season
-- NO palm trees — NO banana leaves — NO bamboo — NO tropical plants (applies to ALL styles including Tropical Modern)
+- NO coloured walls or coloured facade — graphite monochrome only
+- NO bare winter trees with no leaves — trees must have summer leaf canopy
+- NO palm trees — NO banana leaves — NO bamboo — NO tropical plants (ALL styles including Tropical Modern)
+- NO blue sky, NO clouds, NO sky colour — white paper only
+- NO watermark, NO text, NO logo, NO labels
 
 Architectural direction:
 ${styleBase}
 
-Additional style prompt:
-premium architectural sketch, elegant modern house, full facade view, presentation-board quality, ${styleLabel} style
-
-Final guard rules:
-no Thai traditional roof forms, no text, no watermark, full building visible
-
 FINAL RULE:
-This image must look like a premium architectural sketch for Finnhouses, showing the FULL house with landscaping — suitable as a featured image for a luxury real-estate article.`;
+This image must look like a premium architectural pencil sketch for Finnhouses brand, clearly showing the ${styleLabel} style identity through its unique camera angle, lighting, and architectural character. Suitable as a featured image for a luxury Thai real-estate article.`;
 }
 
 function buildPromptOpenAI(topic: string, style: string, styleBase: string): string {
@@ -476,180 +523,20 @@ function buildPromptGemini(style: string, topic?: string): string {
 
   const arch = archEssence[key] ?? archEssence["contemporary"];
 
-  return `Create a premium architectural pencil sketch illustration for Finnhouses brand.
-
-STYLE: ${label} house
-${topicLine}
-Architecture: ${arch}
-
-━━━ RENDERING STYLE — NON-NEGOTIABLE ━━━
-THIS IS A BLACK-AND-WHITE PENCIL SKETCH ON WHITE PAPER.
-NOT a watercolor painting. NOT a colored illustration. NOT a photo-realistic image.
-
-Pencil technique:
-• Refined ink linework defining building edges and window frames
-• Light-to-medium graphite hatching on walls (parallel diagonal strokes)
-• Cross-hatching only in deep shadow zones (roof underside, window reveals)
-• All strokes are graphite grey — zero brown, zero blue, zero warm tone
-
-COLOR RULE — ONLY THESE TWO IN THE ENTIRE IMAGE:
-1. Warm amber/orange glow ONLY visible through interior window glass — soft, luminous, contained within the glass pane only
-2. Very faint grey-green pencil tint ONLY on leaf foliage — barely perceptible, almost invisible
-Every other area = graphite pencil strokes or pure white paper. No exceptions.
-
-━━━ SKY — ABSOLUTE RULE ━━━
-SKY = PURE WHITE OR OFF-WHITE PAPER ONLY. NOTHING ELSE.
-• ZERO blue in the sky area
-• ZERO clouds of any color
-• ZERO sky wash, ZERO sky gradient, ZERO watercolor in sky
-• The sky shows only the white paper surface — completely empty
-
-━━━ COMPOSITION ━━━
-• Camera: street level, 25–30 metres distance — wide establishing shot
-• FULL BUILDING visible from foundation to roofline — NOT cropped, NOT zoomed in
-• Three-quarter front perspective — slight angle showing front and side facade
-• Sky in upper 15% of frame (white paper only)
-• Foreground in lower 25% of frame
-
-━━━ FOREGROUND — REQUIRED ━━━
-• Multi-level stone terrace steps descending toward the viewer (3–4 levels)
-• Low compact ornamental shrubs planted between each stone step level
-• Narrow reflecting pool or water feature at the very bottom edge
-• Ground plane = light graphite pencil hatching only — no green grass color
-
-━━━ TREES ━━━
-• One tall deciduous broadleaf tree on LEFT side, one on RIGHT side
-• Full summer leaf canopy — fine graphite branch strokes with foliage mass
-• Trees in graphite ONLY with barely-perceptible faint grey-green hint on leaves
-• NO palm trees — NO banana leaves — NO bamboo — NO tropical plants
-
-━━━ SECONDARY WING ━━━
-• RIGHT side: lower secondary living wing, single storey — same modern style as main house
-• Partially visible, slightly receding into frame right
-
-━━━ ABSOLUTELY FORBIDDEN ━━━
-• NO blue sky — NO clouds — NO sky color — NO sky wash of any kind
-• NO colored walls — NO colored facade — NO colored concrete — NO colored roof
-• NO colored ground — NO green grass color — NO colored driveway
-• NO palm trees — NO banana leaves — NO bamboo — NO tropical plants
-• NO watercolor wash style — NO digital painting style — NO colorful illustration
-• NO Thai traditional roof — NO temple roof — NO curved ornamental roof
-• NO text — NO letters — NO numbers — NO logo — NO watermark — NO annotation
-• NO close-up — full building must be visible in wide shot
-• NO colored trees — trees must be graphite with only faint green hint
-
-FINAL OUTPUT:
-Premium hand-drawn architectural pencil sketch on white paper.
-Horizontal landscape format. Graphite monochrome.
-White paper sky. Stone foreground steps. Amber window glow only.
-Full building, wide establishing shot, ${label} style clearly recognisable.`;
-}
-
-// ─── Ideogram v2 (with optional style reference) ─────────────────────────────
-async function generateIdeogram(
-  prompt: string,
-  referenceBase64: string | null,
-  apiKey: string
-) {
-  const imageRequest: Record<string, unknown> = {
-    prompt,
-    aspect_ratio: "ASPECT_2_3",
-    model:        "V_2",
-    style_type:   "DESIGN",
+  // Style-specific camera + light + shadow
+  const styleCamera: Record<string, string> = {
+    "contemporary":    "Three-quarter front · camera at kerb height · 25–30m · AFTERNOON GOLDEN HOUR: low sun from left, long horizontal shadow under cantilever soffit — bold dark band across the top of the facade is the HERO SHADOW",
+    "nordic":          "Gentle frontal or slight 3/4 · eye level showing full gable height · 25–30m · SOFT MORNING LIGHT: gentle, diffused, no harsh lines — warm interior glow through large windows is the dominant warmth",
+    "luxury":          "Three-quarter front · camera LOW angled slightly upward · 25–30m · LATE AFTERNOON: dramatic long shadows, cantilever casts bold dark shadow on facade, monumental feeling",
+    "minimal":         "Straight frontal · perfectly centred · eye level · 25–30m · CRISP MIDDAY LIGHT: bright and sharp — deep shadow in recessed window reveals is the ONLY shadow detail, vast white paper dominates",
+    "loft":            "Three-quarter front · eye level · 25–30m · OVERCAST FLAT LIGHT: even illumination shows raw concrete board-form texture clearly, warm rust on steel beams",
+    "modern_tropical": "Wide three-quarter front · slightly further back 28–32m · MIDDAY BRIGHT: deep shadow zone under overhang is the HERO SHADOW — vertical louvre stripes cast shadow lines on glass behind",
   };
 
-  // Attach style reference if provided
-  if (referenceBase64) {
-    // Ideogram accepts data URL in style_reference_images
-    imageRequest.style_reference_images  = [{ url: referenceBase64 }];
-    imageRequest.style_reference_weight  = 0.82;
-  }
-
-  const res = await fetch("https://api.ideogram.ai/generate", {
-    method:  "POST",
-    headers: { "Api-Key": apiKey, "Content-Type": "application/json" },
-    body:    JSON.stringify({ image_request: imageRequest }),
-  });
-  const data = await res.json();
-  if (!res.ok || !data.data?.[0]) {
-    console.error("[Ideogram] Error:", JSON.stringify(data));
-    throw new Error(data.error?.message ?? data.detail ?? "Ideogram generation failed");
-  }
-  return data.data[0].url as string;
-}
-
-// ─── Main handler ─────────────────────────────────────────────────────────────
-export async function POST(req: NextRequest) {
-  const {
-    topic,
-    style,
-    model          = "gemini",   // "gemini" | "openai" | "openai-edit" | "ideogram"
-    referenceImage = null,        // base64 data URL, optional
-  } = await req.json();
-
-  const renderMode = STYLE_TO_RENDER[style] ?? "contemporary";
-  const styleBase  = BASE_BY_STYLE[renderMode] ?? BASE_BY_STYLE["contemporary"];
-  // openai uses n8n-mirror prompt (matches blog image style exactly)
-  // gemini uses updated watercolor/ink prompt
-  // ideogram uses its own prompt
-  const prompt     = model === "ideogram"
-    ? buildPromptIdeogram(topic, style, styleBase)
-    : model === "gemini"
-      ? buildPromptGemini(style, topic)
-      : buildPromptN8nMirror(topic, style);  // openai & openai-edit
-
-  // Detect OpenAI billing / quota errors — triggers Gemini fallback
-  const isBillingError = (msg: string) =>
-    msg.toLowerCase().includes("billing") ||
-    msg.toLowerCase().includes("hard limit") ||
-    msg.toLowerCase().includes("quota") ||
-    msg.toLowerCase().includes("insufficient_quota") ||
-    msg.toLowerCase().includes("rate limit");
-
-  try {
-    let url: string;
-    let usedModel = model;
-
-    if (model === "gemini") {
-      const apiKey = process.env.GEMINI_API_KEY;
-      if (!apiKey) return NextResponse.json({ ok: false, error: "GEMINI_API_KEY not configured" }, { status: 500 });
-      url = await generateGemini(prompt, apiKey);
-
-    } else if (model === "ideogram") {
-      const apiKey = process.env.IDEOGRAM_API_KEY;
-      if (!apiKey) return NextResponse.json({ ok: false, error: "IDEOGRAM_API_KEY not configured" }, { status: 500 });
-      url = await generateIdeogram(prompt, referenceImage, apiKey);
-
-    } else if (model === "openai-edit" && referenceImage) {
-      const apiKey = process.env.OPENAI_API_KEY;
-      if (!apiKey) return NextResponse.json({ ok: false, error: "OPENAI_API_KEY not configured" }, { status: 500 });
-      url = await generateOpenAIEdit(prompt, referenceImage, apiKey);
-
-    } else {
-      // Default: OpenAI text-to-image — auto-fallback to Gemini on billing/quota error
-      const openaiKey = process.env.OPENAI_API_KEY;
-      if (!openaiKey) return NextResponse.json({ ok: false, error: "OPENAI_API_KEY not configured" }, { status: 500 });
-
-      try {
-        url = await generateOpenAI(prompt, openaiKey);
-      } catch (openaiErr: unknown) {
-        const openaiMsg = openaiErr instanceof Error ? openaiErr.message : String(openaiErr);
-        console.log("[Image API] OpenAI failed:", openaiMsg, "— auto-fallback to Gemini");
-
-        // Auto-fallback: try Gemini for ANY OpenAI failure (billing, quota, permissions, etc.)
-        // Uses the same n8n-mirror prompt for best sketch quality
-        const geminiKey = process.env.GEMINI_API_KEY;
-        if (!geminiKey) throw new Error(`OpenAI failed (${openaiMsg}) และ GEMINI_API_KEY ยังไม่ได้ตั้งค่า`);
-        url = await generateGemini(prompt, geminiKey);
-        usedModel = "gemini-fallback";
-      }
-    }
-
-    return NextResponse.json({ ok: true, url, prompt, model: usedModel });
-
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.error("[Image API] Error:", msg);
-    return NextResponse.json({ ok: false, error: msg }, { status: 500 });
-  }
-}
+  // Style-specific color accents
+  const styleAccents: Record<string, string> = {
+    "contemporary":    "COLOR: (1) warm teak-brown on cantilever soffit underside; (2) warm amber interior glow through glass; (3) very faint grey-green on shrubs. All else = graphite.",
+    "nordic":          "COLOR: (1) warm honey-brown horizontal timber boards on upper storey — strongest accent; (2) warm amber glow through windows — prominent hygge warmth; (3) barely-perceptible grey-green ground cover. All else = graphite.",
+    "luxury":          "COLOR: (1) warm cream/ivory stone on facade; (2) strong amber glow through double-height glass — most luminous interior of all styles; (3) faint grey-green on formal hedges. All else = graphite.",
+    "minimal":         "COLOR: (1) single warm teak pivot door ONLY — one precise accent; (2) very subtle amber glow (barely visible); NO third accent — maximum restraint. All else = graphite and white paper.",
+    "lof
