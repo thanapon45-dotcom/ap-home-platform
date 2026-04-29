@@ -135,6 +135,76 @@ Flat roof, white walls. Roller door. Partially cropped at frame right.`,
 };
 
 // ─── Prompt builders ─────────────────────────────────────────────────────────
+
+// Style base descriptions (mirrors what n8n's AI generates as image_style_base)
+const FINNHOUSES_STYLE_BASE: Record<string, string> = {
+  "contemporary":    "premium contemporary residence, dramatic flat cantilever roof, floor-to-ceiling glass, warm timber and stone facade, refined upscale massing, elegant terrace with slim steel railing",
+  "nordic":          "Nordic Scandinavian residence, steeply pitched gabled roof with deep timber eaves, warm honey timber cladding on upper storey, natural stone base, large picture windows, cozy hygge character",
+  "luxury":          "grand luxury modern residence, soaring marble and travertine stone facade, cantilevered flat roof, double-height glass curtain wall, manicured formal garden, prestigious five-star aesthetic",
+  "minimal":         "modern minimal residence, pure flat roof with zero overhang, smooth white stucco facade, deep-set recessed windows, single warm timber pivot door accent, absolute geometric serenity",
+  "loft":            "industrial loft residence, exposed raw board-formed concrete walls, weathered steel structural frame, oversized multi-pane factory windows, flat roof, urban-luxury character",
+  "modern_tropical": "tropical modern residence, wide deep overhanging flat roof on slender columns, full-height vertical timber louvre screens, open semi-outdoor living ground floor, lush tropical greenery framing the facade",
+};
+
+// Mirror n8n's exact prompt structure — produces the same style as blog images
+function buildPromptN8nMirror(topic: string, style: string): string {
+  const key       = style.toLowerCase().replace(/[\s-]/g, "_");
+  const styleBase = FINNHOUSES_STYLE_BASE[key] ?? FINNHOUSES_STYLE_BASE["contemporary"];
+  const styleLabel =
+    key === "modern_tropical" ? "Modern Tropical" :
+    key === "minimal"         ? "Modern Minimal"  :
+    style.charAt(0).toUpperCase() + style.slice(1);
+
+  const topicLine = topic ? `Content topic: ${topic}` : "";
+
+  return `Create a premium architectural sketch featured image for the Finnhouses brand.
+
+Selected style: ${styleLabel}
+Render mode: architectural sketch
+${topicLine}
+
+STYLE DEFINITIONS:
+- minimal: flat or simple roof, clean geometry, white or soft neutral palette, restrained facade detail, elegant simplicity
+- contemporary: balanced geometry, modern luxury proportions, glass + stone + wood composition, upscale developer aesthetic
+- modern tropical: deep overhangs, shaded terraces, climate-responsive design, airy openings, greenery integration, warm materials
+- nordic: steeply pitched gabled roof, deep timber eaves, warm honey timber cladding, natural stone base, Scandinavian cozy character
+- luxury: grand marble stone facade, cantilevered flat roof, double-height glass curtain wall, manicured formal garden, prestigious aesthetic
+
+STRICT REQUIREMENTS:
+- premium hand-rendered architectural sketch
+- refined ink linework with soft marker or watercolor accents
+- must feel like an architect's concept presentation for a high-end developer
+- modern architecture only
+- FULL BUILDING visible — show entire house from foundation to roofline
+- front or three-quarter front perspective
+- eye-level camera — not zoomed in, not cropped
+- wide balanced composition showing full facade + landscaping + garden
+- elegant landscaping with trees framing both sides
+- clean white or off-white presentation paper background
+- subtle drafting or blueprint guide lines are allowed
+- no visible text, no logo, no label
+
+NEGATIVE CONSTRAINTS (CRITICAL):
+- NO Thai style architecture
+- NO Thai roof, NO Thai gable roof, NO temple roof, NO curved roof ornaments
+- NO traditional Asian house, NO steep pitched traditional roof
+- NO cartoon, NO fantasy house, NO exaggerated ornaments
+- NO photo-real people focus
+- NO close-up or zoomed-in crop — must show FULL building
+
+Architectural direction:
+${styleBase}
+
+Additional style prompt:
+premium architectural sketch, elegant modern house, full facade view, presentation-board quality, ${styleLabel} style
+
+Final guard rules:
+no Thai traditional roof forms, no text, no watermark, full building visible
+
+FINAL RULE:
+This image must look like a premium architectural sketch for Finnhouses, showing the FULL house with landscaping — suitable as a featured image for a luxury real-estate article.`;
+}
+
 function buildPromptOpenAI(topic: string, style: string, styleBase: string): string {
   const renderStyle = STYLE_TO_RENDER[style] ?? "contemporary";
   const bld = STYLE_BUILDING[
@@ -463,11 +533,14 @@ export async function POST(req: NextRequest) {
 
   const renderMode = STYLE_TO_RENDER[style] ?? "contemporary";
   const styleBase  = BASE_BY_STYLE[renderMode] ?? BASE_BY_STYLE["contemporary"];
+  // openai uses n8n-mirror prompt (matches blog image style exactly)
+  // gemini uses updated watercolor/ink prompt
+  // ideogram uses its own prompt
   const prompt     = model === "ideogram"
     ? buildPromptIdeogram(topic, style, styleBase)
     : model === "gemini"
       ? buildPromptGemini(style, topic)
-      : buildPromptOpenAI(topic, style, styleBase);
+      : buildPromptN8nMirror(topic, style);  // openai & openai-edit
 
   // Detect OpenAI billing / quota errors — triggers Gemini fallback
   const isBillingError = (msg: string) =>
