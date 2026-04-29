@@ -44,3 +44,7 @@ Thumbs.db
 services/backend-hub/hub-state.json
 services/backend-hub/node_modules/
 services/fb-backend/node_modules/
+
+# Cache directories (n8n, build caches — never commit)
+.cache/
+*.cache

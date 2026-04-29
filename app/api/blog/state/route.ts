@@ -9,9 +9,20 @@ const HUB = process.env.HUB_URL ?? "https://ap-home-platform-production.up.railw
 
 export async function GET() {
   try {
-    const r = await fetch(`${HUB}/api/state`, { cache: "no-store" });
-    const data = await r.json();
-    return NextResponse.json(data);
+    const r = await fetch(`${HUB}/api/state`, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(8000), // ป้องกัน Vercel 10s platform timeout
+    });
+    if (!r.ok) {
+      return NextResponse.json({ blog: { status: "idle" }, error: `Hub returned ${r.status}` });
+    }
+    const text = await r.text();
+    try {
+      const data = JSON.parse(text);
+      return NextResponse.json(data);
+    } catch {
+      return NextResponse.json({ blog: { status: "idle" }, error: "Hub ตอบกลับผิดรูปแบบ (ไม่ใช่ JSON)" });
+    }
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "State fetch failed";
     return NextResponse.json({ blog: { status: "idle" }, error: message });

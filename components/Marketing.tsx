@@ -238,6 +238,13 @@ export default function Marketing() {
     setTimeout(() => setToast(null), 3500);
   }
 
+  // ── Safe JSON helper ─────────────────────────────────────────────────────
+  async function safeJson(r: Response) {
+    if (!r.ok) throw new Error(`Hub ไม่ตอบสนอง (${r.status}) — Railway อาจกำลัง wake up`);
+    try { return await r.json(); }
+    catch { throw new Error(`Server ตอบกลับผิดรูปแบบ (status ${r.status}) — ลองใหม่อีกครั้ง`); }
+  }
+
   // ── Run Blog ──────────────────────────────────────────────────────────────
   async function handleRun() {
     if (!keyword.trim()) { showToast("เลือก keyword ก่อน", "error"); return; }
@@ -253,8 +260,8 @@ export default function Marketing() {
           visual_hint: visualStyle,
         }),
       });
-      const j = await r.json();
-      if (!j.ok) throw new Error(j.error);
+      const j = await safeJson(r);
+      if (!j.ok) throw new Error(j.error ?? "Blog run failed");
       showToast(`▶ Triggered! Run ID: ${j.runId}`, "success");
       await poll();
     } catch (e: unknown) {
@@ -266,8 +273,8 @@ export default function Marketing() {
     try {
       setBusy(true);
       const r = await fetch(`/api/blog/reset`, { method: "POST" });
-      const j = await r.json();
-      if (!j.ok) throw new Error(j.error);
+      const j = await safeJson(r);
+      if (!j.ok) throw new Error(j.error ?? "Reset failed");
       showToast("Reset แล้ว ✓", "success");
       await poll();
     } catch (e: unknown) {
@@ -311,8 +318,8 @@ export default function Marketing() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ items }),
       });
-      const j = await r.json();
-      if (!j.ok) throw new Error(j.error);
+      const j = await safeJson(r);
+      if (!j.ok) throw new Error(j.error ?? "Queue build failed");
       showToast(`📅 Queue ${j.count} วัน สร้างสำเร็จ`, "success");
       await poll();
     } catch (e: unknown) {
@@ -323,11 +330,13 @@ export default function Marketing() {
   async function handleClearQueue() {
     try {
       setQueueBusy(true);
-      await fetch("/api/blog/queue/clear", { method: "POST" });
+      const r = await fetch("/api/blog/queue/clear", { method: "POST" });
+      const j = await safeJson(r);
+      if (!j.ok) throw new Error(j.error ?? "Clear failed");
       showToast("Queue ล้างแล้ว ✓", "success");
       await poll();
-    } catch {
-      showToast("Error clearing queue", "error");
+    } catch (e: unknown) {
+      showToast(e instanceof Error ? e.message : "Error clearing queue", "error");
     } finally { setQueueBusy(false); }
   }
 
