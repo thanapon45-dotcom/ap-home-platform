@@ -463,11 +463,14 @@ function BlogConvertTab({ onSave }: { onSave: (item: ContentItem) => void }) {
   const [result, setResult]       = useState("");
   const [copied, setCopied]       = useState(false);
   const [fetchError, setFetchError] = useState("");
+  const [blogImageUrl, setBlogImageUrl] = useState("");
+  const [posting, setPosting]     = useState(false);
+  const [postResult, setPostResult] = useState<"ok"|"error"|null>(null);
 
   const isUrl = blogText.trim().startsWith("http");
 
   async function fetchFromUrl() {
-    setFetching(true); setFetchError("");
+    setFetching(true); setFetchError(""); setBlogImageUrl("");
     try {
       const res = await fetch("/api/fetch-blog", {
         method: "POST",
@@ -476,9 +479,28 @@ function BlogConvertTab({ onSave }: { onSave: (item: ContentItem) => void }) {
       });
       const data = await res.json();
       if (!res.ok) { setFetchError(data.error ?? "ดึงบทความไม่สำเร็จ"); }
-      else { setBlogText(data.text ?? ""); }
+      else {
+        setBlogText(data.text ?? "");
+        if (data.imageUrl) setBlogImageUrl(data.imageUrl);
+      }
     } catch { setFetchError("เกิดข้อผิดพลาด ลองใหม่"); }
     setFetching(false);
+  }
+
+  async function postToFacebook() {
+    if (!result) return;
+    setPosting(true); setPostResult(null);
+    try {
+      const publicImageUrl = blogImageUrl && blogImageUrl.startsWith("https://") ? blogImageUrl : undefined;
+      const r = await fetch("/api/fb/publish", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: result, imageUrl: publicImageUrl, source: "blog-convert" }),
+      });
+      const data = await r.json();
+      setPostResult(r.ok && data.ok !== false ? "ok" : "error");
+    } catch { setPostResult("error"); }
+    finally { setPosting(false); }
   }
 
   async function convert() {
@@ -590,16 +612,44 @@ ${blogText.slice(0, 2000)}
 
       <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 16 }}>
         {result ? (
-          <Card style={{ flex: 1, position: "relative" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-              <Tag label={`Blog → ${POST_TYPES.find(t => t.value === type)?.label}`} color="#a78bfa" />
-              <div style={{ display: "flex", gap: 8 }}>
-                <button onClick={copy} style={btnStyle("#22d3ee")}>{copied ? "✅ Copied!" : "📋 Copy"}</button>
-                <button onClick={save} style={btnStyle("#10b981")}>💾 Save</button>
+          <>
+            <Card style={{ flex: 1, position: "relative" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                  <Tag label={`Blog → ${POST_TYPES.find(t => t.value === type)?.label}`} color="#a78bfa" />
+                  {blogImageUrl && <Tag label="🖼️ มีรูป" color="#10b981" />}
+                </div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button onClick={copy} style={btnStyle("#22d3ee")}>{copied ? "✅ Copied!" : "📋 Copy"}</button>
+                  <button onClick={save} style={btnStyle("#10b981")}>💾 Save</button>
+                  <button onClick={postToFacebook} disabled={posting} style={btnStyle(postResult === "ok" ? "#10b981" : postResult === "error" ? "#f43f5e" : "#6366f1")}>
+                    {posting ? "⏳ กำลังโพสต์..." : postResult === "ok" ? "✅ โพสต์แล้ว!" : postResult === "error" ? "❌ ผิดพลาด" : "📤 Post to Facebook"}
+                  </button>
+                </div>
               </div>
-            </div>
-            <pre style={{ whiteSpace: "pre-wrap", fontSize: 13, color: "#e2e8f0", lineHeight: 1.7, margin: 0, fontFamily: "inherit" }}>{result}</pre>
-          </Card>
+              <pre style={{ whiteSpace: "pre-wrap", fontSize: 13, color: "#e2e8f0", lineHeight: 1.7, margin: 0, fontFamily: "inherit" }}>{result}</pre>
+            </Card>
+            {blogImageUrl && (
+              <Card style={{ padding: 12 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                  <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                    <Tag label="Featured Image จาก Blog" color="#a78bfa" />
+                    <span style={{ fontSize: 10, color: "#475569" }}>จะโพสต์พร้อมกับข้อความ</span>
+                  </div>
+                </div>
+                <div style={{ width: "100%", aspectRatio: "1.91/1", overflow: "hidden", borderRadius: 12, background: "#0a0f1e" }}>
+                  <img
+                    src={blogImageUrl}
+                    alt="Blog featured image"
+                    style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center" }}
+                  />
+                </div>
+                <div style={{ fontSize: 10, color: "#334155", marginTop: 6, textAlign: "center" }}>
+                  กด "Post to Facebook" เพื่อโพสต์รูปนี้พร้อม caption บน FB Page
+                </div>
+              </Card>
+            )}
+          </>
         ) : (
           <Card style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12 }}>
             <div style={{ fontSize: 48 }}>📰</div>

@@ -23,6 +23,11 @@ export async function POST(req: NextRequest) {
 
     const html = await res.text();
 
+    // Extract og:image (featured image) before stripping tags
+    const ogImageMatch = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i)
+      || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i);
+    const imageUrl = ogImageMatch?.[1] ?? null;
+
     // Strip HTML tags and extract readable text
     const text = html
       .replace(/<script[\s\S]*?<\/script>/gi, " ")
@@ -43,7 +48,7 @@ export async function POST(req: NextRequest) {
       .trim()
       .slice(0, 4000);
 
-    return NextResponse.json({ text });
+    return NextResponse.json({ text, imageUrl });
   } catch (err) {
     return NextResponse.json({ error: "ไม่สามารถดึงบทความได้ กรุณาลองใหม่" }, { status: 500 });
   }
