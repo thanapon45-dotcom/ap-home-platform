@@ -19,7 +19,10 @@ const MOCK = {
 
 // อ่าน lead counts จาก Supabase โดยตรง — refresh ทุก 30s
 function useLeadCounts() {
-  const [counts, setCounts] = useState({ total: 0, new: 0, byBusiness: { build: 0, reno: 0, list: 0 } });
+  const [counts, setCounts] = useState({
+    total: 0, new: 0, contacted: 0, proposal: 0, won: 0,
+    byBusiness: { build: 0, reno: 0, list: 0 },
+  });
 
   useEffect(() => {
     async function fetch_() {
@@ -29,8 +32,11 @@ function useLeadCounts() {
       if (error || !data) return;
       const bu = (l: { business_unit?: string }) => l.business_unit ?? "build";
       setCounts({
-        total: data.length,
-        new:   data.filter(l => l.stage === "new").length,
+        total:     data.length,
+        new:       data.filter(l => l.stage === "new").length,
+        contacted: data.filter(l => l.stage === "contacted").length,
+        proposal:  data.filter(l => l.stage === "proposal").length,
+        won:       data.filter(l => l.stage === "won").length,
         byBusiness: {
           build: data.filter(l => bu(l) === "build").length,
           reno:  data.filter(l => bu(l) === "reno").length,
@@ -188,17 +194,19 @@ export default function DashboardOS() {
   }, []);
 
   const { blog, fb, alerts } = data as any;
-  // leads มาจาก localStorage (CRM) โดยตรง — ไม่ผ่าน Hub
+  // leads มาจาก Supabase โดยตรง — ไม่ผ่าน Hub
   const leads = leadCounts;
   const totalLeads = useAnimNum(leads.new);
 
-  const pipeline = [
-    { label: "Traffic",   value: 1280,             icon: "📡", color: "#22d3ee" },
-    { label: "Leads",     value: leads.new,         icon: "🎯", color: "#6366f1" },
-    { label: "Appts",     value: 6,                icon: "📅", color: "#f59e0b" },
-    { label: "Proposals", value: 4,                icon: "📋", color: "#10b981" },
-    { label: "Closed",    value: 1,                icon: "✅", color: "#f43f5e" },
+  // pipeline ดึงจาก Supabase ทั้งหมด — Traffic ยังไม่มี source (Vercel Analytics ยังไม่ enable)
+  const pipeline: { label: string; value: number | null; icon: string; color: string; noSource?: boolean }[] = [
+    { label: "Traffic",   value: null,           icon: "📡", color: "#22d3ee", noSource: true },
+    { label: "Leads",     value: leads.new,       icon: "🎯", color: "#6366f1" },
+    { label: "Appts",     value: leads.contacted, icon: "📅", color: "#f59e0b" },
+    { label: "Proposals", value: leads.proposal,  icon: "📋", color: "#10b981" },
+    { label: "Closed",    value: leads.won,       icon: "✅", color: "#f43f5e" },
   ];
+  const pipelineMax = Math.max(...pipeline.map(p => p.value ?? 0), 1);
 
   return (
     <div style={{ padding: 24, display: "flex", flexDirection: "column", gap: 20 }}>
@@ -270,9 +278,17 @@ export default function DashboardOS() {
             <div key={p.label} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
               <div style={{ fontSize: 20 }}>{p.icon}</div>
               <div style={{ width: "100%", height: 80, background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.05)", borderRadius: 10, display: "flex", alignItems: "flex-end", overflow: "hidden" }}>
-                <div style={{ width: "100%", height: `${Math.max(8, (p.value / 1280) * 100)}%`, background: `linear-gradient(to top,${p.color},${p.color}88)`, borderRadius: 8 }} />
+                {p.noSource ? (
+                  <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <span style={{ fontSize: 9, color: "#475569", textTransform: "uppercase", letterSpacing: ".08em" }}>no source</span>
+                  </div>
+                ) : (
+                  <div style={{ width: "100%", height: `${Math.max(4, ((p.value ?? 0) / pipelineMax) * 100)}%`, background: `linear-gradient(to top,${p.color},${p.color}88)`, borderRadius: 8 }} />
+                )}
               </div>
-              <div style={{ fontSize: 20, fontWeight: 800, color: p.color }}>{p.value}</div>
+              <div style={{ fontSize: 20, fontWeight: 800, color: p.noSource ? "#475569" : p.color }}>
+                {p.noSource ? "—" : p.value}
+              </div>
               <div style={{ fontSize: 11, color: "#94a3b8" }}>{p.label}</div>
             </div>
           ))}
