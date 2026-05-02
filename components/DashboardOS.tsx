@@ -1,15 +1,15 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
 
 const HUB = process.env.NEXT_PUBLIC_HUB_URL ?? "https://ap-home-platform-production.up.railway.app";
 const POLL_MS = 10_000;
-const CRM_KEY = "finnhouses_leads_v2";
 
 const MOCK = {
   blog:  { status: "Running", queue: 8,  published: 2, failed: 1 },
   fb:    { status: "Active",  queue: 12, drafts: 5,   published: 3 },
-  leads: { total: 20, new: 20, byBusiness: { build: 7, reno: 4, list: 9 } },
+  leads: { total: 0, new: 0, byBusiness: { build: 0, reno: 0, list: 0 } },
   alerts: [
     { level: "high",   text: "n8n workflow error: image upload needs review" },
     { level: "medium", text: "Facebook content queue nearly full" },
@@ -17,47 +17,30 @@ const MOCK = {
   ],
 };
 
-// seed data เริ่มต้น — sync กับ INITIAL_LEADS ใน CRM.tsx
-const SEED_LEADS = [
-  { stage: "new",       business_unit: "build" },
-  { stage: "followup",  business_unit: "build" },
-  { stage: "qualified", business_unit: "reno"  },
-  { stage: "new",       business_unit: "list"  },
-  { stage: "closed",    business_unit: "build" },
-];
-
-// อ่าน lead counts จาก CRM localStorage โดยตรง (ไม่ผ่าน Hub)
+// อ่าน lead counts จาก Supabase โดยตรง — refresh ทุก 30s
 function useLeadCounts() {
   const [counts, setCounts] = useState({ total: 0, new: 0, byBusiness: { build: 0, reno: 0, list: 0 } });
 
   useEffect(() => {
-    function calc(leads: Array<{ stage?: string; business_unit?: string }>) {
-      const newLeads = leads.filter(l => l.stage === "new").length;
-      // leads ที่ไม่มี business_unit (ข้อมูลเก่า) ให้นับเป็น build
+    async function fetch_() {
+      const { data, error } = await supabase
+        .from("leads")
+        .select("stage, business_unit");
+      if (error || !data) return;
       const bu = (l: { business_unit?: string }) => l.business_unit ?? "build";
-      const build = leads.filter(l => bu(l) === "build").length;
-      const reno  = leads.filter(l => bu(l) === "reno").length;
-      const list  = leads.filter(l => bu(l) === "list").length;
-      setCounts({ total: leads.length, new: newLeads, byBusiness: { build, reno, list } });
+      setCounts({
+        total: data.length,
+        new:   data.filter(l => l.stage === "new").length,
+        byBusiness: {
+          build: data.filter(l => bu(l) === "build").length,
+          reno:  data.filter(l => bu(l) === "reno").length,
+          list:  data.filter(l => bu(l) === "list").length,
+        },
+      });
     }
-
-    function read() {
-      try {
-        const raw = localStorage.getItem(CRM_KEY);
-        if (!raw) {
-          // localStorage ว่าง → ใช้ seed data และ seed ลง CRM ด้วย
-          calc(SEED_LEADS);
-          return;
-        }
-        const leads: Array<{ stage?: string; business_unit?: string }> = JSON.parse(raw);
-        if (!Array.isArray(leads) || leads.length === 0) { calc(SEED_LEADS); return; }
-        calc(leads);
-      } catch { calc(SEED_LEADS); }
-    }
-    read();
-    window.addEventListener("storage", read);
-    const id = setInterval(read, 5000);
-    return () => { window.removeEventListener("storage", read); clearInterval(id); };
+    fetch_();
+    const id = setInterval(fetch_, 30_000);
+    return () => clearInterval(id);
   }, []);
 
   return counts;

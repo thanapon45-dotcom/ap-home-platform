@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
 
 const BRAND_NAME = "Finnhouses";
 
@@ -47,20 +48,29 @@ const MARKET_DATA = [
   { month: "มี.ค.", leads: 74, revenue: 35.2 },
 ];
 
-const INITIAL_LEADS: Lead[] = [
-  { id: 1, name: "คุณสมชาย ใจดี",    phone: "081-234-5678", budget: "2.5M", style: "Modern Minimal", stage: "new",       score: 72, source: "Budget Tool",  date: "10 มี.ค.", area: "ปทุมธานี", notes: "สนใจบ้านชั้นเดียว",        business_unit: "build" },
-  { id: 2, name: "คุณพิมพ์ใจ รักสวย", phone: "089-876-5432", budget: "3.8M", style: "Nordic",         stage: "followup",  score: 85, source: "FB Content",   date: "9 มี.ค.",  area: "นนทบุรี",  notes: "บ้าน 2 ชั้น มีห้องทำงาน",  business_unit: "build" },
-  { id: 3, name: "คุณวีระ มั่งมี",    phone: "092-111-2222", budget: "5.2M", style: "Luxury",         stage: "qualified", score: 91, source: "Blog / SEO",  date: "8 มี.ค.",  area: "กรุงเทพฯ", notes: "สนใจ Smart Home",            business_unit: "reno"  },
-  { id: 4, name: "คุณนภา สดใส",       phone: "086-333-4444", budget: "1.8M", style: "Minimal",        stage: "new",       score: 63, source: "LINE OA",     date: "7 มี.ค.",  area: "อยุธยา",   notes: "งบจำกัด บ้านเล็กแต่ครบ",   business_unit: "list"  },
-  { id: 5, name: "คุณเดชา แก้วใส",    phone: "095-555-6666", budget: "4.1M", style: "Modern Minimal", stage: "closed",    score: 96, source: "Budget Tool",  date: "6 มี.ค.",  area: "ปทุมธานี", notes: "เซ็นสัญญาแล้ว ✅",           business_unit: "build" },
-];
-
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Lead = {
-  id: number; name: string; phone: string; budget: string; style: string;
-  stage: string; score: number; source: string; date: string; area: string; notes: string;
+  id: string;
+  name: string; phone: string; budget: string; style: string;
+  stage: string; score: number; source: string; lead_date: string; area: string; notes: string;
   business_unit: "build" | "reno" | "list";
+  created_at?: string;
 };
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function todayLabel(): string {
+  const months = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
+  const d = new Date();
+  return `${d.getDate()} ${months[d.getMonth()]}`;
+}
+
+// budget may arrive as "2.5M" (CRM-added) or "2160000" (old numeric) — normalise to "X.XM"
+function normBudget(raw: unknown): string {
+  if (typeof raw === "string" && raw.endsWith("M")) return raw;
+  const n = parseFloat(String(raw));
+  if (!isNaN(n) && n > 1000) return `${(n / 1_000_000).toFixed(1)}M`;
+  return String(raw ?? "");
+}
 
 // ─── API Helpers ──────────────────────────────────────────────────────────────
 async function callClaude(system: string, prompt: string, maxTokens = 1200): Promise<string> {
@@ -76,22 +86,13 @@ async function callClaude(system: string, prompt: string, maxTokens = 1200): Pro
 
 // ─── Export Helpers ───────────────────────────────────────────────────────────
 function exportLeadsCSV(leads: Lead[]) {
-  const headers = ["ชื่อ", "เบอร์โทร", "งบประมาณ", "สไตล์", "พื้นที่", "แหล่งที่มา", "สถานะ", "Score", "วันที่", "หมายเหตุ"];
-  const rows = leads.map(l => [l.name, l.phone, l.budget, l.style, l.area, l.source, l.stage, l.score, l.date, l.notes]);
+  const headers = ["ชื่อ", "เบอร์โทร", "งบประมาณ", "สไตล์", "พื้นที่", "แหล่งที่มา", "สถานะ", "Score", "วันที่", "หมายเหตุ", "Business Unit"];
+  const rows = leads.map(l => [l.name, l.phone, l.budget, l.style, l.area, l.source, l.stage, l.score, l.lead_date, l.notes, l.business_unit]);
   const csv = [headers, ...rows].map(r => r.map(v => `"${v ?? ""}"`).join(",")).join("\n");
-  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+  const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a"); a.href = url; a.download = `finnhouses_leads_${Date.now()}.csv`; a.click();
   URL.revokeObjectURL(url);
-}
-
-function parseLeadsCSV(text: string): Lead[] {
-  const lines = text.trim().split("\n").slice(1);
-  return lines.map((line, i) => {
-    const cols = line.split(",").map(c => c.replace(/^"|"$/g, "").trim());
-    const bu = cols[10] as "build" | "reno" | "list";
-    return { id: Date.now() + i, name: cols[0] || "", phone: cols[1] || "", budget: cols[2] || "", style: cols[3] || "Modern Minimal", area: cols[4] || "", source: cols[5] || "CSV Import", stage: cols[6] || "new", score: parseInt(cols[7]) || 60, date: cols[8] || "", notes: cols[9] || "", business_unit: (["build","reno","list"].includes(bu) ? bu : "build") };
-  }).filter(l => l.name);
 }
 
 // ─── Mini UI ──────────────────────────────────────────────────────────────────
@@ -120,13 +121,29 @@ function SimpleBar({ value, max, color }: { value: number; max: number; color: s
 function AddLeadModal({ onClose, onAdd }: { onClose: () => void; onAdd: (lead: Lead) => void }) {
   const [form, setForm] = useState({ name: "", phone: "", budget: "", style: "Modern Minimal", area: "", source: "Budget Tool", notes: "", stage: "new", business_unit: "build" as "build" | "reno" | "list" });
   const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
   const inputStyle: React.CSSProperties = { width: "100%", padding: "10px 12px", borderRadius: 10, border: "1.5px solid rgba(255,255,255,.15)", fontSize: 13, boxSizing: "border-box" as const, background: "rgba(255,255,255,.05)", color: "#f1f5f9", fontFamily: "inherit" };
 
-  function submit() {
+  async function submit() {
     if (!form.name || !form.phone || !form.budget || !form.area) { setError("กรุณากรอก ชื่อ, เบอร์, งบ, พื้นที่"); return; }
-    const months = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
-    const today = new Date();
-    onAdd({ ...form, id: Date.now(), score: Math.floor(Math.random()*30)+55, date: `${today.getDate()} ${months[today.getMonth()]}` });
+    setSaving(true);
+    const payload = {
+      name: form.name,
+      phone: form.phone,
+      budget: form.budget,
+      style: form.style,
+      area: form.area,
+      source: form.source,
+      notes: form.notes,
+      stage: form.stage,
+      business_unit: form.business_unit,
+      score: Math.floor(Math.random() * 30) + 55,
+      lead_date: todayLabel(),
+    };
+    const { data, error: err } = await supabase.from("leads").insert([payload]).select().single();
+    setSaving(false);
+    if (err) { setError(`บันทึกไม่สำเร็จ: ${err.message}`); return; }
+    onAdd(data as Lead);
     onClose();
   }
 
@@ -140,7 +157,7 @@ function AddLeadModal({ onClose, onAdd }: { onClose: () => void; onAdd: (lead: L
         {error && <div style={{ background: "rgba(244,63,94,.12)", border: "1px solid rgba(244,63,94,.3)", borderRadius: 10, padding: "10px 14px", marginBottom: 14, fontSize: 13, color: "#fda4af" }}>{error}</div>}
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 14px" }}>
-          {([ ["ชื่อ-นามสกุล","name","คุณสมชาย ใจดี"], ["เบอร์โทร","phone","081-xxx-xxxx"], ["งบประมาณ","budget","2.5M"], ["พื้นที่","area","ปทุมธานี"] ] as [string, keyof typeof form, string][]).map(([label, key, ph]) => (
+          {([ ["ชื่อ-นามสกุล","name","คุณสมชาย ใจดี"], ["เบอร์โทร","phone","081-xxx-xxxx"], ["งบประมาณ","budget","เช่น 2.5M"], ["พื้นที่","area","ปทุมธานี"] ] as [string, keyof typeof form, string][]).map(([label, key, ph]) => (
             <div key={key} style={{ marginBottom: 14 }}>
               <label style={{ fontSize: 12, fontWeight: 700, color: "#94a3b8", display: "block", marginBottom: 5 }}>{label} <span style={{ color: "#f43f5e" }}>*</span></label>
               <input value={form[key] as string} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))} placeholder={ph} style={inputStyle} />
@@ -187,7 +204,9 @@ function AddLeadModal({ onClose, onAdd }: { onClose: () => void; onAdd: (lead: L
 
         <div style={{ display: "flex", gap: 10 }}>
           <button onClick={onClose} style={{ flex: 1, background: "rgba(255,255,255,.06)", color: "#94a3b8", border: "none", borderRadius: 12, padding: "12px 0", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>ยกเลิก</button>
-          <button onClick={submit} style={{ flex: 2, background: "linear-gradient(135deg,#22d3ee,#0891b2)", color: "#fff", border: "none", borderRadius: 12, padding: "12px 0", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>✅ บันทึก Lead</button>
+          <button onClick={submit} disabled={saving} style={{ flex: 2, background: saving ? "rgba(255,255,255,.06)" : "linear-gradient(135deg,#22d3ee,#0891b2)", color: saving ? "#64748b" : "#fff", border: "none", borderRadius: 12, padding: "12px 0", fontSize: 14, fontWeight: 700, cursor: saving ? "default" : "pointer" }}>
+            {saving ? "⏳ กำลังบันทึก..." : "✅ บันทึก Lead"}
+          </button>
         </div>
       </div>
     </div>
@@ -195,7 +214,7 @@ function AddLeadModal({ onClose, onAdd }: { onClose: () => void; onAdd: (lead: L
 }
 
 // ─── Pipeline Tab ─────────────────────────────────────────────────────────────
-function PipelineTab({ leads, setLeads, deleteLead }: { leads: Lead[]; setLeads: React.Dispatch<React.SetStateAction<Lead[]>>; deleteLead: (id: number) => void }) {
+function PipelineTab({ leads, setLeads, deleteLead }: { leads: Lead[]; setLeads: React.Dispatch<React.SetStateAction<Lead[]>>; deleteLead: (id: string) => void }) {
   const [selected, setSelected]     = useState<Lead | null>(null);
   const [aiAnalysis, setAiAnalysis] = useState("");
   const [analyzing, setAnalyzing]   = useState(false);
@@ -216,10 +235,11 @@ function PipelineTab({ leads, setLeads, deleteLead }: { leads: Lead[]; setLeads:
     setAnalyzing(false);
   }
 
-  function moveStage(lead: Lead, dir: 1 | -1) {
+  async function moveStage(lead: Lead, dir: 1 | -1) {
     const idx = STAGES.findIndex(s => s.key === lead.stage);
     const next = STAGES[idx + dir];
     if (!next) return;
+    await supabase.from("leads").update({ stage: next.key }).eq("id", lead.id);
     setLeads(ls => ls.map(l => l.id === lead.id ? { ...l, stage: next.key } : l));
     if (selected?.id === lead.id) setSelected(prev => prev ? { ...prev, stage: next.key } : null);
   }
@@ -229,7 +249,6 @@ function PipelineTab({ leads, setLeads, deleteLead }: { leads: Lead[]; setLeads:
     fontSize: 14, background: "rgba(255,255,255,.05)", color: "#f1f5f9", fontFamily: "inherit", outline: "none",
   };
 
-  // Source icon helper
   function sourceIcon(src: string) {
     if (src.includes("Budget")) return "🧮";
     if (src.includes("FB Content") || src.includes("Facebook")) return "📘";
@@ -257,7 +276,6 @@ function PipelineTab({ leads, setLeads, deleteLead }: { leads: Lead[]; setLeads:
           const stageLeads = filtered.filter(l => l.stage === stage.key);
           return (
             <div key={stage.key} style={{ marginBottom: 20 }}>
-              {/* Stage header */}
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, padding: "6px 12px", background: stage.bg, borderRadius: 10, border: `1px solid ${stage.color}30` }}>
                 <div style={{ width: 10, height: 10, borderRadius: "50%", background: stage.color, flexShrink: 0 }} />
                 <span style={{ fontWeight: 700, fontSize: 13, color: stage.color }}>{stage.label}</span>
@@ -286,7 +304,7 @@ function PipelineTab({ leads, setLeads, deleteLead }: { leads: Lead[]; setLeads:
                       <ScoreBadge score={lead.score} />
                     </div>
                     <div style={{ fontSize: 12, color: "#94a3b8", display: "flex", gap: 10, flexWrap: "wrap" }}>
-                      <span>💰 {lead.budget}</span>
+                      <span>💰 {normBudget(lead.budget)}</span>
                       <span>🏠 {lead.style}</span>
                       <span>📍 {lead.area}</span>
                       <span style={{ color: "#64748b" }}>{sourceIcon(lead.source)} {lead.source}</span>
@@ -316,7 +334,7 @@ function PipelineTab({ leads, setLeads, deleteLead }: { leads: Lead[]; setLeads:
             </div>
             <div style={{ background: "rgba(255,255,255,.03)", borderRadius: 12, padding: 14, marginBottom: 14, fontSize: 13, lineHeight: 2, color: "#94a3b8", border: "1px solid rgba(255,255,255,.06)" }}>
               📞 {selected.phone}<br />
-              💰 {selected.budget}<br />
+              💰 {normBudget(selected.budget)}<br />
               📍 {selected.area}<br />
               {selected.notes && <span>📝 {selected.notes}</span>}
             </div>
@@ -330,7 +348,7 @@ function PipelineTab({ leads, setLeads, deleteLead }: { leads: Lead[]; setLeads:
             )}
             <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
               <a href={`tel:${selected.phone}`} style={{ flex: 1, background: "#f43f5e", color: "#fff", border: "none", borderRadius: 10, padding: "10px 0", fontSize: 13, fontWeight: 700, cursor: "pointer", textDecoration: "none", textAlign: "center" }}>📞 โทร</a>
-              <button onClick={() => navigator.clipboard.writeText(`${selected.name}\n${selected.phone}\n${selected.budget} | ${selected.area}`)} style={{ flex: 1, background: "rgba(34,211,238,.15)", color: "#22d3ee", border: "1px solid rgba(34,211,238,.3)", borderRadius: 10, padding: "10px 0", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>📋 คัดลอก</button>
+              <button onClick={() => navigator.clipboard.writeText(`${selected.name}\n${selected.phone}\n${normBudget(selected.budget)} | ${selected.area}`)} style={{ flex: 1, background: "rgba(34,211,238,.15)", color: "#22d3ee", border: "1px solid rgba(34,211,238,.3)", borderRadius: 10, padding: "10px 0", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>📋 คัดลอก</button>
             </div>
           </>
         ) : (
@@ -350,7 +368,6 @@ function OverviewTab({ leads }: { leads: Lead[] }) {
   const closed   = leads.filter(l => l.stage === "closed").length;
   const hotLeads = leads.filter(l => l.score >= 80).sort((a, b) => b.score - a.score);
 
-  // Group by source
   const sourceCounts = SOURCES.reduce((acc, s) => {
     acc[s] = leads.filter(l => l.source === s).length;
     return acc;
@@ -358,13 +375,12 @@ function OverviewTab({ leads }: { leads: Lead[] }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      {/* Stats row */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16 }}>
         {[
-          { icon: "👥", label: "Lead ทั้งหมด",   value: total,                    sub: "ทุก stage รวมกัน",      color: "#22d3ee" },
-          { icon: "✅", label: "Closed",          value: closed,                   sub: `${total ? Math.round(closed/total*100) : 0}% conversion`, color: "#10b981" },
-          { icon: "🔥", label: "Hot Leads ≥80%",  value: hotLeads.length,          sub: "ส่งต่อฝ่ายขายได้เลย",  color: "#f43f5e" },
-          { icon: "💰", label: "รายได้คาดการณ์", value: "35.2M",                  sub: "↑ 23% MoM",            color: "#f59e0b" },
+          { icon: "👥", label: "Lead ทั้งหมด",   value: total,           sub: "ทุก stage รวมกัน",      color: "#22d3ee" },
+          { icon: "✅", label: "Closed",          value: closed,          sub: `${total ? Math.round(closed/total*100) : 0}% conversion`, color: "#10b981" },
+          { icon: "🔥", label: "Hot Leads ≥80%",  value: hotLeads.length, sub: "ส่งต่อฝ่ายขายได้เลย",  color: "#f43f5e" },
+          { icon: "💰", label: "รายได้คาดการณ์", value: "35.2M",         sub: "↑ 23% MoM",            color: "#f59e0b" },
         ].map(s => (
           <div key={s.label} style={{ background: "rgba(15,20,40,.85)", border: `1px solid ${s.color}25`, borderRadius: 16, padding: "20px 24px", display: "flex", alignItems: "center", gap: 16 }}>
             <div style={{ fontSize: 32 }}>{s.icon}</div>
@@ -378,7 +394,6 @@ function OverviewTab({ leads }: { leads: Lead[] }) {
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-        {/* Funnel */}
         <Card>
           <h3 style={{ margin: "0 0 20px", fontSize: 15, fontWeight: 700, color: "#f1f5f9" }}>🔻 Sales Funnel</h3>
           {STAGES.map(s => {
@@ -395,7 +410,6 @@ function OverviewTab({ leads }: { leads: Lead[] }) {
           })}
         </Card>
 
-        {/* Source breakdown */}
         <Card>
           <h3 style={{ margin: "0 0 20px", fontSize: 15, fontWeight: 700, color: "#f1f5f9" }}>📥 Lead ตามแหล่งที่มา</h3>
           {SOURCES.filter(s => sourceCounts[s] > 0).map(s => (
@@ -412,7 +426,6 @@ function OverviewTab({ leads }: { leads: Lead[] }) {
           )}
         </Card>
 
-        {/* Lead chart */}
         <Card>
           <h3 style={{ margin: "0 0 20px", fontSize: 15, fontWeight: 700, color: "#f1f5f9" }}>📅 Lead รายเดือน</h3>
           <div style={{ display: "flex", alignItems: "flex-end", gap: 8, height: 130 }}>
@@ -426,7 +439,6 @@ function OverviewTab({ leads }: { leads: Lead[] }) {
           </div>
         </Card>
 
-        {/* Hot leads */}
         <Card>
           <h3 style={{ margin: "0 0 16px", fontSize: 15, fontWeight: 700, color: "#f1f5f9" }}>🔥 Hot Leads</h3>
           {hotLeads.length === 0 ? (
@@ -437,7 +449,7 @@ function OverviewTab({ leads }: { leads: Lead[] }) {
                 <span style={{ fontWeight: 700, fontSize: 13, color: "#f1f5f9" }}>{lead.name}</span>
                 <ScoreBadge score={lead.score} />
               </div>
-              <div style={{ fontSize: 12, color: "#94a3b8" }}>💰 {lead.budget} · 📍 {lead.area} · {lead.source}</div>
+              <div style={{ fontSize: 12, color: "#94a3b8" }}>💰 {normBudget(lead.budget)} · 📍 {lead.area} · {lead.source}</div>
             </div>
           ))}
         </Card>
@@ -459,7 +471,7 @@ function NurtureTab({ leads }: { leads: Lead[] }) {
     try {
       const text = await callClaude(
         `คุณคือผู้เชี่ยวชาญ Lead Nurturing สำหรับ ${BRAND_NAME} บริษัทรับสร้างบ้านคุณภาพสูง`,
-        `สร้างแผน Lead Nurturing 30 วัน สำหรับ: ${selected.name} | งบ: ${selected.budget} | สไตล์: ${selected.style} | พื้นที่: ${selected.area} | แหล่งที่มา: ${selected.source} | Score: ${selected.score}%\n\nสร้างข้อความจริงสำหรับ touchpoint วัน 0, 3, 7, 14, 21, 30 ปรับให้เหมาะกับโปรไฟล์ลูกค้านี้ รวมถึงอ้างอิงแหล่งที่มาในการพูดคุย`,
+        `สร้างแผน Lead Nurturing 30 วัน สำหรับ: ${selected.name} | งบ: ${normBudget(selected.budget)} | สไตล์: ${selected.style} | พื้นที่: ${selected.area} | แหล่งที่มา: ${selected.source} | Score: ${selected.score}%\n\nสร้างข้อความจริงสำหรับ touchpoint วัน 0, 3, 7, 14, 21, 30 ปรับให้เหมาะกับโปรไฟล์ลูกค้านี้ รวมถึงอ้างอิงแหล่งที่มาในการพูดคุย`,
         1400
       );
       setMsg(text);
@@ -506,7 +518,7 @@ function NurtureTab({ leads }: { leads: Lead[] }) {
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
               <div>
                 <h3 style={{ margin: "0 0 3px", fontSize: 16, fontWeight: 800, color: "#f1f5f9" }}>💌 Nurture Plan — {selected.name}</h3>
-                <div style={{ fontSize: 12, color: "#64748b" }}>{selected.area} | {selected.budget} | {selected.source}</div>
+                <div style={{ fontSize: 12, color: "#64748b" }}>{selected.area} | {normBudget(selected.budget)} | {selected.source}</div>
               </div>
               <button onClick={genSequence} disabled={loading} style={{
                 background: loading ? "rgba(255,255,255,.06)" : "linear-gradient(135deg,#a855f7,#7c3aed)",
@@ -550,31 +562,52 @@ const TABS = [
 export default function CRM() {
   const [activeTab, setActiveTab] = useState("pipeline");
   const [importMsg, setImportMsg] = useState("");
-  const [showAdd, setShowAdd]     = useState(false);
+  const [leads, setLeads]         = useState<Lead[]>([]);
+  const [loadErr, setLoadErr]     = useState("");
 
-  const [leads, setLeads] = useState<Lead[]>(() => {
-    try {
-      const s = typeof window !== "undefined" ? localStorage.getItem("finnhouses_leads_v2") : null;
-      return s ? JSON.parse(s) : INITIAL_LEADS;
-    } catch { return INITIAL_LEADS; }
-  });
-
+  // ── Fetch from Supabase on mount ──
   useEffect(() => {
-    try { localStorage.setItem("finnhouses_leads_v2", JSON.stringify(leads)); } catch {}
-  }, [leads]);
+    supabase
+      .from("leads")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .then(({ data, error }) => {
+        if (error) { setLoadErr(error.message); return; }
+        setLeads((data ?? []) as Lead[]);
+      });
+  }, []);
 
-  function deleteLead(id: number) {
-    if (window.confirm("ลบ Lead นี้?")) setLeads(ls => ls.filter(l => l.id !== id));
+  async function deleteLead(id: string) {
+    if (!window.confirm("ลบ Lead นี้?")) return;
+    await supabase.from("leads").delete().eq("id", id);
+    setLeads(ls => ls.filter(l => l.id !== id));
   }
 
-  function handleImportCSV(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleImportCSV(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]; if (!file) return;
     const reader = new FileReader();
-    reader.onload = ev => {
-      const parsed = parseLeadsCSV(ev.target?.result as string);
-      if (!parsed.length) { setImportMsg("❌ ไม่พบข้อมูล"); return; }
-      setLeads(ls => [...parsed, ...ls]);
-      setImportMsg(`✅ Import ${parsed.length} Lead`);
+    reader.onload = async ev => {
+      const text = ev.target?.result as string;
+      const lines = text.trim().split("\n").slice(1);
+      const rows = lines.map(line => {
+        const cols = line.split(",").map(c => c.replace(/^"|"$/g, "").trim());
+        const bu = cols[10] as "build" | "reno" | "list";
+        return {
+          name: cols[0] || "", phone: cols[1] || "", budget: cols[2] || "",
+          style: cols[3] || "Modern Minimal", area: cols[4] || "",
+          source: cols[5] || "CSV Import", stage: cols[6] || "new",
+          score: parseInt(cols[7]) || 60, lead_date: cols[8] || "",
+          notes: cols[9] || "",
+          business_unit: (["build","reno","list"].includes(bu) ? bu : "build") as "build" | "reno" | "list",
+        };
+      }).filter(r => r.name);
+
+      if (!rows.length) { setImportMsg("❌ ไม่พบข้อมูล"); return; }
+
+      const { data, error } = await supabase.from("leads").insert(rows).select();
+      if (error) { setImportMsg(`❌ ${error.message}`); return; }
+      setLeads(ls => [...(data as Lead[]), ...ls]);
+      setImportMsg(`✅ Import ${rows.length} Lead`);
       setTimeout(() => setImportMsg(""), 3000);
     };
     reader.readAsText(file, "UTF-8"); e.target.value = "";
@@ -582,8 +615,6 @@ export default function CRM() {
 
   return (
     <div style={{ padding: 24, display: "flex", flexDirection: "column", gap: 0 }}>
-      {showAdd && <AddLeadModal onClose={() => setShowAdd(false)} onAdd={lead => { setLeads(ls => [lead, ...ls]); setShowAdd(false); }} />}
-
       {/* Header */}
       <div style={{ background: "rgba(15,20,40,.9)", border: "1px solid rgba(255,255,255,.07)", borderRadius: 20, padding: "16px 20px", marginBottom: 20, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
         <div>
@@ -594,7 +625,6 @@ export default function CRM() {
           <div style={{ fontSize: 11, color: "#475569", marginTop: 2 }}>รับ Lead จาก Budget Tool · FB Content · Blog · ช่องทางอื่น ๆ</div>
         </div>
 
-        {/* Tabs */}
         <div style={{ display: "flex", gap: 2, background: "rgba(255,255,255,.05)", borderRadius: 14, padding: 3 }}>
           {TABS.map(tab => (
             <button key={tab.key} onClick={() => setActiveTab(tab.key)} style={{
@@ -609,12 +639,11 @@ export default function CRM() {
           ))}
         </div>
 
-        {/* Actions */}
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          {loadErr && <div style={{ background: "rgba(244,63,94,.15)", color: "#f43f5e", borderRadius: 20, padding: "4px 12px", fontSize: 11, fontWeight: 600 }}>⚠️ {loadErr}</div>}
           {importMsg && (
             <div style={{ background: importMsg.startsWith("✅") ? "rgba(16,185,129,.15)" : "rgba(244,63,94,.15)", color: importMsg.startsWith("✅") ? "#10b981" : "#f43f5e", borderRadius: 20, padding: "4px 12px", fontSize: 11, fontWeight: 600 }}>{importMsg}</div>
           )}
-          <button onClick={() => setShowAdd(true)} style={{ background: "linear-gradient(135deg,#22d3ee,#0891b2)", color: "#fff", border: "none", borderRadius: 10, padding: "7px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>➕ Lead</button>
           <label style={{ background: "rgba(255,255,255,.06)", color: "#94a3b8", border: "1px solid rgba(255,255,255,.1)", borderRadius: 10, padding: "7px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
             📥 CSV <input type="file" accept=".csv" onChange={handleImportCSV} style={{ display: "none" }} />
           </label>
@@ -622,7 +651,6 @@ export default function CRM() {
         </div>
       </div>
 
-      {/* Tab content */}
       {activeTab === "pipeline" && <PipelineTab leads={leads} setLeads={setLeads} deleteLead={deleteLead} />}
       {activeTab === "overview" && <OverviewTab leads={leads} />}
       {activeTab === "nurture"  && <NurtureTab leads={leads} />}

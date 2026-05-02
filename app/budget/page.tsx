@@ -25,7 +25,22 @@ export default function BudgetPage() {
   const submit = async () => {
     if (!name || !phone || !area) return;
     setSaving(true);
-    await supabase.from("leads").insert([{ name, phone, area: Number(area), budget }]);
+    const months = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
+    const d = new Date();
+    const budgetLabel = `${(budget! / 1_000_000).toFixed(1)}M`;
+    await supabase.from("leads").insert([{
+      name,
+      phone,
+      area:          Number(area),
+      budget:        budgetLabel,        // "2.2M" format — consistent with CRM
+      stage:         "new",
+      source:        "Budget Tool",
+      business_unit: "build",
+      style:         "Modern Minimal",
+      score:         70,
+      notes:         `พื้นที่ ${area} ตร.ม.`,
+      lead_date:     `${d.getDate()} ${months[d.getMonth()]}`,
+    }]);
     await fetch("/api/telegram", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, phone, area, budget }),
