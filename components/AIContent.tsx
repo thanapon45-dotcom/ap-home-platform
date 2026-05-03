@@ -98,11 +98,11 @@ type FbState = {
 };
 
 // ── API Helpers ───────────────────────────────────────────────────────────────
-async function callClaude(system: string, prompt: string): Promise<string> {
+async function callClaude(system: string, prompt: string, model = "claude-haiku-4-5-20251001"): Promise<string> {
   const res = await fetch("/api/chat", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ system, prompt, maxTokens: 800 }),
+    body: JSON.stringify({ system, prompt, maxTokens: 800, model }),
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error ?? "Claude API error");
@@ -510,13 +510,22 @@ function BlogConvertTab({ onSave }: { onSave: (item: ContentItem) => void }) {
     const system = `คุณเป็น Social Media Editor ของแบรนด์ ${BRAND} งานของคุณคือแปลงบทความ SEO ยาวเป็น Facebook Post สั้นๆ ที่คนอยากอ่าน
 เขียนเฉพาะ Facebook Post เท่านั้น — ไม่ใช่บทความ ไม่ใช่ summary ทางวิชาการ
 
-กฎเหล็ก (ห้ามละเมิด):
+กฎเหล็กด้านเนื้อหา (ห้ามละเมิด):
 ❌ ห้ามคัดลอกโครงสร้างของบทความต้นฉบับ (บทนำ เนื้อหา สรุป)
 ❌ ห้ามใช้ markdown headers (## หรือ **ชื่อหัวข้อ:**)
 ❌ ห้ามใช้เส้น --- แบ่งส่วน
 ❌ ห้ามเขียนยาวเกิน 220 คำ
 ✅ สกัดแค่ insight ที่น่าสนใจที่สุด 1-3 จุด มาเล่าใน FB style
-✅ ภาษาพูดธรรมชาติ เหมือน real post`;
+✅ ภาษาพูดธรรมชาติ เหมือน real post
+
+กฎเหล็กด้านภาษาไทย (สำคัญมาก):
+❌ ห้ามใช้ประโยคที่ฟังดูเหมือนแปลจากภาษาอังกฤษ
+❌ ห้ามสะกดผิด เช่น "ขออนุญาติ" → ต้องเป็น "ขออนุญาต", "กะเทาะ" ไม่ใช่ "กระเทาะ"
+❌ ห้ามใช้คำที่ขัดแย้งในตัวเอง เช่น "พังนิดหน่อย" หรือ "เสียหายเล็กน้อย" เมื่อหมายถึงปัญหาใหญ่
+❌ ห้าม hallucinate คำที่ไม่มีความหมายในภาษาไทย
+❌ ห้ามซ้ำคำในประโยคเดียวกัน
+✅ เขียนเหมือนคนไทยพูดคุยกันจริงๆ ใน Facebook — กระชับ ตรงประเด็น อ่านง่าย
+✅ ตรวจสอบการสะกดคำทุกคำก่อน output`;
     const prompt = `บทความต้นฉบับ (อ่านเพื่อเข้าใจ แต่ห้ามเลียนแบบรูปแบบ):
 
 ${blogText.slice(0, 2000)}
@@ -533,7 +542,7 @@ ${blogText.slice(0, 2000)}
 • Hashtag 5-7 อัน รวม #Finnhouses #สร้างบ้าน
 
 เขียนเนื้อหาตรงๆ ห้ามใส่ label "Hook:" "CTA:" นำหน้า`;
-    const text = await callClaude(system, prompt).catch(e => `❌ Error: ${e.message}`);
+    const text = await callClaude(system, prompt, "claude-sonnet-4-6").catch(e => `❌ Error: ${e.message}`);
     setResult(text);
     setLoading(false);
   }
