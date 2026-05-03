@@ -20,7 +20,7 @@ const MOCK = {
 // อ่าน lead counts จาก Supabase โดยตรง — refresh ทุก 30s
 function useLeadCounts() {
   const [counts, setCounts] = useState({
-    total: 0, new: 0, contacted: 0, proposal: 0, won: 0,
+    total: 0, new: 0, followup: 0, qualified: 0, closed: 0,
     byBusiness: { build: 0, reno: 0, list: 0 },
   });
 
@@ -34,9 +34,9 @@ function useLeadCounts() {
       setCounts({
         total:     data.length,
         new:       data.filter(l => l.stage === "new").length,
-        contacted: data.filter(l => l.stage === "contacted").length,
-        proposal:  data.filter(l => l.stage === "proposal").length,
-        won:       data.filter(l => l.stage === "won").length,
+        followup:  data.filter(l => l.stage === "followup").length,
+        qualified: data.filter(l => l.stage === "qualified").length,
+        closed:    data.filter(l => l.stage === "closed").length,
         byBusiness: {
           build: data.filter(l => bu(l) === "build").length,
           reno:  data.filter(l => bu(l) === "reno").length,
@@ -200,11 +200,11 @@ export default function DashboardOS() {
 
   // pipeline ดึงจาก Supabase ทั้งหมด — Traffic ยังไม่มี source (Vercel Analytics ยังไม่ enable)
   const pipeline: { label: string; value: number | null; icon: string; color: string; noSource?: boolean }[] = [
-    { label: "Traffic",   value: null,           icon: "📡", color: "#22d3ee", noSource: true },
-    { label: "Leads",     value: leads.new,       icon: "🎯", color: "#6366f1" },
-    { label: "Appts",     value: leads.contacted, icon: "📅", color: "#f59e0b" },
-    { label: "Proposals", value: leads.proposal,  icon: "📋", color: "#10b981" },
-    { label: "Closed",    value: leads.won,       icon: "✅", color: "#f43f5e" },
+    { label: "Traffic",   value: null,              icon: "📡", color: "#22d3ee", noSource: true },
+    { label: "Leads",     value: leads.new,         icon: "🎯", color: "#6366f1" },
+    { label: "Appts",     value: leads.followup,    icon: "📅", color: "#f59e0b" },
+    { label: "Proposals", value: leads.qualified,   icon: "📋", color: "#10b981" },
+    { label: "Closed",    value: leads.closed,      icon: "✅", color: "#f43f5e" },
   ];
   const pipelineMax = Math.max(...pipeline.map(p => p.value ?? 0), 1);
 

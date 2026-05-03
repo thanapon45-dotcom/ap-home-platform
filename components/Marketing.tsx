@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 
 // Use Vercel server-side routes to avoid CORS/browser→Railway issues
-const HUB = "";
+const HUB = "ap-home-platform-production.up.railway.app";
 const POLL_MS = 5_000;
 
 // ── Topic Engine PRO — 32 Keywords ─────────────────────────────────────────
