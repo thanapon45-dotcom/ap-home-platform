@@ -718,10 +718,9 @@ async function loadFinnhousesReference(): Promise<string> {
   return _finnhousesRefCache;
 }
 
-// ─── Finnhouses dynamic prompt builder ────────────────────────────────────────
-// Keyword-dense format optimised for gpt-image-1 edit API.
-// Reference image anchors the visual style (blueprint board + monochrome);
-// prompt drives the architecture variant + topic.
+// ─── Finnhouses brand prompt system ───────────────────────────────────────────
+// Text-to-image approach (NOT edit API) — more consistent output for style matching
+// Calibrated to match finnhouses-sketch-6.png visual identity
 
 const FINNHOUSES_ARCH: Record<string, string> = {
   contemporary:    "two-storey contemporary luxury residence, dramatic flat cantilever roof extending 3m, floor-to-ceiling glass curtain wall, black aluminum frame details, natural stone and concrete facade",
@@ -742,12 +741,12 @@ const FINNHOUSES_MOOD: Record<string, string> = {
 };
 
 const FINNHOUSES_MATERIAL: Record<string, string> = {
-  contemporary:    "natural stone and warm teak wood, concrete, dark steel",
-  minimal:         "smooth white stucco concrete, timber pivot door accent",
-  nordic:          "honey-brown horizontal timber boards, natural stone base plinth",
-  luxury:          "marble and travertine stone, bronze metal frames, grand stone approach",
-  loft:            "exposed raw concrete, weathered structural steel, industrial glass",
-  modern_tropical: "warm teak timber louvres, white concrete columns, natural stone terrace",
+  contemporary:    "natural stone cladding, warm teak timber soffit, concrete, dark steel frames",
+  minimal:         "smooth white stucco concrete, single timber pivot door accent, recessed concrete reveals",
+  nordic:          "honey-brown horizontal timber boards upper storey, natural stone base plinth",
+  luxury:          "marble and travertine stone facade panels, bronze metal frames, grand stone approach",
+  loft:            "exposed raw board-formed concrete, weathered structural steel, industrial glass",
+  modern_tropical: "warm teak timber louvre vertical screens, white concrete columns, natural stone terrace",
 };
 
 function buildPromptFinnhouses(topic: string, style: string): string {
@@ -758,32 +757,37 @@ function buildPromptFinnhouses(topic: string, style: string): string {
   const topicCtx = topic ? `architectural concept for "${topic}",` : "";
 
   return `${arch},
-architectural sketch rendering style,
+architectural presentation board,
 ${topicCtx}
-clean hand-drawn ink linework, precise pencil hatching,
-graphite monochrome on white paper,
-blueprint elevation drawings visible in background,
-architect's presentation board layout,
-cool gray monochrome color palette,
-subtle warm wood tone accent on roof soffit only,
+clean hand-drawn architectural ink linework,
+precise pencil hatching and graphite shading technique,
+mixed media architectural illustration — ink outline with soft pencil rendering,
+cool gray graphite monochrome color palette,
+warm amber interior glow through floor-to-ceiling glass — furniture silhouettes faintly visible,
+warm teak timber soffit underside — only warm accent allowed on roof soffit,
 ${material},
-open terrace with wide stone steps in foreground,
-luxury car partially visible left side,
-tall deciduous trees framing both sides,
-lower secondary living wing on the right,
-architectural concept presentation board aesthetic,
-precise perspective drawing, wide-angle eye-level view,
-soft ambient daylight, subtle shadows,
-realistic proportions, fine sketch detailing,
-premium design visualization, high detail, clean line quality,
+lower secondary living wing on right side receding into frame,
+luxury sedan car partially visible on left side foreground,
+bollard pathway lights standing in foreground,
+wide multi-level stone terrace steps in foreground,
+tall deciduous broadleaf trees framing both sides — summer full-leaf canopy,
+soft ambient daylight, subtle realistic shadows, realistic proportions,
 
-Style references: architectural sketch render, conceptual architecture illustration, pen and ink architecture drawing, presentation board, cool gray graphite monochrome
-Camera: wide landscape format, eye-level street perspective, 25-30m distance, full building visible, horizontal composition
-Mood: ${mood}
-Quality: high detail, balanced composition, professional architectural presentation board
+PRESENTATION BOARD LAYOUT:
+three blueprint elevation drawings spanning full width as horizontal band across the TOP of the composition — front elevation center, side elevation left, rear elevation right,
+faint architectural construction lines and technical blueprint grid visible in background,
+architect's competition board aesthetic — professional architectural studio presentation,
 
-NO warm sepia tones, NO amber wash, NO color except subtle wood accent,
-NO Thai traditional roof, NO palm trees, NO text labels, NO watermark, NO logo`;
+SUBJECT: ${arch}
+STYLE: architectural sketch rendering, competition board aesthetic, hand-drawn architectural illustration, pen and ink architecture drawing, mixed media architecture illustration, professional architectural visualization
+CAMERA: wide landscape format, eye-level street perspective 25-30m distance, full building visible foundation to roofline, horizontal composition
+MOOD: ${mood}
+QUALITY: high detail, clean line quality, precise linework, balanced composition, professional architectural presentation board, premium design visualization
+
+NO warm facade colors — NO colored walls — NO colored roof — NO blue sky — NO sky gradient,
+NO palm trees — NO banana leaves — NO Thai traditional roof — NO ornamental curved roof,
+NO text labels — NO dimensions — NO annotations — NO watermark — NO logo,
+NO close-up crop — full building must be visible in wide landscape shot`;
 }
 
 // ─── Main handler ─────────────────────────────────────────────────────────────
@@ -840,14 +844,14 @@ export async function POST(req: NextRequest) {
       url = await generateOpenAIEdit(prompt, referenceImage, apiKey);
 
     } else if (model === "finnhouses") {
-      // ── Finnhouses brand mode: use reference image + edit API ──────────────
+      // ── Finnhouses brand mode: text-to-image with calibrated prompt ──────────
+      // NOTE: edit API dropped — text-to-image is more consistent for style reproduction
       const apiKey = process.env.OPENAI_API_KEY;
       if (!apiKey) return NextResponse.json({ ok: false, error: "OPENAI_API_KEY not configured" }, { status: 500 });
       const finnPrompt = buildPromptFinnhouses(topic, style);
-      const refImage   = await loadFinnhousesReference();
-      console.log("[finnhouses] calling openai-edit with reference image");
-      url = await generateOpenAIEdit(finnPrompt, refImage, apiKey);
-      usedModel = "finnhouses-edit";
+      console.log("[finnhouses] calling gpt-image-1 text-to-image with calibrated prompt");
+      url = await generateOpenAI(finnPrompt, apiKey);
+      usedModel = "finnhouses-v2";
 
     } else {
       // Default: OpenAI text-to-image — auto-fallback to Gemini on billing/quota error
