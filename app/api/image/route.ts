@@ -266,20 +266,22 @@ function buildPromptN8nMirror(topic: string, style: string): string {
   const accents    = STYLE_ACCENTS[key]    ?? STYLE_ACCENTS["contemporary"];
   const foreground = STYLE_FOREGROUND[key] ?? STYLE_FOREGROUND["contemporary"];
 
-  return `Create a premium architectural sketch featured image for the Finnhouses brand.
+  return `Create a premium architectural pencil sketch presentation board for the Finnhouses brand.
 
 Selected style: ${styleLabel}
-Render mode: architectural pencil sketch — monochrome graphite on white paper
 ${topicLine}
 
 MOOD: ${mood}
 
-STRICT REQUIREMENTS:
-- premium hand-rendered architectural pencil sketch on white presentation paper
-- refined ink linework with soft pencil hatching and shading
+PRESENTATION BOARD LAYOUT:
+This is an architect's studio presentation board — NOT a plain sketch on blank paper.
+BACKGROUND: faint architectural blueprint drawings fill the entire background behind the main sketch — multiple full elevation views and section drawings in pale blue-gray pencil lines on off-white paper. These blueprint drawings are clearly visible as a background layer. The main perspective sketch of the house sits prominently in front of this blueprint background.
+CORNER DETAILS: small loose pencil elevation or section thumbnail sketches in the upper-left and upper-right corners of the board, smaller than the main image.
+
+MAIN SKETCH REQUIREMENTS:
+- premium hand-rendered architectural pencil sketch, refined ink linework with precise hatching
 - must feel like an architect's concept presentation board for a high-end Thai real estate developer
 - FULL BUILDING visible from foundation to roofline — two-storey main volume + lower secondary living wing on right side
-- sky (white/off-white paper) visible in upper 15% of frame — NO blue sky, NO clouds
 - small ornamental deciduous trees framing both sides — fine branch strokes, graphite only
 - INTERIOR through glass: warm amber glow, furniture silhouettes (sofa, pendant lamp, low table) faintly visible
 - wide landscape composition — horizontal format 16:9
@@ -295,19 +297,18 @@ ${accents}
 NEGATIVE CONSTRAINTS (CRITICAL):
 - NO Thai style architecture, NO Thai roof, NO temple roof, NO curved ornamental roof
 - NO traditional Asian house, NO cartoon, NO fantasy house
-- NO photo-real people focus
-- NO close-up, NO zoomed-in crop — must show COMPLETE building with foreground and sky
-- NO coloured walls or coloured facade — graphite monochrome only
-- NO bare winter trees with no leaves — trees must have summer leaf canopy
-- NO palm trees — NO banana leaves — NO bamboo — NO tropical plants (ALL styles including Tropical Modern)
-- NO blue sky, NO clouds, NO sky colour — white paper only
-- NO watermark, NO text, NO logo, NO labels
+- NO close-up, NO zoomed-in crop — must show COMPLETE building with foreground
+- NO coloured walls or coloured facade — graphite monochrome only (except the 3 accents above)
+- NO bare winter trees — trees must have summer leaf canopy
+- NO palm trees — NO banana leaves — NO bamboo — NO tropical plants (ALL styles)
+- NO blue sky, NO clouds — upper area shows blueprint drawings background only
+- NO visible text labels, NO dimensions, NO annotations, NO watermark, NO logo
 
 Architectural direction:
 ${styleBase}
 
 FINAL RULE:
-This image must look like a premium architectural pencil sketch for Finnhouses brand, clearly showing the ${styleLabel} style identity through its unique camera angle, lighting, and architectural character. Suitable as a featured image for a luxury Thai real-estate article.`;
+Output must look like a professional architectural studio presentation board — pencil sketch of the ${styleLabel} house layered over faint blueprint drawings background, with small elevation thumbnails in corners. Suitable as a premium featured image for a luxury Thai real-estate article.`;
 }
 
 function buildPromptOpenAI(topic: string, style: string, styleBase: string): string {
@@ -696,13 +697,58 @@ async function generateIdeogram(
   return data.data[0].url as string;
 }
 
+// ─── Finnhouses Brand Reference Image ────────────────────────────────────────
+// Cached base64 of finnhouses-sketch-6.png (style reference for openai-edit)
+let _finnhousesRefCache: string | null = null;
+
+async function loadFinnhousesReference(): Promise<string> {
+  if (_finnhousesRefCache) return _finnhousesRefCache;
+
+  // Fetch from own public URL (file lives at /public/finnhouses-sketch-6.png)
+  const baseUrl = process.env.NEXT_PUBLIC_VERCEL_URL
+    ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`
+    : process.env.HUB_PUBLIC_BASE_URL?.replace("ap-home-platform-production.up.railway.app", "ap-home-platform.vercel.app")
+    ?? "https://ap-home-platform.vercel.app";
+
+  const res = await fetch(`${baseUrl}/finnhouses-sketch-6.png`);
+  if (!res.ok) throw new Error(`[Finnhouses ref] fetch failed: ${res.status}`);
+
+  const buffer = await res.arrayBuffer();
+  const b64    = Buffer.from(buffer).toString("base64");
+  _finnhousesRefCache = `data:image/png;base64,${b64}`;
+  console.log("[Finnhouses ref] loaded and cached, size:", b64.length);
+  return _finnhousesRefCache;
+}
+
+// Short prompt for edit mode — reference image provides the visual style,
+// prompt only needs to specify what architecture/topic to render
+function buildPromptFinnhouses(topic: string, style: string): string {
+  const styleKey = style.toLowerCase().replace(/[\s-]/g, "_");
+  const archByStyle: Record<string, string> = {
+    contemporary:    "contemporary two-storey residence, flat cantilevered roof, floor-to-ceiling glass curtain wall, stone and concrete facade",
+    minimal:         "minimal two-storey residence, flat roof zero overhang, smooth white facade, deep-set recessed windows, single timber pivot door",
+    nordic:          "Nordic Scandinavian two-storey residence, steeply pitched gabled roof with deep timber eaves, honey-brown timber upper storey, large picture windows",
+    luxury:          "grand luxury two-storey modern residence, soaring stone facade, razor-thin cantilevered flat roof, double-height glass curtain wall",
+    loft:            "industrial loft two-storey residence, exposed raw concrete walls, oversized factory-style steel windows, flat roof",
+    modern_tropical: "modern tropical two-storey residence, wide deep flat shade roof on slim concrete columns, full-height vertical timber louvre screens, open ground floor",
+  };
+  const arch = archByStyle[styleKey] ?? archByStyle["contemporary"];
+  const topicLine = topic ? `Article topic: ${topic}.` : "";
+
+  return `Architectural pencil sketch presentation board, same visual style as the reference image.
+Keep identical: blueprint elevation drawings at the top, pencil sketch rendering technique, cool gray monochrome color palette, presentation board layout.
+Architecture: ${arch}. Two-storey main volume with lower secondary wing on the right. Luxury car partially visible left side. Tall deciduous trees both sides. Wide landscaped foreground with steps.
+${topicLine}
+Strictly NO warm colors except subtle wood tone on roof soffit underside. NO Thai traditional roof. NO text labels. NO watermark.`;
+}
+
 // ─── Main handler ─────────────────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
   const {
     topic,
     style,
     concept        = "",          // pre-generated image concept from Claude (2-step approach)
-    model          = "openai",    // "openai" | "gemini" | "openai-edit" | "ideogram"
+    model          = "openai",    // "openai" | "gemini" | "openai-edit" | "ideogram" | "finnhouses"
     referenceImage = null,        // base64 data URL, optional
   } = await req.json();
 
@@ -748,6 +794,16 @@ export async function POST(req: NextRequest) {
       const apiKey = process.env.OPENAI_API_KEY;
       if (!apiKey) return NextResponse.json({ ok: false, error: "OPENAI_API_KEY not configured" }, { status: 500 });
       url = await generateOpenAIEdit(prompt, referenceImage, apiKey);
+
+    } else if (model === "finnhouses") {
+      // ── Finnhouses brand mode: use reference image + edit API ──────────────
+      const apiKey = process.env.OPENAI_API_KEY;
+      if (!apiKey) return NextResponse.json({ ok: false, error: "OPENAI_API_KEY not configured" }, { status: 500 });
+      const finnPrompt = buildPromptFinnhouses(topic, style);
+      const refImage   = await loadFinnhousesReference();
+      console.log("[finnhouses] calling openai-edit with reference image");
+      url = await generateOpenAIEdit(finnPrompt, refImage, apiKey);
+      usedModel = "finnhouses-edit";
 
     } else {
       // Default: OpenAI text-to-image — auto-fallback to Gemini on billing/quota error
