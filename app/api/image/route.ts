@@ -442,7 +442,7 @@ async function generateOpenAIEdit(prompt: string, referenceBase64: string, apiKe
   form.append("model",   "gpt-image-1");
   form.append("prompt",  prompt);
   form.append("n",       "1");
-  form.append("size",    "1024x1536");
+  form.append("size",    "1536x1024");
   form.append("quality", "high");
   form.append("image[]", file);   // reference image — gpt-image-1 edit endpoint
 
