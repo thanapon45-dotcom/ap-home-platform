@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import fs   from "fs";
+import path from "path";
 
 // ─── Style definitions ───────────────────────────────────────────────────────
 const BASE_BY_STYLE: Record<string, string> = {
@@ -704,19 +706,15 @@ let _finnhousesRefCache: string | null = null;
 async function loadFinnhousesReference(): Promise<string> {
   if (_finnhousesRefCache) return _finnhousesRefCache;
 
-  // Fetch from own public URL (file lives at /public/finnhouses-sketch-6.png)
-  const baseUrl = process.env.NEXT_PUBLIC_VERCEL_URL
-    ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`
-    : process.env.HUB_PUBLIC_BASE_URL?.replace("ap-home-platform-production.up.railway.app", "ap-home-platform.vercel.app")
-    ?? "https://ap-home-platform.vercel.app";
-
-  const res = await fetch(`${baseUrl}/finnhouses-sketch-6.png`);
-  if (!res.ok) throw new Error(`[Finnhouses ref] fetch failed: ${res.status}`);
-
-  const buffer = await res.arrayBuffer();
-  const b64    = Buffer.from(buffer).toString("base64");
+  // Read directly from filesystem — public/ is available at process.cwd()/public/
+  const imgPath = path.join(process.cwd(), "public", "finnhouses-sketch-6.png");
+  if (!fs.existsSync(imgPath)) {
+    throw new Error(`[Finnhouses ref] file not found at ${imgPath}`);
+  }
+  const buffer = fs.readFileSync(imgPath);
+  const b64    = buffer.toString("base64");
   _finnhousesRefCache = `data:image/png;base64,${b64}`;
-  console.log("[Finnhouses ref] loaded and cached, size:", b64.length);
+  console.log("[Finnhouses ref] loaded from filesystem, size:", b64.length);
   return _finnhousesRefCache;
 }
 
