@@ -718,26 +718,72 @@ async function loadFinnhousesReference(): Promise<string> {
   return _finnhousesRefCache;
 }
 
-// Short prompt for edit mode — reference image provides the visual style,
-// prompt only needs to specify what architecture/topic to render
-function buildPromptFinnhouses(topic: string, style: string): string {
-  const styleKey = style.toLowerCase().replace(/[\s-]/g, "_");
-  const archByStyle: Record<string, string> = {
-    contemporary:    "contemporary two-storey residence, flat cantilevered roof, floor-to-ceiling glass curtain wall, stone and concrete facade",
-    minimal:         "minimal two-storey residence, flat roof zero overhang, smooth white facade, deep-set recessed windows, single timber pivot door",
-    nordic:          "Nordic Scandinavian two-storey residence, steeply pitched gabled roof with deep timber eaves, honey-brown timber upper storey, large picture windows",
-    luxury:          "grand luxury two-storey modern residence, soaring stone facade, razor-thin cantilevered flat roof, double-height glass curtain wall",
-    loft:            "industrial loft two-storey residence, exposed raw concrete walls, oversized factory-style steel windows, flat roof",
-    modern_tropical: "modern tropical two-storey residence, wide deep flat shade roof on slim concrete columns, full-height vertical timber louvre screens, open ground floor",
-  };
-  const arch = archByStyle[styleKey] ?? archByStyle["contemporary"];
-  const topicLine = topic ? `Article topic: ${topic}.` : "";
+// ─── Finnhouses dynamic prompt builder ────────────────────────────────────────
+// Keyword-dense format optimised for gpt-image-1 edit API.
+// Reference image anchors the visual style (blueprint board + monochrome);
+// prompt drives the architecture variant + topic.
 
-  return `Architectural pencil sketch presentation board, same visual style as the reference image.
-Keep identical: blueprint elevation drawings at the top, pencil sketch rendering technique, cool gray monochrome color palette, presentation board layout.
-Architecture: ${arch}. Two-storey main volume with lower secondary wing on the right. Luxury car partially visible left side. Tall deciduous trees both sides. Wide landscaped foreground with steps.
-${topicLine}
-Strictly NO warm colors except subtle wood tone on roof soffit underside. NO Thai traditional roof. NO text labels. NO watermark.`;
+const FINNHOUSES_ARCH: Record<string, string> = {
+  contemporary:    "two-storey contemporary luxury residence, dramatic flat cantilever roof extending 3m, floor-to-ceiling glass curtain wall, black aluminum frame details, natural stone and concrete facade",
+  minimal:         "two-storey modern minimal residence, ultra-clean flat roof zero overhang, smooth white stucco facade, deep-set recessed windows, single timber pivot door",
+  nordic:          "two-storey Nordic Scandinavian residence, steeply pitched gabled roof with deep overhanging timber eaves, honey-brown horizontal timber cladding upper storey, large picture windows",
+  luxury:          "grand two-storey luxury modern residence, soaring marble and travertine stone facade, razor-thin cantilevered flat roof, double-height glass curtain wall, prestigious monumental scale",
+  loft:            "two-storey industrial loft residence, exposed raw board-formed concrete walls, visible structural steel frame, oversized multi-pane factory-style steel windows, flat roof",
+  modern_tropical: "two-storey modern tropical luxury house, large cantilever roof, full-height vertical timber louvre screens on upper facade, open semi-outdoor ground floor on slender concrete columns, generous shade",
+};
+
+const FINNHOUSES_MOOD: Record<string, string> = {
+  contemporary:    "refined prestige, confident horizontal lines, balanced luxury",
+  minimal:         "meditative calm, beauty in emptiness, zen restraint",
+  nordic:          "cozy hygge warmth, Scandinavian natural elegance, serene",
+  luxury:          "grand and monumental, opulent five-star, prestigious",
+  loft:            "raw urban-luxury, industrial authenticity elevated, honest materials",
+  modern_tropical: "breezy relaxed luxury, climate-responsive, cool and shaded",
+};
+
+const FINNHOUSES_MATERIAL: Record<string, string> = {
+  contemporary:    "natural stone and warm teak wood, concrete, dark steel",
+  minimal:         "smooth white stucco concrete, timber pivot door accent",
+  nordic:          "honey-brown horizontal timber boards, natural stone base plinth",
+  luxury:          "marble and travertine stone, bronze metal frames, grand stone approach",
+  loft:            "exposed raw concrete, weathered structural steel, industrial glass",
+  modern_tropical: "warm teak timber louvres, white concrete columns, natural stone terrace",
+};
+
+function buildPromptFinnhouses(topic: string, style: string): string {
+  const key      = style.toLowerCase().replace(/[\s-]/g, "_");
+  const arch     = FINNHOUSES_ARCH[key]     ?? FINNHOUSES_ARCH["contemporary"];
+  const mood     = FINNHOUSES_MOOD[key]     ?? FINNHOUSES_MOOD["contemporary"];
+  const material = FINNHOUSES_MATERIAL[key] ?? FINNHOUSES_MATERIAL["contemporary"];
+  const topicCtx = topic ? `architectural concept for "${topic}",` : "";
+
+  return `${arch},
+architectural sketch rendering style,
+${topicCtx}
+clean hand-drawn ink linework, precise pencil hatching,
+graphite monochrome on white paper,
+blueprint elevation drawings visible in background,
+architect's presentation board layout,
+cool gray monochrome color palette,
+subtle warm wood tone accent on roof soffit only,
+${material},
+open terrace with wide stone steps in foreground,
+luxury car partially visible left side,
+tall deciduous trees framing both sides,
+lower secondary living wing on the right,
+architectural concept presentation board aesthetic,
+precise perspective drawing, wide-angle eye-level view,
+soft ambient daylight, subtle shadows,
+realistic proportions, fine sketch detailing,
+premium design visualization, high detail, clean line quality,
+
+Style references: architectural sketch render, conceptual architecture illustration, pen and ink architecture drawing, presentation board, cool gray graphite monochrome
+Camera: wide landscape format, eye-level street perspective, 25-30m distance, full building visible, horizontal composition
+Mood: ${mood}
+Quality: high detail, balanced composition, professional architectural presentation board
+
+NO warm sepia tones, NO amber wash, NO color except subtle wood accent,
+NO Thai traditional roof, NO palm trees, NO text labels, NO watermark, NO logo`;
 }
 
 // ─── Main handler ─────────────────────────────────────────────────────────────
