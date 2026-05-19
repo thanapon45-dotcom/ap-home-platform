@@ -240,6 +240,7 @@ export default function Marketing() {
   const [visualStyle, setVisual]  = useState("contemporary");
   const [busy, setBusy]           = useState(false);
   const [toast, setToast]         = useState<{ msg: string; type: string } | null>(null);
+  const [marketData, setMarketData] = useState("");
 
   // Content Queue
   const [contentQueue, setContentQueue] = useState<QueueItem[]>([]);
@@ -303,6 +304,7 @@ export default function Marketing() {
             { url: "https://www.finnhouses.com/blog",      anchor: "บทความสร้างบ้าน" },
             { url: "https://www.finnhouses.com/about",     anchor: "เกี่ยวกับ Finnhouses" },
           ],
+          ...(marketData.trim() && { market_data: marketData.trim() }),
         }),
       });
       const j = await safeJson(r);
@@ -516,6 +518,40 @@ export default function Marketing() {
                 ))}
               </div>
             </div>
+          </div>
+
+          {/* Market Data (Option B — Real Estate Intelligence) */}
+          <div style={{ background: "rgba(15,20,40,.85)", border: "1px solid rgba(233,121,249,.18)", borderRadius: 20, padding: 22 }}>
+            <div style={{ fontSize: 11, letterSpacing: ".18em", textTransform: "uppercase", color: "#e879f9", fontWeight: 600, marginBottom: 6 }}>
+              📊 Market Data <span style={{ fontWeight: 400, color: "#475569", textTransform: "none", letterSpacing: 0 }}>(optional)</span>
+            </div>
+            <div style={{ fontSize: 11, color: "#475569", marginBottom: 10, lineHeight: 1.5 }}>
+              ใส่ราคาจริงจาก field — GPT จะใช้ตัวเลขนี้เขียนบทความ<br />
+              เช่น: "บ้านเดี่ยวลำลูกกา คลอง 5–7: 3–4.5M, คลอง 10+: 2–3M"
+            </div>
+            <textarea
+              value={marketData}
+              onChange={e => setMarketData(e.target.value)}
+              placeholder={"ราคา / ข้อมูลโซน / ค่ารีโนเวทที่รู้จริง..."}
+              rows={4}
+              style={{
+                ...inputStyle,
+                resize: "vertical",
+                fontSize: 12,
+                lineHeight: 1.6,
+                color: marketData ? "#f1f5f9" : "#475569",
+              }}
+            />
+            {marketData.trim() && (
+              <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#e879f9", display: "inline-block" }} />
+                <span style={{ fontSize: 11, color: "#e879f9" }}>Data จะถูกส่งไปกับ run นี้</span>
+                <button onClick={() => setMarketData("")} style={{
+                  marginLeft: "auto", fontSize: 10, color: "#475569", background: "none",
+                  border: "none", cursor: "pointer", padding: "2px 6px",
+                }}>✕ clear</button>
+              </div>
+            )}
           </div>
 
           {/* Action buttons */}
