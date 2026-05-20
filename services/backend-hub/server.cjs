@@ -373,6 +373,42 @@ app.post("/webhook/n8n", async (req, res) => {
   res.json({ ok: true });
 });
 
+// ── WF2 Image-done callback ───────────────────────────────────────────────────
+app.post("/webhook/image-done", async (req, res) => {
+  const state = readState();
+  const payload = req.body || {};
+  const status = String(payload.status || "patched");
+  const postId = String(payload.post_id || "");
+  const mediaId = String(payload.media_id || "0");
+  const mediaUrl = String(payload.media_url || "");
+
+  state.blog = {
+    ...state.blog,
+    image_status: status,
+    image_media_id: mediaId,
+    image_media_url: mediaUrl,
+    image_patched_at: nowIso(),
+    updatedAt: nowIso(),
+  };
+
+  pushHistory(state, {
+    type: "image_callback_received",
+    engine: "blog",
+    postId,
+    mediaId,
+    status,
+    message: `WF2 image ${status}`,
+  });
+  writeState(state);
+
+  if (status === "patched") {
+    const msg = `🖼️ Image patched\nPost ID: ${postId}\nMedia ID: ${mediaId}\nURL: ${mediaUrl}`;
+    sendTelegram(msg).catch(() => {});
+  }
+
+  res.json({ ok: true, status, postId, mediaId });
+});
+
 app.post("/webhook/fb", (req, res) => {
   const state = readState();
   const payload = req.body || {};
