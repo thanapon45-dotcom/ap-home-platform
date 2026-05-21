@@ -39,6 +39,26 @@ async function supabaseInsert(table, payload) {
   }
 }
 
+async function supabaseUpsert(table, payload, onConflict = "id") {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return { ok: false, error: "No Supabase credentials" };
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?on_conflict=${onConflict}`, {
+      method: "POST",
+      headers: {
+        "apikey": SUPABASE_ANON_KEY,
+        "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+        "Content-Type": "application/json",
+        "Prefer": "resolution=merge-duplicates,return=representation",
+      },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json().catch(() => ({}));
+    return { ok: res.ok, data };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+}
+
 async function supabaseUpdate(table, match, payload) {
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return { ok: false, error: "No Supabase credentials" };
   const params = new URLSearchParams(match).toString();
@@ -489,6 +509,34 @@ app.post("/webhook/blog-published", async (req, res) => {
   }
 
   res.json({ ok: result.ok, content_id: contentId, supabase: result });
+});
+
+// ── Property saved → Supabase properties (upsert) ────────────────────────────
+app.post("/webhook/property-saved", async (req, res) => {
+  const payload = req.body || {};
+  const wpPostId = Number(payload.wp_post_id || 0);
+  if (!wpPostId) return res.status(400).json({ ok: false, error: "wp_post_id required" });
+
+  const row = {
+    wp_post_id:    wpPostId,
+    title:         String(payload.title || ""),
+    property_type: String(payload.property_type || ""),
+    status:        String(payload.status || "ขาย"),
+    location:      String(payload.location || ""),
+    zone:          String(payload.zone || ""),
+    asking_price:  payload.asking_price ? Number(payload.asking_price) : null,
+    area_sqm:      payload.area_sqm    ? Number(payload.area_sqm)    : null,
+    land_sqm:      payload.land_sqm    ? Number(payload.land_sqm)    : null,
+    bedrooms:      payload.bedrooms    ? Number(payload.bedrooms)    : null,
+    bathrooms:     payload.bathrooms   ? Number(payload.bathrooms)   : null,
+    is_flip:       Boolean(payload.is_flip || false),
+    listed_at:     String(payload.listed_at || new Date().toISOString()),
+    updated_at:    new Date().toISOString(),
+  };
+
+  const result = await supabaseUpsert("properties", row, "wp_post_id");
+  console.log(`[hub] property-saved wp_post_id=${wpPostId}`, result.ok ? "✅" : result.error);
+  res.json({ ok: result.ok, wp_post_id: wpPostId, supabase: result });
 });
 
 app.post("/webhook/fb", (req, res) => {
