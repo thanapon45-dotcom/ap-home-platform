@@ -16,6 +16,9 @@ const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "";
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || "";
 const SUPABASE_URL = process.env.SUPABASE_URL || "";
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || "";
+const WP_URL = process.env.WP_URL || "https://finnhouses.com";
+const WP_USER = process.env.WP_USER || "";
+const WP_APP_PASS = process.env.WP_APP_PASS || "";
 const STATE_FILE = path.join(__dirname, "hub-state.json");
 
 // ── Supabase REST Helper ──────────────────────────────────────────────────────
@@ -893,6 +896,77 @@ app.post("/webhook/property-line-intake", async (req, res) => {
   const result = await supabaseInsert("properties", row);
   console.log(`[hub] property-line-intake title="${row.title}"`, result.ok ? "✅" : result.error);
   res.json({ ok: result.ok, supabase: result });
+});
+
+// ── Publish Property to WordPress + update Supabase ──────────────────────────
+app.post("/action/property/publish", async (req, res) => {
+  const { supabase_id, ...propertyData } = req.body || {};
+
+  if (!supabase_id) {
+    return res.status(400).json({ ok: false, error: "supabase_id required" });
+  }
+  if (!WP_USER || !WP_APP_PASS) {
+    return res.status(500).json({ ok: false, error: "WP credentials not configured" });
+  }
+
+  // Call WordPress custom REST endpoint
+  const basicAuth = Buffer.from(`${WP_USER}:${WP_APP_PASS}`).toString("base64");
+  let wpResult;
+  try {
+    const wpRes = await fetch(`${WP_URL}/wp-json/finnhouses/v1/property-intake`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Basic ${basicAuth}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ ...propertyData, supabase_id, post_status: "publish" }),
+    });
+    wpResult = await wpRes.json();
+    if (!wpRes.ok) {
+      console.error("[hub] WP publish failed", wpResult);
+      return res.status(502).json({ ok: false, error: "WP error", detail: wpResult });
+    }
+  } catch (e) {
+    return res.status(502).json({ ok: false, error: "WP unreachable", detail: e.message });
+  }
+
+  const { wp_post_id, url } = wpResult;
+
+  // Update Supabase: status → published, store wp_post_id
+  const sbResult = await supabaseUpdate(
+    "properties",
+    { id: `eq.${supabase_id}` },
+    {
+      status:     "published",
+      wp_post_id: wp_post_id,
+      updated_at: new Date().toISOString(),
+    }
+  );
+
+  console.log(`[hub] property published wp_post_id=${wp_post_id} supabase_id=${supabase_id}`, sbResult.ok ? "✅" : sbResult.error);
+  res.json({ ok: true, wp_post_id, url, supabase: sbResult });
+});
+
+// ── Get pending_review properties (for Dashboard review UI) ──────────────────
+app.get("/api/properties/pending", async (req, res) => {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    return res.status(500).json({ ok: false, error: "No Supabase credentials" });
+  }
+  try {
+    const sbRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/properties?status=eq.pending_review&order=listed_at.desc`,
+      {
+        headers: {
+          "apikey": SUPABASE_ANON_KEY,
+          "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+        },
+      }
+    );
+    const data = await sbRes.json();
+    res.json({ ok: sbRes.ok, data });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
 });
 
 app.listen(PORT, HUB_HOST, () => {
