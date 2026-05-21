@@ -13,12 +13,15 @@ const inputStyle: React.CSSProperties = {
 };
 
 export default function BudgetPage() {
-  const [area, setArea]     = useState("");
-  const [name, setName]     = useState("");
-  const [phone, setPhone]   = useState("");
-  const [saving, setSaving] = useState(false);
-  const [done, setDone]     = useState(false);
-  const [step, setStep]     = useState<1 | 2>(1);
+  const [area, setArea]       = useState("");
+  const [name, setName]       = useState("");
+  const [phone, setPhone]     = useState("");
+  const [location, setLocation] = useState("");
+  const [intent, setIntent]   = useState("build");
+  const [urgency, setUrgency] = useState("warm");
+  const [saving, setSaving]   = useState(false);
+  const [done, setDone]       = useState(false);
+  const [step, setStep]       = useState<1 | 2>(1);
 
   const budget = area ? Number(area) * PRICE_PER_SQM : null;
 
@@ -32,13 +35,17 @@ export default function BudgetPage() {
       name,
       phone,
       area:          Number(area),
-      budget:        budgetLabel,        // "2.2M" format — consistent with CRM
+      budget:        budgetLabel,
       stage:         "new",
       source:        "Budget Tool",
       business_unit: "build",
       style:         "Modern Minimal",
-      score:         70,
-      notes:         `พื้นที่ ${area} ตร.ม.`,
+      score:         urgency === "hot" ? 85 : urgency === "warm" ? 70 : 55,
+      intent,
+      urgency,
+      location,
+      outcome:       "pending",
+      notes:         `พื้นที่ ${area} ตร.ม.${location ? ` | โซน: ${location}` : ""}`,
       lead_date:     `${d.getDate()} ${months[d.getMonth()]}`,
     }]);
     await fetch("/api/telegram", {
@@ -62,7 +69,7 @@ export default function BudgetPage() {
           <div style={{ fontSize: 56 }}>✅</div>
           <div style={{ fontSize: 20, fontWeight: 700, color: "#10b981", marginTop: 12 }}>ส่งข้อมูลสำเร็จ!</div>
           <div style={{ fontSize: 14, color: "#64748b", marginTop: 8 }}>ทีมงาน Finnhouses จะติดต่อกลับภายใน 24 ชั่วโมง</div>
-          <button onClick={() => { setDone(false); setName(""); setPhone(""); setArea(""); setStep(1); }}
+          <button onClick={() => { setDone(false); setName(""); setPhone(""); setArea(""); setLocation(""); setIntent("build"); setUrgency("warm"); setStep(1); }}
             style={{ marginTop: 20, padding: "10px 24px", borderRadius: 12, background: "rgba(16,185,129,.15)", border: "1px solid rgba(16,185,129,.3)", color: "#10b981", fontSize: 14, cursor: "pointer" }}>
             คำนวณใหม่
           </button>
@@ -105,6 +112,36 @@ export default function BudgetPage() {
               <div>
                 <label style={{ fontSize: 12, color: "#94a3b8", display: "block", marginBottom: 6 }}>เบอร์โทรศัพท์</label>
                 <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="08x-xxx-xxxx" style={inputStyle} />
+              </div>
+              <div>
+                <label style={{ fontSize: 12, color: "#94a3b8", display: "block", marginBottom: 6 }}>พื้นที่ที่สนใจสร้าง</label>
+                <input value={location} onChange={e => setLocation(e.target.value)} placeholder="เช่น ลำลูกกา / รังสิต / นนทบุรี" style={inputStyle} />
+              </div>
+              <div>
+                <label style={{ fontSize: 12, color: "#94a3b8", display: "block", marginBottom: 8 }}>ความต้องการ</label>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 6 }}>
+                  {[{ v: "build", l: "🏗️ สร้างบ้าน" }, { v: "renovate", l: "🔨 รีโนเวท" }, { v: "buy", l: "🏠 ซื้อบ้าน" }].map(opt => (
+                    <button key={opt.v} type="button" onClick={() => setIntent(opt.v)} style={{
+                      padding: "9px 4px", borderRadius: 10, cursor: "pointer", fontSize: 12, fontWeight: 600,
+                      background: intent === opt.v ? "rgba(16,185,129,.15)" : "rgba(255,255,255,.03)",
+                      border: `1.5px solid ${intent === opt.v ? "rgba(16,185,129,.5)" : "rgba(255,255,255,.1)"}`,
+                      color: intent === opt.v ? "#10b981" : "#64748b",
+                    }}>{opt.l}</button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label style={{ fontSize: 12, color: "#94a3b8", display: "block", marginBottom: 8 }}>วางแผนเริ่มสร้างภายใน</label>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 6 }}>
+                  {[{ v: "hot", l: "🔥 3 เดือน", c: "#f43f5e" }, { v: "warm", l: "🌡️ 6 เดือน", c: "#f59e0b" }, { v: "cold", l: "🧊 1 ปี+", c: "#22d3ee" }].map(opt => (
+                    <button key={opt.v} type="button" onClick={() => setUrgency(opt.v)} style={{
+                      padding: "9px 4px", borderRadius: 10, cursor: "pointer", fontSize: 12, fontWeight: 600,
+                      background: urgency === opt.v ? `${opt.c}18` : "rgba(255,255,255,.03)",
+                      border: `1.5px solid ${urgency === opt.v ? opt.c + "60" : "rgba(255,255,255,.1)"}`,
+                      color: urgency === opt.v ? opt.c : "#64748b",
+                    }}>{opt.l}</button>
+                  ))}
+                </div>
               </div>
               <div style={{ padding: "12px 16px", borderRadius: 12, background: "rgba(245,158,11,.06)", border: "1px solid rgba(245,158,11,.15)", fontSize: 13, color: "#94a3b8" }}>
                 🏠 พื้นที่ <strong style={{ color: "#f1f5f9" }}>{area} ตร.ม.</strong> · งบประมาณ <strong style={{ color: "#10b981" }}>{fmt(budget)} บาท</strong>
