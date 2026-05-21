@@ -866,6 +866,35 @@ app.post("/action/blog/queue/run-next", async (req, res) => {
   });
 });
 
+// ── LINE Seller Intake → Supabase properties (insert, no wp_post_id) ──────────
+app.post("/webhook/property-line-intake", async (req, res) => {
+  const payload = req.body || {};
+  if (!payload.title && !payload.notes) {
+    return res.status(400).json({ ok: false, error: "title or notes required" });
+  }
+  const row = {
+    title:         String(payload.title || "ทรัพย์จาก LINE"),
+    property_type: String(payload.property_type || ""),
+    status:        "pending_review",
+    location:      String(payload.location || ""),
+    zone:          String(payload.zone || ""),
+    asking_price:  payload.asking_price ? Number(payload.asking_price) : null,
+    area_sqm:      payload.area_sqm    ? Number(payload.area_sqm)    : null,
+    land_sqm:      payload.land_sqm    ? Number(payload.land_sqm)    : null,
+    bedrooms:      payload.bedrooms    ? Number(payload.bedrooms)    : null,
+    bathrooms:     payload.bathrooms   ? Number(payload.bathrooms)   : null,
+    is_flip:       false,
+    source:        "LINE ฝากขาย",
+    notes:         String(payload.notes || ""),
+    line_user_id:  String(payload.line_user_id || ""),
+    listed_at:     new Date().toISOString(),
+    updated_at:    new Date().toISOString(),
+  };
+  const result = await supabaseInsert("properties", row);
+  console.log(`[hub] property-line-intake title="${row.title}"`, result.ok ? "✅" : result.error);
+  res.json({ ok: result.ok, supabase: result });
+});
+
 app.listen(PORT, HUB_HOST, () => {
   const state = readState();
   writeState(state);
