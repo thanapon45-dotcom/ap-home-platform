@@ -14,7 +14,51 @@ const N8N_BLOG_WEBHOOK_URL = process.env.N8N_BLOG_WEBHOOK_URL || "http://127.0.0
 const FB_BACKEND_URL = process.env.FB_BACKEND_URL || "http://127.0.0.1:3001";
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "";
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || "";
+const SUPABASE_URL = process.env.SUPABASE_URL || "";
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || "";
 const STATE_FILE = path.join(__dirname, "hub-state.json");
+
+// ── Supabase REST Helper ──────────────────────────────────────────────────────
+async function supabaseInsert(table, payload) {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return { ok: false, error: "No Supabase credentials" };
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
+      method: "POST",
+      headers: {
+        "apikey": SUPABASE_ANON_KEY,
+        "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+        "Content-Type": "application/json",
+        "Prefer": "return=representation",
+      },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    return { ok: res.ok, data };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+}
+
+async function supabaseUpdate(table, match, payload) {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return { ok: false, error: "No Supabase credentials" };
+  const params = new URLSearchParams(match).toString();
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${params}`, {
+      method: "PATCH",
+      headers: {
+        "apikey": SUPABASE_ANON_KEY,
+        "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+        "Content-Type": "application/json",
+        "Prefer": "return=representation",
+      },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    return { ok: res.ok, data };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+}
 
 function nowIso() {
   return new Date().toISOString();
@@ -404,9 +448,47 @@ app.post("/webhook/image-done", async (req, res) => {
   if (status === "patched") {
     const msg = `🖼️ Image patched\nPost ID: ${postId}\nMedia ID: ${mediaId}\nURL: ${mediaUrl}`;
     sendTelegram(msg).catch(() => {});
+    // sync image status back to content_posts
+    supabaseUpdate("content_posts", { wp_post_id: `eq.${postId}` }, {
+      image_generated: true,
+    }).catch(() => {});
   }
 
   res.json({ ok: true, status, postId, mediaId });
+});
+
+// ── WF1 Blog-published callback → Supabase content_posts ─────────────────────
+app.post("/webhook/blog-published", async (req, res) => {
+  const payload = req.body || {};
+  const topic        = String(payload.topic || "");
+  const keyword      = String(payload.keyword || "");
+  const wpPostId     = Number(payload.wp_post_id || 0);
+  const postUrl      = String(payload.post_url || "");
+  const format       = String(payload.format || "blog");
+  const tokenUsage   = Number(payload.token_usage || 0);
+  const contentId    = `blog_${wpPostId || Date.now()}`;
+
+  const row = {
+    content_id:     contentId,
+    topic,
+    keyword,
+    format,
+    source_channel: "blog_runner",
+    wp_post_id:     wpPostId || null,
+    published_at:   new Date().toISOString(),
+    image_generated: false,
+    token_usage:    tokenUsage,
+    lead_generated: false,
+    conversion_rate: 0,
+  };
+
+  const result = await supabaseInsert("content_posts", row);
+
+  if (result.ok) {
+    sendTelegram(`📝 Blog published logged\nKeyword: ${keyword}\nPost: ${postUrl}\nID: ${contentId}`).catch(() => {});
+  }
+
+  res.json({ ok: result.ok, content_id: contentId, supabase: result });
 });
 
 app.post("/webhook/fb", (req, res) => {
