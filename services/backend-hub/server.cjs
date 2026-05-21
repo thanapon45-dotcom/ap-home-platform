@@ -898,6 +898,36 @@ app.post("/webhook/property-line-intake", async (req, res) => {
   res.json({ ok: result.ok, supabase: result });
 });
 
+// ── Upload image to WP Media Library ─────────────────────────────────────────
+app.post("/action/property/upload-image",
+  express.raw({ type: ["image/jpeg","image/jpg","image/png","image/webp"], limit: "10mb" }),
+  async (req, res) => {
+    if (!WP_USER || !WP_APP_PASS) {
+      return res.status(500).json({ ok: false, error: "WP credentials not configured" });
+    }
+    const filename = req.headers["x-filename"] || "photo.jpg";
+    const mimetype = req.headers["content-type"] || "image/jpeg";
+    const basicAuth = Buffer.from(`${WP_USER}:${WP_APP_PASS}`).toString("base64");
+    try {
+      const wpRes = await fetch(`${WP_URL}/wp-json/wp/v2/media`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Basic ${basicAuth}`,
+          "Content-Disposition": `attachment; filename="${filename}"`,
+          "Content-Type": mimetype,
+        },
+        body: req.body,
+      });
+      const data = await wpRes.json();
+      if (!wpRes.ok) return res.status(502).json({ ok: false, error: data?.message ?? "WP media upload failed" });
+      console.log(`[hub] media uploaded id=${data.id} url=${data.source_url}`);
+      res.json({ ok: true, media_id: data.id, url: data.source_url });
+    } catch (e) {
+      res.status(502).json({ ok: false, error: e.message });
+    }
+  }
+);
+
 // ── Publish Property to WordPress + update Supabase ──────────────────────────
 app.post("/action/property/publish", async (req, res) => {
   const { supabase_id, ...propertyData } = req.body || {};
