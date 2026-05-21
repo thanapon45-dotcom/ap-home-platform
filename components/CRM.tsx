@@ -30,6 +30,22 @@ const SOURCES = [
 
 const STYLES = ["Modern Minimal", "Nordic", "Luxury", "Contemporary", "Loft", "Tropical Modern", "Minimal"];
 
+const INTENTS = [
+  { value: "build",    label: "🏗️ สร้างบ้าน" },
+  { value: "buy",      label: "🏠 ซื้อบ้าน" },
+  { value: "sell",     label: "💼 ฝากขาย" },
+  { value: "renovate", label: "🔨 รีโนเวท" },
+  { value: "invest",   label: "📈 ลงทุน" },
+];
+
+const URGENCIES = [
+  { value: "hot",  label: "🔥 Hot",  color: "#f43f5e" },
+  { value: "warm", label: "🌡️ Warm", color: "#f59e0b" },
+  { value: "cold", label: "🧊 Cold", color: "#22d3ee" },
+];
+
+const OUTCOMES = ["pending", "won", "lost"];
+
 const NURTURE_SEQUENCES = [
   { day: 0,  action: "ส่ง Welcome Package + Portfolio PDF",                 icon: "📧" },
   { day: 3,  action: "โทรติดตาม + นัดชม Showroom",                          icon: "📞" },
@@ -54,7 +70,12 @@ type Lead = {
   name: string; phone: string; budget: string; style: string;
   stage: string; score: number; source: string; lead_date: string; area: string; notes: string;
   business_unit: "build" | "reno" | "list";
+  intent?: string;
+  urgency?: string;
+  outcome?: string;
+  location?: string;
   created_at?: string;
+  updated_at?: string;
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -86,8 +107,8 @@ async function callClaude(system: string, prompt: string, maxTokens = 1200): Pro
 
 // ─── Export Helpers ───────────────────────────────────────────────────────────
 function exportLeadsCSV(leads: Lead[]) {
-  const headers = ["ชื่อ", "เบอร์โทร", "งบประมาณ", "สไตล์", "พื้นที่", "แหล่งที่มา", "สถานะ", "Score", "วันที่", "หมายเหตุ", "Business Unit"];
-  const rows = leads.map(l => [l.name, l.phone, l.budget, l.style, l.area, l.source, l.stage, l.score, l.lead_date, l.notes, l.business_unit]);
+  const headers = ["ชื่อ", "เบอร์โทร", "งบประมาณ", "สไตล์", "พื้นที่", "แหล่งที่มา", "สถานะ", "Score", "วันที่", "หมายเหตุ", "Business Unit", "Intent", "Urgency", "Outcome", "Location"];
+  const rows = leads.map(l => [l.name, l.phone, l.budget, l.style, l.area, l.source, l.stage, l.score, l.lead_date, l.notes, l.business_unit, l.intent ?? "", l.urgency ?? "", l.outcome ?? "", l.location ?? ""]);
   const csv = [headers, ...rows].map(r => r.map(v => `"${v ?? ""}"`).join(",")).join("\n");
   const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
@@ -119,7 +140,7 @@ function SimpleBar({ value, max, color }: { value: number; max: number; color: s
 
 // ─── Add Lead Modal ───────────────────────────────────────────────────────────
 function AddLeadModal({ onClose, onAdd }: { onClose: () => void; onAdd: (lead: Lead) => void }) {
-  const [form, setForm] = useState({ name: "", phone: "", budget: "", style: "Modern Minimal", area: "", source: "Budget Tool", notes: "", stage: "new", business_unit: "build" as "build" | "reno" | "list" });
+  const [form, setForm] = useState({ name: "", phone: "", budget: "", style: "Modern Minimal", area: "", source: "Budget Tool", notes: "", stage: "new", business_unit: "build" as "build" | "reno" | "list", intent: "build", urgency: "warm", location: "", outcome: "pending" });
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const inputStyle: React.CSSProperties = { width: "100%", padding: "10px 12px", borderRadius: 10, border: "1.5px solid rgba(255,255,255,.15)", fontSize: 13, boxSizing: "border-box" as const, background: "rgba(255,255,255,.05)", color: "#f1f5f9", fontFamily: "inherit" };
@@ -137,6 +158,10 @@ function AddLeadModal({ onClose, onAdd }: { onClose: () => void; onAdd: (lead: L
       notes: form.notes,
       stage: form.stage,
       business_unit: form.business_unit,
+      intent: form.intent,
+      urgency: form.urgency,
+      location: form.location,
+      outcome: form.outcome,
       score: Math.floor(Math.random() * 30) + 55,
       lead_date: todayLabel(),
     };
@@ -197,6 +222,42 @@ function AddLeadModal({ onClose, onAdd }: { onClose: () => void; onAdd: (lead: L
           </div>
         </div>
 
+        {/* Intent */}
+        <div style={{ marginBottom: 14 }}>
+          <label style={{ fontSize: 12, fontWeight: 700, color: "#94a3b8", display: "block", marginBottom: 5 }}>ความต้องการ (Intent)</label>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 5 }}>
+            {INTENTS.map(opt => (
+              <button key={opt.value} type="button" onClick={() => setForm(f => ({ ...f, intent: opt.value }))} style={{
+                padding: "7px 4px", borderRadius: 8, cursor: "pointer", fontSize: 10, fontWeight: 600, textAlign: "center",
+                background: form.intent === opt.value ? "rgba(34,211,238,.15)" : "rgba(255,255,255,.03)",
+                border: `1.5px solid ${form.intent === opt.value ? "rgba(34,211,238,.5)" : "rgba(255,255,255,.1)"}`,
+                color: form.intent === opt.value ? "#22d3ee" : "#64748b",
+              }}>{opt.label}</button>
+            ))}
+          </div>
+        </div>
+
+        {/* Urgency + Location */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 14px", marginBottom: 14 }}>
+          <div>
+            <label style={{ fontSize: 12, fontWeight: 700, color: "#94a3b8", display: "block", marginBottom: 5 }}>ความเร่งด่วน</label>
+            <div style={{ display: "flex", gap: 6 }}>
+              {URGENCIES.map(u => (
+                <button key={u.value} type="button" onClick={() => setForm(f => ({ ...f, urgency: u.value }))} style={{
+                  flex: 1, padding: "8px 4px", borderRadius: 8, cursor: "pointer", fontSize: 11, fontWeight: 700,
+                  background: form.urgency === u.value ? `${u.color}18` : "rgba(255,255,255,.03)",
+                  border: `1.5px solid ${form.urgency === u.value ? u.color + "60" : "rgba(255,255,255,.1)"}`,
+                  color: form.urgency === u.value ? u.color : "#64748b",
+                }}>{u.label}</button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label style={{ fontSize: 12, fontWeight: 700, color: "#94a3b8", display: "block", marginBottom: 5 }}>พื้นที่ที่สนใจ</label>
+            <input value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} placeholder="ลำลูกกา / รังสิต / นนทบุรี" style={inputStyle} />
+          </div>
+        </div>
+
         <div style={{ marginBottom: 20 }}>
           <label style={{ fontSize: 12, fontWeight: 700, color: "#94a3b8", display: "block", marginBottom: 5 }}>หมายเหตุ</label>
           <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={3} style={{ ...inputStyle, resize: "vertical" }} placeholder="ข้อมูลเพิ่มเติม..." />
@@ -228,7 +289,7 @@ function PipelineTab({ leads, setLeads, deleteLead }: { leads: Lead[]; setLeads:
     try {
       const text = await callClaude(
         `คุณคือผู้เชี่ยวชาญด้านการขายบ้านสำหรับ ${BRAND_NAME}`,
-        `วิเคราะห์ Lead: ${lead.name} | งบ: ${lead.budget} | สไตล์: ${lead.style} | พื้นที่: ${lead.area} | แหล่งที่มา: ${lead.source} | Score: ${lead.score}% | Note: ${lead.notes}\n\nให้: 1)ประเมินความพร้อมซื้อ 2)Pain point ที่น่าจะมี 3)กลยุทธ์ปิดการขาย 3 ข้อ 4)Script โทรหา (1-2 ประโยค)`,
+        `วิเคราะห์ Lead: ${lead.name} | งบ: ${lead.budget} | สไตล์: ${lead.style} | พื้นที่: ${lead.area} | Location: ${lead.location ?? "-"} | แหล่งที่มา: ${lead.source} | Score: ${lead.score}% | Intent: ${lead.intent ?? "-"} | Urgency: ${lead.urgency ?? "-"} | Note: ${lead.notes}\n\nให้: 1)ประเมินความพร้อมซื้อ 2)Pain point ที่น่าจะมี 3)กลยุทธ์ปิดการขาย 3 ข้อ 4)Script โทรหา (1-2 ประโยค)`,
       );
       setAiAnalysis(text);
     } catch (e: unknown) { setAiAnalysis(`❌ ${e instanceof Error ? e.message : "Error"}`); }
@@ -239,7 +300,7 @@ function PipelineTab({ leads, setLeads, deleteLead }: { leads: Lead[]; setLeads:
     const idx = STAGES.findIndex(s => s.key === lead.stage);
     const next = STAGES[idx + dir];
     if (!next) return;
-    await supabase.from("leads").update({ stage: next.key }).eq("id", lead.id);
+    await supabase.from("leads").update({ stage: next.key, updated_at: new Date().toISOString() }).eq("id", lead.id);
     setLeads(ls => ls.map(l => l.id === lead.id ? { ...l, stage: next.key } : l));
     if (selected?.id === lead.id) setSelected(prev => prev ? { ...prev, stage: next.key } : null);
   }
@@ -308,6 +369,8 @@ function PipelineTab({ leads, setLeads, deleteLead }: { leads: Lead[]; setLeads:
                       <span>🏠 {lead.style}</span>
                       <span>📍 {lead.area}</span>
                       <span style={{ color: "#64748b" }}>{sourceIcon(lead.source)} {lead.source}</span>
+                      {lead.urgency && (() => { const u = URGENCIES.find(x => x.value === lead.urgency); return u ? <span style={{ color: u.color, fontWeight: 700 }}>{u.label}</span> : null; })()}
+                      {lead.intent && <span style={{ color: "#a855f7" }}>🎯 {lead.intent}</span>}
                     </div>
                   </div>
                   <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
@@ -336,6 +399,10 @@ function PipelineTab({ leads, setLeads, deleteLead }: { leads: Lead[]; setLeads:
               📞 {selected.phone}<br />
               💰 {normBudget(selected.budget)}<br />
               📍 {selected.area}<br />
+              {selected.location && <span>🗺️ {selected.location}<br /></span>}
+              {selected.intent && <span>🎯 Intent: <strong style={{ color: "#a855f7" }}>{selected.intent}</strong><br /></span>}
+              {selected.urgency && (() => { const u = URGENCIES.find(x => x.value === selected.urgency); return u ? <span>⚡ Urgency: <strong style={{ color: u.color }}>{u.label}</strong><br /></span> : null; })()}
+              {selected.outcome && <span>📋 Outcome: <strong style={{ color: selected.outcome === "won" ? "#10b981" : selected.outcome === "lost" ? "#f43f5e" : "#94a3b8" }}>{selected.outcome}</strong><br /></span>}
               {selected.notes && <span>📝 {selected.notes}</span>}
             </div>
             <h4 style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 700, color: "#f1f5f9" }}>🤖 AI วิเคราะห์ Lead</h4>
