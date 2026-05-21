@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import PropertyReview from "@/components/PropertyReview";
 
 const HUB = process.env.NEXT_PUBLIC_HUB_URL ?? "https://ap-home-platform-production.up.railway.app";
 const POLL_MS = 10_000;
@@ -187,6 +188,7 @@ export default function DashboardOS() {
   const { data, live, lastSync } = useLiveData();
   const leadCounts = useLeadCounts();
   const [clock, setClock] = useState<Date | null>(null);
+  const [activeTab, setActiveTab] = useState<"overview" | "properties">("overview");
   useEffect(() => {
     setClock(new Date());
     const t = setInterval(() => setClock(new Date()), 1000);
@@ -208,8 +210,32 @@ export default function DashboardOS() {
   ];
   const pipelineMax = Math.max(...pipeline.map(p => p.value ?? 0), 1);
 
+  const TAB_STYLE = (active: boolean) => ({
+    padding: "8px 20px", borderRadius: 8, fontSize: 13, fontWeight: 600,
+    cursor: "pointer", border: "none", transition: "all .2s",
+    background: active ? "#22d3ee18" : "transparent",
+    color: active ? "#22d3ee" : "#64748b",
+    borderBottom: active ? "2px solid #22d3ee" : "2px solid transparent",
+  });
+
   return (
     <div style={{ padding: 24, display: "flex", flexDirection: "column", gap: 20 }}>
+      {/* TAB BAR */}
+      <div style={{ display: "flex", gap: 4, borderBottom: "1px solid rgba(255,255,255,.07)", paddingBottom: 0 }}>
+        <button style={TAB_STYLE(activeTab === "overview")} onClick={() => setActiveTab("overview")}>
+          📊 Overview
+        </button>
+        <button style={TAB_STYLE(activeTab === "properties")} onClick={() => setActiveTab("properties")}>
+          🏠 ทรัพย์รอ Review
+        </button>
+      </div>
+
+      {/* PROPERTIES TAB */}
+      {activeTab === "properties" && <PropertyReview />}
+
+      {/* OVERVIEW TAB */}
+      {activeTab === "overview" && <>
+
       {/* HEADER */}
       <div className="animate-fadeUp" style={{ background: "rgba(15,20,40,.85)", border: "1px solid rgba(255,255,255,.07)", borderRadius: 24, padding: "28px 32px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 16 }}>
@@ -335,6 +361,8 @@ export default function DashboardOS() {
           ))}
         </div>
       </div>
+
+      </> }
     </div>
   );
 }
