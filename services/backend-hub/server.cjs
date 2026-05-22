@@ -999,6 +999,38 @@ app.get("/api/properties/pending", async (req, res) => {
   }
 });
 
+// ── Land Analyzer / Reno Estimator — Lead Capture ────────────────────────────
+app.post("/action/land-lead", async (req, res) => {
+  const { name, phone, source, notes, budget, roi } = req.body || {};
+  if (!name || !phone) return res.status(400).json({ ok: false, error: "name and phone required" });
+
+  const months = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
+  const d = new Date();
+  const lead_date = `${d.getDate()} ${months[d.getMonth()]}`;
+  const business_unit = source === "Reno Estimator" ? "renovation" : "broker";
+
+  const row = {
+    name,
+    phone,
+    stage:         "new",
+    source:        source || "Land Analyzer",
+    business_unit,
+    score:         70,
+    budget:        budget || null,
+    notes:         notes || null,
+    lead_date,
+    outcome:       "pending",
+  };
+
+  const result = await supabaseInsert("leads", row);
+
+  const roiLine = roi ? ` | ROI ≈ ${roi}` : "";
+  const msg = `🗺️ Lead ใหม่ — ${source || "Land Analyzer"}\n👤 ${name}\n📞 ${phone}\n💰 ${budget || "ไม่ระบุ"}${roiLine}\n📝 ${notes || "-"}`;
+  sendTelegram(msg).catch(() => {});
+
+  res.json({ ok: result.ok, error: result.error || null });
+});
+
 app.listen(PORT, HUB_HOST, () => {
   const state = readState();
   writeState(state);
