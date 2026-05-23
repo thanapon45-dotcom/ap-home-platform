@@ -1050,6 +1050,18 @@ app.get("/api/properties/wp-published", async (req, res) => {
   }
 });
 
+// ── Mutex map: ป้องกัน race condition เมื่อ LINE ส่งหลายรูปพร้อมกัน ──────────
+const _appendLocks = {};
+async function withPropertyLock(propId, fn) {
+  // wait ถ้ามี lock อยู่
+  while (_appendLocks[propId]) {
+    await new Promise(r => setTimeout(r, 60));
+  }
+  _appendLocks[propId] = true;
+  try { return await fn(); }
+  finally { delete _appendLocks[propId]; }
+}
+
 // ── Append LINE image to a property (called by n8n after uploading to WP) ─────
 app.post("/action/property/append-line-image", async (req, res) => {
   const { line_user_id, media_id, url } = req.body || {};
@@ -1071,30 +1083,44 @@ app.post("/action/property/append-line-image", async (req, res) => {
       return res.status(404).json({ ok: false, error: "No pending property found for this LINE user (within 48h)" });
     }
     const prop = rows[0];
-    const existing = Array.isArray(prop.line_images) ? prop.line_images : [];
-    // Cap at 4 images
-    if (existing.length >= 4) {
-      return res.json({ ok: true, skipped: true, reason: "Already 4 images", property_id: prop.id });
-    }
-    const updated = [...existing, { media_id, url }];
 
-    // 2. Patch Supabase
-    const patchRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/properties?id=eq.${prop.id}`,
-      {
-        method: "PATCH",
-        headers: {
-          "apikey": SUPABASE_ANON_KEY,
-          "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
-          "Content-Type": "application/json",
-          "Prefer": "return=representation",
-        },
-        body: JSON.stringify({ line_images: updated }),
+    // 2. Atomic append ด้วย mutex ต่อ property — ป้องกัน race condition
+    const result = await withPropertyLock(prop.id, async () => {
+      // Re-fetch ข้อมูลล่าสุด (หลัง lock) เพื่อให้ได้ array ที่ update แล้ว
+      const freshRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/properties?id=eq.${prop.id}&select=id,line_images`,
+        { headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": `Bearer ${SUPABASE_ANON_KEY}` } }
+      );
+      const freshRows = await freshRes.json();
+      const fresh = freshRows?.[0] || prop;
+      const existing = Array.isArray(fresh.line_images) ? fresh.line_images : [];
+
+      // Cap at 4 images
+      if (existing.length >= 4) {
+        return { ok: true, skipped: true, reason: "Already 4 images", property_id: prop.id, image_count: existing.length };
       }
-    );
-    const patchData = await patchRes.json();
-    console.log(`[hub] append-line-image → property ${prop.id} media_id=${media_id}`, patchRes.ok ? "✅" : patchData);
-    res.json({ ok: patchRes.ok, property_id: prop.id, image_count: updated.length });
+      const updated = [...existing, { media_id, url }];
+
+      // Patch Supabase
+      const patchRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/properties?id=eq.${prop.id}`,
+        {
+          method: "PATCH",
+          headers: {
+            "apikey": SUPABASE_ANON_KEY,
+            "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+            "Content-Type": "application/json",
+            "Prefer": "return=representation",
+          },
+          body: JSON.stringify({ line_images: updated }),
+        }
+      );
+      const patchData = await patchRes.json();
+      console.log(`[hub] append-line-image → property ${prop.id} media_id=${media_id} count=${updated.length}`, patchRes.ok ? "✅" : patchData);
+      return { ok: patchRes.ok, property_id: prop.id, image_count: updated.length };
+    });
+
+    res.json(result);
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });
   }
