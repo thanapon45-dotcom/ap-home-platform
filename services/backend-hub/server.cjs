@@ -1050,6 +1050,35 @@ app.get("/api/properties/wp-published", async (req, res) => {
   }
 });
 
+// ── Dismiss a pending property (update status → dismissed) ───────────────────
+app.post("/action/property/dismiss", async (req, res) => {
+  const { supabase_id } = req.body || {};
+  if (!supabase_id) return res.status(400).json({ ok: false, error: "supabase_id required" });
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return res.status(500).json({ ok: false, error: "No Supabase credentials" });
+  try {
+    const patchRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/properties?id=eq.${supabase_id}`,
+      {
+        method: "PATCH",
+        headers: {
+          "apikey": SUPABASE_ANON_KEY,
+          "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+          "Content-Type": "application/json",
+          "Prefer": "return=minimal",
+        },
+        body: JSON.stringify({ status: "dismissed" }),
+      }
+    );
+    if (!patchRes.ok) {
+      const txt = await patchRes.text();
+      return res.status(500).json({ ok: false, error: txt });
+    }
+    res.json({ ok: true, supabase_id });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
 // ── Mutex map: ป้องกัน race condition เมื่อ LINE ส่งหลายรูปพร้อมกัน ──────────
 const _appendLocks = {};
 async function withPropertyLock(propId, fn) {

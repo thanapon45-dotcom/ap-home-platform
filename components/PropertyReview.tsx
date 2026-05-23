@@ -76,6 +76,7 @@ export default function PropertyReview() {
   const [publishing, setPublishing] = useState<Record<string, boolean>>({});
   const [published, setPublished] = useState<Record<string, { url: string; wp_post_id: number }>>({});
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
+  const [dismissing, setDismissing] = useState<Record<string, boolean>>({});
   const [mediaMap, setMediaMap] = useState<Record<string, Array<{ media_id: number; url: string }>>>({});
   const [uploadingSlots, setUploadingSlots] = useState<Record<string, Record<number, boolean>>>({});
 
@@ -142,6 +143,25 @@ export default function PropertyReview() {
     });
   }
 
+  async function handleDismiss(p: Property) {
+    setDismissing(prev => ({ ...prev, [p.id]: true }));
+    try {
+      const res = await fetch("/api/property/dismiss", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ supabase_id: p.id }),
+      });
+      const json = await res.json();
+      if (!json.ok) throw new Error(json.error ?? "dismiss failed");
+      // Remove from UI only after Supabase confirmed
+      setDismissed(prev => new Set([...prev, p.id]));
+    } catch (e: unknown) {
+      alert(`Dismiss ไม่สำเร็จ: ${e instanceof Error ? e.message : "unknown error"}`);
+    } finally {
+      setDismissing(prev => ({ ...prev, [p.id]: false }));
+    }
+  }
+
   async function handlePublish(p: Property) {
     const edit = editMap[p.id];
     setPublishing(prev => ({ ...prev, [p.id]: true }));
@@ -206,6 +226,7 @@ export default function PropertyReview() {
           const edit = editMap[p.id] ?? toEditState(p);
           const isPub = !!published[p.id];
           const isPublishing = !!publishing[p.id];
+          const isDismissing = !!dismissing[p.id];
           const pubData = published[p.id];
           const images = mediaMap[p.id] ?? [];
           const slots = uploadingSlots[p.id] ?? {};
@@ -355,10 +376,11 @@ export default function PropertyReview() {
                     {isPublishing ? "กำลัง Publish..." : "Approve & Publish to Website"}
                   </button>
                   <button
-                    onClick={() => setDismissed(prev => new Set([...prev, p.id]))}
-                    style={{ background: "transparent", border: "1px solid #333", color: "#666", padding: "10px 16px", borderRadius: 6, cursor: "pointer", fontSize: 14 }}
+                    onClick={() => handleDismiss(p)}
+                    disabled={isDismissing}
+                    style={{ background: "transparent", border: "1px solid #333", color: isDismissing ? "#444" : "#666", padding: "10px 16px", borderRadius: 6, cursor: isDismissing ? "not-allowed" : "pointer", fontSize: 14 }}
                   >
-                    Dismiss
+                    {isDismissing ? "กำลัง Dismiss..." : "Dismiss"}
                   </button>
                 </div>
               ) : (
