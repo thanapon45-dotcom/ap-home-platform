@@ -1079,19 +1079,9 @@ app.post("/action/property/dismiss", async (req, res) => {
   }
 });
 
-// ── Mutex map: ป้องกัน race condition เมื่อ LINE ส่งหลายรูปพร้อมกัน ──────────
-const _appendLocks = {};
-async function withPropertyLock(propId, fn) {
-  // wait ถ้ามี lock อยู่
-  while (_appendLocks[propId]) {
-    await new Promise(r => setTimeout(r, 60));
-  }
-  _appendLocks[propId] = true;
-  try { return await fn(); }
-  finally { delete _appendLocks[propId]; }
-}
-
-// ── Append LINE image to a property (called by n8n after uploading to WP) ─────
+// ── Append LINE image to a property — uses Supabase RPC for atomic DB-level append ──
+// RPC: append_line_image_atomic(p_id, p_media_id, p_url)
+// ป้องกัน race condition ที่ PostgreSQL level (SELECT FOR UPDATE ใน function)
 app.post("/action/property/append-line-image", async (req, res) => {
   const { line_user_id, media_id, url } = req.body || {};
   if (!line_user_id || !media_id || !url) {
@@ -1113,43 +1103,30 @@ app.post("/action/property/append-line-image", async (req, res) => {
     }
     const prop = rows[0];
 
-    // 2. Atomic append ด้วย mutex ต่อ property — ป้องกัน race condition
-    const result = await withPropertyLock(prop.id, async () => {
-      // Re-fetch ข้อมูลล่าสุด (หลัง lock) เพื่อให้ได้ array ที่ update แล้ว
-      const freshRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/properties?id=eq.${prop.id}&select=id,line_images`,
-        { headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": `Bearer ${SUPABASE_ANON_KEY}` } }
-      );
-      const freshRows = await freshRes.json();
-      const fresh = freshRows?.[0] || prop;
-      const existing = Array.isArray(fresh.line_images) ? fresh.line_images : [];
-
-      // Cap at 4 images
-      if (existing.length >= 4) {
-        return { ok: true, skipped: true, reason: "Already 4 images", property_id: prop.id, image_count: existing.length };
-      }
-      const updated = [...existing, { media_id, url }];
-
-      // Patch Supabase
-      const patchRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/properties?id=eq.${prop.id}`,
-        {
-          method: "PATCH",
-          headers: {
-            "apikey": SUPABASE_ANON_KEY,
-            "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
-            "Content-Type": "application/json",
-            "Prefer": "return=representation",
-          },
-          body: JSON.stringify({ line_images: updated }),
-        }
-      );
-      const patchData = await patchRes.json();
-      console.log(`[hub] append-line-image → property ${prop.id} media_id=${media_id} count=${updated.length}`, patchRes.ok ? "✅" : patchData);
-      return { ok: patchRes.ok, property_id: prop.id, image_count: updated.length };
+    // 2. Atomic append ผ่าน Supabase RPC (PostgreSQL SELECT FOR UPDATE)
+    // ไม่ต้องใช้ in-memory mutex — DB handle concurrency เอง
+    const rpcRes = await fetch(`${SUPABASE_URL}/rest/v1/rpc/append_line_image_atomic`, {
+      method: "POST",
+      headers: {
+        "apikey": SUPABASE_ANON_KEY,
+        "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ p_id: prop.id, p_media_id: media_id, p_url: url }),
     });
+    const rpcData = await rpcRes.json();
+    console.log(`[hub] append-line-image RPC → property ${prop.id} media_id=${media_id}`, rpcRes.ok ? "✅" : rpcData);
 
-    res.json(result);
+    if (!rpcRes.ok) {
+      return res.status(500).json({ ok: false, error: rpcData?.message || JSON.stringify(rpcData) });
+    }
+
+    res.json({
+      ok: true,
+      property_id: prop.id,
+      image_count: rpcData?.image_count ?? null,
+      skipped: rpcData?.skipped ?? false,
+    });
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });
   }
