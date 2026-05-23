@@ -999,6 +999,45 @@ app.get("/api/properties/pending", async (req, res) => {
   }
 });
 
+// ── Get published properties from WordPress (for AI Content Listing tab) ─────
+app.get("/api/properties/wp-published", async (req, res) => {
+  if (!WP_URL || !WP_USER || !WP_APP_PASS) {
+    return res.status(500).json({ ok: false, error: "No WP credentials" });
+  }
+  try {
+    const auth = Buffer.from(`${WP_USER}:${WP_APP_PASS}`).toString("base64");
+    const wpRes = await fetch(
+      `${WP_URL}/wp-json/wp/v2/property?status=publish&per_page=20&orderby=date&order=desc&_embed=1`,
+      { headers: { Authorization: `Basic ${auth}` } }
+    );
+    if (!wpRes.ok) {
+      const txt = await wpRes.text();
+      return res.status(500).json({ ok: false, error: `WP ${wpRes.status}: ${txt.slice(0,200)}` });
+    }
+    const posts = await wpRes.json();
+    const properties = posts.map(p => ({
+      wp_id:         p.id,
+      title:         p.title?.rendered ?? "",
+      link:          p.link ?? "",
+      date:          p.date ?? "",
+      excerpt:       p.excerpt?.rendered?.replace(/<[^>]+>/g, "").trim() ?? "",
+      featured_image: p._embedded?.["wp:featuredmedia"]?.[0]?.source_url ?? "",
+      // WP meta fields (registered via finnhouses_register_property_meta)
+      price:         p.meta?.asking_price ?? p.meta?.price ?? null,
+      property_type: p.meta?.property_type ?? "",
+      location:      p.meta?.location ?? "",
+      zone:          p.meta?.zone ?? "",
+      bedrooms:      p.meta?.bedrooms ?? null,
+      bathrooms:     p.meta?.bathrooms ?? null,
+      area_sqm:      p.meta?.area_sqm ?? null,
+      land_sqm:      p.meta?.land_sqm ?? null,
+    }));
+    res.json({ ok: true, properties });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
 // ── Land Analyzer / Reno Estimator — Lead Capture ────────────────────────────
 app.post("/action/land-lead", async (req, res) => {
   const { name, phone, source, notes, budget, roi } = req.body || {};

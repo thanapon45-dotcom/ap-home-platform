@@ -750,6 +750,237 @@ function CopyBtn({ text, label = "📋 Copy" }: { text: string; label?: string }
   );
 }
 
+// ── Tab: Listing → FB Post ────────────────────────────────────────────────────
+type WpProperty = {
+  wp_id: number;
+  title: string;
+  link: string;
+  date: string;
+  excerpt: string;
+  featured_image: string;
+  price: number | null;
+  property_type: string;
+  location: string;
+  zone: string;
+  bedrooms: number | null;
+  bathrooms: number | null;
+  area_sqm: number | null;
+  land_sqm: number | null;
+};
+
+function formatPriceTh(val: number | null) {
+  if (!val) return "—";
+  if (val >= 1_000_000) return `${(val / 1_000_000).toFixed(1)} ล้าน ฿`;
+  return `${val.toLocaleString("th-TH")} ฿`;
+}
+
+function ListingTab({ onSave }: { onSave: (item: ContentItem) => void }) {
+  const [properties, setProperties] = useState<WpProperty[]>([]);
+  const [loadingList, setLoadingList] = useState(true);
+  const [listError, setListError] = useState("");
+  const [selected, setSelected] = useState<WpProperty | null>(null);
+  const [type, setType] = useState("fb_post");
+  const [result, setResult] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [posting, setPosting] = useState(false);
+  const [postResult, setPostResult] = useState<"ok" | "error" | null>(null);
+
+  useEffect(() => {
+    fetch("/api/property/list")
+      .then(r => r.json())
+      .then(d => {
+        if (d.ok) setProperties(d.properties ?? []);
+        else setListError(d.error ?? "ดึงข้อมูลไม่สำเร็จ");
+      })
+      .catch(() => setListError("เกิดข้อผิดพลาด ลองรีโหลดหน้า"))
+      .finally(() => setLoadingList(false));
+  }, []);
+
+  async function generate() {
+    if (!selected) return;
+    setLoading(true); setResult(""); setPostResult(null);
+    const typeLabel = POST_TYPES.find(t => t.value === type)?.label ?? type;
+    const details = [
+      `ประเภท: ${selected.property_type || "บ้าน"}`,
+      `ทำเล: ${selected.location || "—"}${selected.zone ? ` (${selected.zone})` : ""}`,
+      `ราคา: ${formatPriceTh(selected.price)}`,
+      selected.bedrooms  ? `ห้องนอน: ${selected.bedrooms} ห้อง`      : "",
+      selected.bathrooms ? `ห้องน้ำ: ${selected.bathrooms} ห้อง`     : "",
+      selected.area_sqm  ? `พื้นที่ใช้สอย: ${selected.area_sqm} ตร.ม.` : "",
+      selected.land_sqm  ? `ที่ดิน: ${selected.land_sqm} ตร.ว.`      : "",
+      selected.excerpt   ? `รายละเอียด: ${selected.excerpt.slice(0, 300)}` : "",
+    ].filter(Boolean).join("\n");
+
+    const system = `คุณเป็น Social Media Editor ของแบรนด์ ${BRAND} (โบรกเกอร์อสังหาริมทรัพย์และบริษัทรับสร้างบ้าน)
+เขียน ${typeLabel} โปรโมททรัพย์ชิ้นนี้ให้น่าสนใจและขายออกได้จริง
+
+กฎเหล็ก:
+❌ ห้าม hallucinate ข้อมูลที่ไม่มีในรายละเอียดทรัพย์
+❌ ห้ามเขียนยาวเกิน 200 คำ
+❌ ห้ามใช้ "ปรึกษาฟรี" หรือ "ลิงก์ใน Bio"
+✅ เขียน FB style กระชับ ดึงใจ ภาษาพูดธรรมชาติ
+✅ ไฮไลท์ราคาและจุดเด่น
+✅ CTA: "ทักมาปรึกษาเลย 0627946152" หรือ "ดูรายละเอียดที่ finnhouses.com"
+✅ Hashtag 5-7 อัน รวม #Finnhouses #ขายบ้าน #โบรกเกอร์`;
+
+    const prompt = `รายละเอียดทรัพย์:
+ชื่อ: "${selected.title.replace(/<[^>]+>/g, "")}"
+${details}
+
+เขียน ${typeLabel} สำหรับ Facebook page ของ ${BRAND}:
+• Hook 1-2 บรรทัดแรก — ดึงใจคนที่กำลังมองหาบ้าน
+• Highlight จุดเด่น 3-4 ข้อ (emoji bullet)
+• ราคา (ต้องแสดง ถ้ามีข้อมูล)
+• CTA
+• Hashtag
+
+เขียนตรงๆ ห้ามใส่ label "Hook:" หรือ "CTA:" นำหน้า`;
+
+    const text = await callClaude(system, prompt, "claude-sonnet-4-6").catch(e => `❌ Error: ${e.message}`);
+    setResult(text);
+    setLoading(false);
+  }
+
+  async function postToFacebook() {
+    if (!result) return;
+    setPosting(true); setPostResult(null);
+    try {
+      const imageUrl = selected?.featured_image?.startsWith("https://") ? selected.featured_image : undefined;
+      const r = await fetch("/api/fb/publish", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: result, imageUrl, source: "listing" }),
+      });
+      const data = await r.json();
+      setPostResult(r.ok && data.ok !== false ? "ok" : "error");
+    } catch { setPostResult("error"); }
+    finally { setPosting(false); }
+  }
+
+  function copy() { navigator.clipboard.writeText(result); setCopied(true); setTimeout(() => setCopied(false), 2000); }
+
+  function save() {
+    if (!result || result.startsWith("❌")) return;
+    onSave({
+      id: Date.now(), keyword: selected?.title.replace(/<[^>]+>/g, "") ?? "Listing",
+      style: "—", type, content: result,
+      imageUrl: selected?.featured_image ?? "",
+      date: new Date().toLocaleDateString("th-TH"), source: "blog",
+    });
+  }
+
+  return (
+    <div style={{ display: "flex", gap: 20, height: "100%" }}>
+      {/* Left — Property List */}
+      <Card style={{ width: 300, flexShrink: 0, display: "flex", flexDirection: "column", gap: 10, overflow: "hidden" }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: "#fb7185", letterSpacing: ".1em" }}>🏠 PROPERTY LISTINGS</div>
+        <div style={{ fontSize: 11, color: "#64748b" }}>เลือกทรัพย์ที่อยากโพสต์ขาย</div>
+        <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 8 }}>
+          {loadingList ? (
+            <div style={{ textAlign: "center", paddingTop: 40, color: "#334155", fontSize: 13 }}>⏳ กำลังโหลด...</div>
+          ) : listError ? (
+            <div style={{ color: "#f43f5e", fontSize: 12, padding: "8px 12px", background: "rgba(244,63,94,.08)", borderRadius: 8 }}>❌ {listError}</div>
+          ) : properties.length === 0 ? (
+            <div style={{ textAlign: "center", paddingTop: 40, color: "#334155", fontSize: 13 }}>ยังไม่มีทรัพย์ที่ publish บนเว็บ</div>
+          ) : properties.map(p => (
+            <button
+              key={p.wp_id}
+              onClick={() => { setSelected(p); setResult(""); setPostResult(null); }}
+              style={{
+                textAlign: "left", padding: "10px 12px", borderRadius: 10, cursor: "pointer", width: "100%",
+                background: selected?.wp_id === p.wp_id ? "rgba(251,113,133,.1)" : "rgba(255,255,255,.03)",
+                border: selected?.wp_id === p.wp_id ? "1px solid rgba(251,113,133,.35)" : "1px solid rgba(255,255,255,.06)",
+              }}
+            >
+              {p.featured_image && (
+                <img src={p.featured_image} alt="" style={{ width: "100%", height: 80, objectFit: "cover", borderRadius: 6, marginBottom: 8, display: "block" }} />
+              )}
+              <div style={{ fontSize: 12, fontWeight: 700, color: "#e2e8f0", lineHeight: 1.4, marginBottom: 4 }}
+                dangerouslySetInnerHTML={{ __html: p.title }} />
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {p.price   && <span style={{ fontSize: 10, color: "#fb7185", fontWeight: 700 }}>{formatPriceTh(p.price)}</span>}
+                {p.location && <span style={{ fontSize: 10, color: "#64748b" }}>📍 {p.location}</span>}
+                {p.bedrooms && <span style={{ fontSize: 10, color: "#64748b" }}>🛏 {p.bedrooms}</span>}
+              </div>
+            </button>
+          ))}
+        </div>
+      </Card>
+
+      {/* Right — Generate + Result */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 16 }}>
+        {selected ? (
+          <>
+            <Card style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "#fb7185" }}>📝 สร้าง Post สำหรับ</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "#f1f5f9" }}
+                dangerouslySetInnerHTML={{ __html: selected.title }} />
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {[
+                  selected.property_type && `🏷️ ${selected.property_type}`,
+                  selected.location      && `📍 ${selected.location}`,
+                  selected.price         && `💰 ${formatPriceTh(selected.price)}`,
+                  selected.bedrooms      && `🛏 ${selected.bedrooms} ห้องนอน`,
+                  selected.area_sqm      && `📐 ${selected.area_sqm} ตร.ม.`,
+                ].filter(Boolean).map((tag, i) => (
+                  <Tag key={i} label={tag as string} color="#fb7185" />
+                ))}
+              </div>
+              <div>
+                <div style={{ fontSize: 11, color: "#64748b", marginBottom: 6 }}>แปลงเป็น</div>
+                <div style={{ display: "flex", gap: 6 }}>
+                  {POST_TYPES.map(t => (
+                    <button key={t.value} onClick={() => setType(t.value)} style={{
+                      flex: 1, padding: "8px 4px", borderRadius: 8, fontSize: 11, fontWeight: 600, cursor: "pointer",
+                      background: type === t.value ? "rgba(251,113,133,.15)" : "rgba(255,255,255,.04)",
+                      color: type === t.value ? "#fb7185" : "#64748b",
+                      border: type === t.value ? "1px solid rgba(251,113,133,.3)" : "1px solid rgba(255,255,255,.06)",
+                      textAlign: "center" as const,
+                    }}>{t.emoji}<br />{t.label}</button>
+                  ))}
+                </div>
+              </div>
+              <button onClick={generate} disabled={loading} style={{
+                background: loading ? "rgba(251,113,133,.05)" : "rgba(251,113,133,.12)",
+                color: loading ? "#334155" : "#fb7185",
+                border: "1px solid rgba(251,113,133,.25)", borderRadius: 12,
+                padding: "12px", fontSize: 13, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer",
+              }}>
+                {loading ? "⏳ กำลังสร้าง..." : "✨ สร้าง FB Post"}
+              </button>
+            </Card>
+            {result && (
+              <Card style={{ flex: 1, position: "relative" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                  <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                    <Tag label={`🏠 Listing → ${POST_TYPES.find(t => t.value === type)?.label}`} color="#fb7185" />
+                    {selected.featured_image && <Tag label="🖼️ มีรูป" color="#10b981" />}
+                  </div>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button onClick={copy} style={btnStyle("#22d3ee")}>{copied ? "✅ Copied!" : "📋 Copy"}</button>
+                    <button onClick={save} style={btnStyle("#10b981")}>💾 Save</button>
+                    <button onClick={postToFacebook} disabled={posting} style={btnStyle(postResult === "ok" ? "#10b981" : postResult === "error" ? "#f43f5e" : "#6366f1")}>
+                      {posting ? "⏳..." : postResult === "ok" ? "✅ โพสต์แล้ว!" : postResult === "error" ? "❌ ผิดพลาด" : "📤 Post to Facebook"}
+                    </button>
+                  </div>
+                </div>
+                <pre style={{ whiteSpace: "pre-wrap", fontSize: 13, color: "#e2e8f0", lineHeight: 1.7, margin: 0, fontFamily: "inherit" }}>{result}</pre>
+              </Card>
+            )}
+          </>
+        ) : (
+          <Card style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12 }}>
+            <div style={{ fontSize: 48 }}>🏠</div>
+            <div style={{ fontSize: 14, color: "#475569" }}>เลือกทรัพย์จากรายการทางซ้าย</div>
+            <div style={{ fontSize: 11, color: "#334155" }}>AI จะสร้าง FB Post พร้อมรูปให้อัตโนมัติ</div>
+          </Card>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Tab: Saved & FB Status ────────────────────────────────────────────────────
 function HistoryTab({ saved, onDelete }: { saved: ContentItem[]; onDelete: (id: number) => void }) {
   const [fb, setFb] = useState<FbState>({ status: "unknown", queue: 0, drafts: 0, published: 0, lastUpdate: null });
@@ -858,6 +1089,7 @@ function btnStyle(color: string): React.CSSProperties {
 const TABS = [
   { key: "keyword", label: "สร้างจาก Keyword", icon: "✨" },
   { key: "blog",    label: "แปลงจาก Blog",      icon: "📰" },
+  { key: "listing", label: "จาก Listing",        icon: "🏠" },
   { key: "history", label: "History & Status",   icon: "📡" },
   { key: "queue",   label: "Content Queue",      icon: "📅" },
 ];
@@ -1179,6 +1411,7 @@ export default function AIContent() {
       <div style={{ flex: 1, overflow: "auto" }}>
         {tab === "keyword" && <KeywordTab onSave={handleSave} />}
         {tab === "blog"    && <BlogConvertTab onSave={handleSave} />}
+        {tab === "listing" && <ListingTab onSave={handleSave} />}
         {tab === "history" && <HistoryTab saved={saved} onDelete={handleDelete} />}
         {tab === "queue"   && <FbQueueTab />}
       </div>
