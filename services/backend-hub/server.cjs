@@ -1015,23 +1015,35 @@ app.get("/api/properties/wp-published", async (req, res) => {
       return res.status(500).json({ ok: false, error: `WP ${wpRes.status}: ${txt.slice(0,200)}` });
     }
     const posts = await wpRes.json();
-    const properties = posts.map(p => ({
-      wp_id:         p.id,
-      title:         p.title?.rendered ?? "",
-      link:          p.link ?? "",
-      date:          p.date ?? "",
-      excerpt:       p.excerpt?.rendered?.replace(/<[^>]+>/g, "").trim() ?? "",
-      featured_image: p._embedded?.["wp:featuredmedia"]?.[0]?.source_url ?? "",
-      // WP meta fields (registered via finnhouses_register_property_meta)
-      price:         p.meta?.asking_price ?? p.meta?.price ?? null,
-      property_type: p.meta?.property_type ?? "",
-      location:      p.meta?.location ?? "",
-      zone:          p.meta?.zone ?? "",
-      bedrooms:      p.meta?.bedrooms ?? null,
-      bathrooms:     p.meta?.bathrooms ?? null,
-      area_sqm:      p.meta?.area_sqm ?? null,
-      land_sqm:      p.meta?.land_sqm ?? null,
-    }));
+    const properties = posts.map(p => {
+      // Taxonomies come via _embedded["wp:term"] — array of arrays per taxonomy
+      const terms = p._embedded?.["wp:term"] ?? [];
+      const getTaxTerm = (slug) => {
+        for (const group of terms) {
+          const found = group.find(t => t.taxonomy === slug);
+          if (found) return found.name ?? "";
+        }
+        return "";
+      };
+      return {
+        wp_id:          p.id,
+        title:          p.title?.rendered ?? "",
+        link:           p.link ?? "",
+        date:           p.date ?? "",
+        excerpt:        p.excerpt?.rendered?.replace(/<[^>]+>/g, "").trim() ?? "",
+        featured_image: p._embedded?.["wp:featuredmedia"]?.[0]?.source_url ?? "",
+        // Meta fields — WP uses finn_ prefix (registered via finnhouses_register_property_meta)
+        price:          p.meta?.finn_price ?? null,
+        zone:           p.meta?.finn_zone ?? "",
+        bedrooms:       p.meta?.finn_bedrooms ?? null,
+        bathrooms:      p.meta?.finn_bathrooms ?? null,
+        area_sqm:       p.meta?.finn_usable_area ?? null,
+        land_sqm:       p.meta?.finn_area ?? null,
+        // Taxonomies
+        property_type:  getTaxTerm("property_type"),
+        location:       getTaxTerm("property_location"),
+      };
+    });
     res.json({ ok: true, properties });
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });

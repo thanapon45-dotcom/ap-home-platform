@@ -821,18 +821,19 @@ function ListingTab({ onSave }: { onSave: (item: ContentItem) => void }) {
 ❌ ห้ามใช้ "ปรึกษาฟรี" หรือ "ลิงก์ใน Bio"
 ✅ เขียน FB style กระชับ ดึงใจ ภาษาพูดธรรมชาติ
 ✅ ไฮไลท์ราคาและจุดเด่น
-✅ CTA: "ทักมาปรึกษาเลย 0627946152" หรือ "ดูรายละเอียดที่ finnhouses.com"
+✅ CTA: ใช้ลิงก์ทรัพย์นี้โดยตรง — "ดูรายละเอียดเพิ่มเติมที่ [PROPERTY_URL]" หรือ "ทักมาปรึกษาเลย 0627946152"
 ✅ Hashtag 5-7 อัน รวม #Finnhouses #ขายบ้าน #โบรกเกอร์`;
 
     const prompt = `รายละเอียดทรัพย์:
 ชื่อ: "${selected.title.replace(/<[^>]+>/g, "")}"
 ${details}
+ลิงก์ทรัพย์: ${selected.link}
 
 เขียน ${typeLabel} สำหรับ Facebook page ของ ${BRAND}:
 • Hook 1-2 บรรทัดแรก — ดึงใจคนที่กำลังมองหาบ้าน
 • Highlight จุดเด่น 3-4 ข้อ (emoji bullet)
 • ราคา (ต้องแสดง ถ้ามีข้อมูล)
-• CTA
+• CTA: ใช้ลิงก์ทรัพย์นี้โดยตรง (${selected.link}) ให้คนคลิกดูรายละเอียดเพิ่มเติม
 • Hashtag
 
 เขียนตรงๆ ห้ามใส่ label "Hook:" หรือ "CTA:" นำหน้า`;
