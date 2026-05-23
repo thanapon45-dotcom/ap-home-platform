@@ -872,12 +872,12 @@ ${details}
   }
 
   return (
-    <div style={{ display: "flex", gap: 20, height: "100%" }}>
+    <div style={{ display: "flex", gap: 20, height: "calc(100vh - 210px)", minHeight: 420 }}>
       {/* Left — Property List */}
-      <Card style={{ width: 300, flexShrink: 0, display: "flex", flexDirection: "column", gap: 10, overflow: "hidden" }}>
+      <Card style={{ width: 280, flexShrink: 0, display: "flex", flexDirection: "column", gap: 10, overflow: "hidden", height: "100%" }}>
         <div style={{ fontSize: 12, fontWeight: 700, color: "#fb7185", letterSpacing: ".1em" }}>🏠 PROPERTY LISTINGS</div>
         <div style={{ fontSize: 11, color: "#64748b" }}>เลือกทรัพย์ที่อยากโพสต์ขาย</div>
-        <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 8, minHeight: 0 }}>
           {loadingList ? (
             <div style={{ textAlign: "center", paddingTop: 40, color: "#334155", fontSize: 13 }}>⏳ กำลังโหลด...</div>
           ) : listError ? (
@@ -910,10 +910,10 @@ ${details}
       </Card>
 
       {/* Right — Generate + Result */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 16 }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 12, overflow: "hidden", minHeight: 0 }}>
         {selected ? (
           <>
-            <Card style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <Card style={{ display: "flex", flexDirection: "column", gap: 10, flexShrink: 0 }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: "#fb7185" }}>📝 สร้าง Post สำหรับ</div>
               <div style={{ fontSize: 14, fontWeight: 700, color: "#f1f5f9" }}
                 dangerouslySetInnerHTML={{ __html: selected.title }} />
@@ -952,8 +952,8 @@ ${details}
               </button>
             </Card>
             {result && (
-              <Card style={{ flex: 1, position: "relative" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+              <Card style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minHeight: 0 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexShrink: 0 }}>
                   <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                     <Tag label={`🏠 Listing → ${POST_TYPES.find(t => t.value === type)?.label}`} color="#fb7185" />
                     {selected.featured_image && <Tag label="🖼️ มีรูป" color="#10b981" />}
@@ -966,7 +966,7 @@ ${details}
                     </button>
                   </div>
                 </div>
-                <pre style={{ whiteSpace: "pre-wrap", fontSize: 13, color: "#e2e8f0", lineHeight: 1.7, margin: 0, fontFamily: "inherit" }}>{result}</pre>
+                <pre style={{ whiteSpace: "pre-wrap", fontSize: 13, color: "#e2e8f0", lineHeight: 1.7, margin: 0, fontFamily: "inherit", overflowY: "auto", flex: 1 }}>{result}</pre>
               </Card>
             )}
           </>
