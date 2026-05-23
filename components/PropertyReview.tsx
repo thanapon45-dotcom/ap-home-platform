@@ -138,6 +138,7 @@ export default function PropertyReview() {
           land_sqm:       edit.land_sqm ? Number(edit.land_sqm) : null,
           notes:          edit.notes || null,
           featured_media: mediaMap[p.id]?.media_id ?? null,
+          gallery_ids:    mediaMap[p.id]?.media_id ? [mediaMap[p.id].media_id] : [],
         }),
       });
       const json = await res.json();
