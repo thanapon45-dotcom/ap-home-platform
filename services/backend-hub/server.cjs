@@ -1050,6 +1050,56 @@ app.get("/api/properties/wp-published", async (req, res) => {
   }
 });
 
+// ── Append LINE image to a property (called by n8n after uploading to WP) ─────
+app.post("/action/property/append-line-image", async (req, res) => {
+  const { line_user_id, media_id, url } = req.body || {};
+  if (!line_user_id || !media_id || !url) {
+    return res.status(400).json({ ok: false, error: "line_user_id, media_id, url required" });
+  }
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    return res.status(500).json({ ok: false, error: "No Supabase credentials" });
+  }
+  try {
+    // 1. Find latest pending_review property for this LINE user (within 48h)
+    const since = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+    const findRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/properties?line_user_id=eq.${encodeURIComponent(line_user_id)}&status=eq.pending_review&listed_at=gte.${since}&order=listed_at.desc&limit=1`,
+      { headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": `Bearer ${SUPABASE_ANON_KEY}` } }
+    );
+    const rows = await findRes.json();
+    if (!rows?.length) {
+      return res.status(404).json({ ok: false, error: "No pending property found for this LINE user (within 48h)" });
+    }
+    const prop = rows[0];
+    const existing = Array.isArray(prop.line_images) ? prop.line_images : [];
+    // Cap at 4 images
+    if (existing.length >= 4) {
+      return res.json({ ok: true, skipped: true, reason: "Already 4 images", property_id: prop.id });
+    }
+    const updated = [...existing, { media_id, url }];
+
+    // 2. Patch Supabase
+    const patchRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/properties?id=eq.${prop.id}`,
+      {
+        method: "PATCH",
+        headers: {
+          "apikey": SUPABASE_ANON_KEY,
+          "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+          "Content-Type": "application/json",
+          "Prefer": "return=representation",
+        },
+        body: JSON.stringify({ line_images: updated }),
+      }
+    );
+    const patchData = await patchRes.json();
+    console.log(`[hub] append-line-image → property ${prop.id} media_id=${media_id}`, patchRes.ok ? "✅" : patchData);
+    res.json({ ok: patchRes.ok, property_id: prop.id, image_count: updated.length });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
 // ── Land Analyzer / Reno Estimator — Lead Capture ────────────────────────────
 app.post("/action/land-lead", async (req, res) => {
   const { name, phone, source, notes, budget, roi } = req.body || {};

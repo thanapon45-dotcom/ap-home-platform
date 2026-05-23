@@ -2,6 +2,8 @@
 
 import { useEffect, useState, useCallback } from "react";
 
+interface LineImage { media_id: number; url: string; }
+
 interface Property {
   id: string;
   title: string;
@@ -18,6 +20,7 @@ interface Property {
   listed_at: string;
   status: string;
   wp_post_id?: number | null;
+  line_images?: LineImage[] | null;
 }
 
 interface EditState {
@@ -73,8 +76,8 @@ export default function PropertyReview() {
   const [publishing, setPublishing] = useState<Record<string, boolean>>({});
   const [published, setPublished] = useState<Record<string, { url: string; wp_post_id: number }>>({});
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
-  const [mediaMap, setMediaMap] = useState<Record<string, { media_id: number; url: string }>>({});
-  const [uploading, setUploading] = useState<Record<string, boolean>>({});
+  const [mediaMap, setMediaMap] = useState<Record<string, Array<{ media_id: number; url: string }>>>({});
+  const [uploadingSlots, setUploadingSlots] = useState<Record<string, Record<number, boolean>>>({});
 
   const fetchPending = useCallback(async () => {
     setLoading(true);
@@ -84,9 +87,14 @@ export default function PropertyReview() {
       const json = await res.json();
       if (!json.ok) throw new Error(json.error ?? "fetch failed");
       setProperties(json.data ?? []);
-      const map: Record<string, EditState> = {};
-      for (const p of json.data ?? []) map[p.id] = toEditState(p);
-      setEditMap(map);
+      const editMap: Record<string, EditState> = {};
+      const mediaInit: Record<string, Array<{ media_id: number; url: string }>> = {};
+      for (const p of json.data ?? []) {
+        editMap[p.id] = toEditState(p);
+        if (p.line_images?.length) mediaInit[p.id] = p.line_images.slice(0, 4);
+      }
+      setEditMap(editMap);
+      setMediaMap(mediaInit);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "โหลดข้อมูลไม่ได้");
     } finally {
@@ -100,8 +108,10 @@ export default function PropertyReview() {
     setEditMap(prev => ({ ...prev, [id]: { ...prev[id], [field]: value } }));
   }
 
-  async function handleImageUpload(propId: string, file: File) {
-    setUploading(prev => ({ ...prev, [propId]: true }));
+  async function handleImageUpload(propId: string, slotIdx: number, file: File) {
+    setUploadingSlots(prev => ({
+      ...prev, [propId]: { ...(prev[propId] ?? {}), [slotIdx]: true },
+    }));
     try {
       const r = await fetch("/api/property/upload-image", {
         method: "POST",
@@ -110,12 +120,26 @@ export default function PropertyReview() {
       });
       const json = await r.json();
       if (!json.ok) throw new Error(json.error ?? "upload failed");
-      setMediaMap(prev => ({ ...prev, [propId]: { media_id: json.media_id, url: json.url } }));
+      setMediaMap(prev => {
+        const arr = [...(prev[propId] ?? [])];
+        arr[slotIdx] = { media_id: json.media_id, url: json.url };
+        return { ...prev, [propId]: arr };
+      });
     } catch (e: unknown) {
       alert(`อัพรูปไม่สำเร็จ: ${e instanceof Error ? e.message : "unknown"}`);
     } finally {
-      setUploading(prev => ({ ...prev, [propId]: false }));
+      setUploadingSlots(prev => ({
+        ...prev, [propId]: { ...(prev[propId] ?? {}), [slotIdx]: false },
+      }));
     }
+  }
+
+  function removeImage(propId: string, slotIdx: number) {
+    setMediaMap(prev => {
+      const arr = [...(prev[propId] ?? [])];
+      arr[slotIdx] = undefined as unknown as { media_id: number; url: string };
+      return { ...prev, [propId]: arr };
+    });
   }
 
   async function handlePublish(p: Property) {
@@ -137,8 +161,8 @@ export default function PropertyReview() {
           area_sqm:       edit.area_sqm ? Number(edit.area_sqm) : null,
           land_sqm:       edit.land_sqm ? Number(edit.land_sqm) : null,
           notes:          edit.notes || null,
-          featured_media: mediaMap[p.id]?.media_id ?? null,
-          gallery_ids:    mediaMap[p.id]?.media_id ? [mediaMap[p.id].media_id] : [],
+          featured_media: (mediaMap[p.id] ?? []).find(Boolean)?.media_id ?? null,
+          gallery_ids:    (mediaMap[p.id] ?? []).filter(Boolean).map(i => i.media_id),
         }),
       });
       const json = await res.json();
@@ -183,8 +207,9 @@ export default function PropertyReview() {
           const isPub = !!published[p.id];
           const isPublishing = !!publishing[p.id];
           const pubData = published[p.id];
-          const hasImage = !!mediaMap[p.id];
-          const isUploading = !!uploading[p.id];
+          const images = mediaMap[p.id] ?? [];
+          const slots = uploadingSlots[p.id] ?? {};
+          const lineImgCount = p.line_images?.length ?? 0;
 
           return (
             <div key={p.id} style={{ background: "#141414", border: `1px solid ${isPub ? "#1a4a1a" : "#222"}`, borderRadius: 10, padding: 24, position: "relative" }}>
@@ -261,35 +286,60 @@ export default function PropertyReview() {
 
               {!isPub && (
                 <div style={{ marginBottom: 16 }}>
-                  <div style={{ fontSize: 11, color: "#666", marginBottom: 8 }}>Cover Image</div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    {hasImage ? (
-                      <div style={{ position: "relative" }}>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={mediaMap[p.id].url} alt="cover" style={{ width: 120, height: 80, objectFit: "cover", borderRadius: 6, border: "1px solid #2a2a2a" }} />
-                        <button
-                          onClick={() => setMediaMap(prev => { const n = { ...prev }; delete n[p.id]; return n; })}
-                          style={{ position: "absolute", top: -6, right: -6, background: "#f43f5e", border: "none", borderRadius: "50%", width: 18, height: 18, color: "#fff", fontSize: 11, cursor: "pointer", lineHeight: "18px", textAlign: "center" }}
-                        >x</button>
-                      </div>
-                    ) : (
-                      <label htmlFor={`img-${p.id}`} style={{ cursor: isUploading ? "wait" : "pointer" }}>
-                        <div style={{ width: 120, height: 80, background: "#1a1a1a", border: "1px dashed #333", borderRadius: 6, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-                          {isUploading ? (
-                            <span style={{ fontSize: 11, color: "#666" }}>uploading...</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                    <span style={{ fontSize: 11, color: "#666" }}>รูปภาพ (สูงสุด 4 รูป)</span>
+                    <span style={{ fontSize: 10, color: "#444" }}>· รูปแรก = หน้าปก, ทั้งหมด = แกลเลอรี่</span>
+                    {lineImgCount > 0 && (
+                      <span style={{ fontSize: 10, background: "#1a3a2a", color: "#4ade80", padding: "2px 7px", borderRadius: 10 }}>
+                        📱 {lineImgCount} รูปจาก LINE
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                    {[0, 1, 2, 3].map(slotIdx => {
+                      const img = images[slotIdx];
+                      const isUp = !!slots[slotIdx];
+                      return (
+                        <div key={slotIdx} style={{ position: "relative" }}>
+                          {img ? (
+                            <>
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={img.url} alt={`slot ${slotIdx}`}
+                                style={{ width: 110, height: 75, objectFit: "cover", borderRadius: 6, border: slotIdx === 0 ? "2px solid #C9A84C" : "1px solid #2a2a2a", display: "block" }} />
+                              {slotIdx === 0 && (
+                                <span style={{ position: "absolute", bottom: 4, left: 4, fontSize: 9, background: "#C9A84C", color: "#000", borderRadius: 3, padding: "1px 5px", fontWeight: 700 }}>COVER</span>
+                              )}
+                              {slotIdx < lineImgCount && (
+                                <span style={{ position: "absolute", top: 4, left: 4, fontSize: 9, background: "#166534", color: "#4ade80", borderRadius: 3, padding: "1px 5px" }}>LINE</span>
+                              )}
+                              <button onClick={() => removeImage(p.id, slotIdx)}
+                                style={{ position: "absolute", top: -6, right: -6, background: "#f43f5e", border: "none", borderRadius: "50%", width: 18, height: 18, color: "#fff", fontSize: 11, cursor: "pointer", lineHeight: "18px", textAlign: "center" }}>
+                                x
+                              </button>
+                            </>
                           ) : (
-                            <div style={{ textAlign: "center" }}>
-                              <div style={{ fontSize: 20 }}>+</div>
-                              <div style={{ fontSize: 10, color: "#555" }}>เลือกรูป</div>
-                            </div>
+                            <label htmlFor={`img-${p.id}-${slotIdx}`} style={{ cursor: isUp ? "wait" : "pointer", display: "block" }}>
+                              <div style={{ width: 110, height: 75, background: "#1a1a1a", border: `1px dashed ${slotIdx === 0 ? "#C9A84C55" : "#2a2a2a"}`, borderRadius: 6, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+                                {isUp ? (
+                                  <span style={{ fontSize: 10, color: "#666" }}>uploading...</span>
+                                ) : (
+                                  <>
+                                    <div style={{ fontSize: 18, color: slotIdx === 0 ? "#C9A84C" : "#444" }}>+</div>
+                                    <div style={{ fontSize: 9, color: slotIdx === 0 ? "#C9A84C88" : "#444" }}>{slotIdx === 0 ? "หน้าปก" : `รูป ${slotIdx + 1}`}</div>
+                                  </>
+                                )}
+                              </div>
+                              <input id={`img-${p.id}-${slotIdx}`} type="file" accept="image/jpeg,image/png,image/webp" style={{ display: "none" }}
+                                onChange={e => { const f = e.target.files?.[0]; if (f) handleImageUpload(p.id, slotIdx, f); e.target.value = ""; }} />
+                            </label>
                           )}
                         </div>
-                        <input id={`img-${p.id}`} type="file" accept="image/jpeg,image/png,image/webp" style={{ display: "none" }}
-                          onChange={e => { const f = e.target.files?.[0]; if (f) handleImageUpload(p.id, f); }} />
-                      </label>
-                    )}
-                    <div style={{ fontSize: 11, color: hasImage ? "#4ade80" : "#555" }}>
-                      {hasImage ? "พร้อม publish พร้อมรูป" : "ไม่บังคับ — ถ้าไม่มีรูปจะ publish โดยไม่มี cover"}
+                      );
+                    })}
+                    <div style={{ fontSize: 11, color: images.filter(Boolean).length > 0 ? "#4ade80" : "#444", alignSelf: "center", marginLeft: 4 }}>
+                      {images.filter(Boolean).length > 0
+                        ? `✓ ${images.filter(Boolean).length} รูป พร้อม publish`
+                        : "ไม่มีรูปก็ publish ได้"}
                     </div>
                   </div>
                 </div>

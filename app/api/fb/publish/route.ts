@@ -19,13 +19,18 @@ export async function POST(req: NextRequest) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
+      signal: AbortSignal.timeout(25_000), // 25s — Railway cold-start can take ~20s
     });
 
     const data = await r.json();
     return NextResponse.json(data, { status: r.status });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "FB publish failed";
+    const isTimeout = message.includes("timeout") || message.includes("abort");
     console.error("[api/fb/publish] error:", message);
-    return NextResponse.json({ ok: false, error: message }, { status: 500 });
+    return NextResponse.json(
+      { ok: false, error: isTimeout ? "FB Backend กำลังเริ่มต้น กรุณาลองใหม่ใน 30 วินาที" : message },
+      { status: 503 }
+    );
   }
 }
