@@ -166,9 +166,16 @@ export default function PropertyReview() {
     const edit = editMap[p.id];
     // Validate: ห้ามส่ง gallery slot ที่ media_id = 0 (URL มีแต่ยังไม่ได้ upload จริง)
     const slots = mediaMap[p.id] ?? [];
+    // ตรวจ cover slot ก่อน
+    const coverMediaId = slots[0]?.media_id ?? 0;
+    if (!(coverMediaId > 0)) {
+      alert('กรุณา upload รูปหน้าปก (COVER) ก่อน Approve — slot แรกยังว่างอยู่');
+      return;
+    }
+    // ตรวจ gallery slots 1-3
     const brokenSlots = slots.slice(1, 4).filter(s => s && !(s.media_id > 0));
     if (brokenSlots.length > 0) {
-      alert(`Gallery มี ${brokenSlots.length} slot ที่ media_id = 0 — กรุณา re-upload รูปนั้นก่อน Approve`);
+      alert(`Gallery มี ${brokenSlots.length} slot ที่ media_id = 0 — ลบแล้ว upload ใหม่`);
       return;
     }
     setPublishing(prev => ({ ...prev, [p.id]: true }));
@@ -188,7 +195,9 @@ export default function PropertyReview() {
           area_sqm:       edit.area_sqm ? Number(edit.area_sqm) : null,
           land_sqm:       edit.land_sqm ? Number(edit.land_sqm) : null,
           notes:          edit.notes || null,
-          featured_media: (mediaMap[p.id] ?? []).find(Boolean)?.media_id ?? null,
+          featured_media: ((mediaMap[p.id] ?? [])[0]?.media_id ?? 0) > 0
+                            ? (mediaMap[p.id] ?? [])[0].media_id
+                            : null,
           gallery_ids:    (mediaMap[p.id] ?? []).slice(1).filter(i => i?.media_id > 0).map(i => i.media_id),
         }),
       });
@@ -333,10 +342,14 @@ export default function PropertyReview() {
                             <>
                               {/* eslint-disable-next-line @next/next/no-img-element */}
                               <img src={img.url} alt={`slot ${slotIdx}`}
-                                style={{ width: 110, height: 75, objectFit: "cover", borderRadius: 6, border: slotIdx === 0 ? "2px solid #C9A84C" : "1px solid #2a2a2a", display: "block" }} />
+                                style={{ width: 110, height: 75, objectFit: "cover", borderRadius: 6, border: img.media_id > 0 ? (slotIdx === 0 ? "2px solid #C9A84C" : "1px solid #2a2a2a") : "2px solid #f43f5e", display: "block" }} />
                               {slotIdx === 0 && (
                                 <span style={{ position: "absolute", bottom: 4, left: 4, fontSize: 9, background: "#C9A84C", color: "#000", borderRadius: 3, padding: "1px 5px", fontWeight: 700 }}>COVER</span>
                               )}
+                              {/* media_id badge */}
+                              <span style={{ position: "absolute", top: 4, right: 4, fontSize: 8, background: img.media_id > 0 ? "#14532d" : "#7f1d1d", color: img.media_id > 0 ? "#4ade80" : "#f87171", borderRadius: 3, padding: "1px 4px" }}>
+                                {img.media_id > 0 ? `#${img.media_id}` : "⚠️"}
+                              </span>
                               {slotIdx < lineImgCount && (
                                 <span style={{ position: "absolute", top: 4, left: 4, fontSize: 9, background: "#166534", color: "#4ade80", borderRadius: 3, padding: "1px 5px" }}>LINE</span>
                               )}
@@ -364,9 +377,9 @@ export default function PropertyReview() {
                         </div>
                       );
                     })}
-                    <div style={{ fontSize: 11, color: images.filter(Boolean).length > 0 ? "#4ade80" : "#444", alignSelf: "center", marginLeft: 4 }}>
-                      {images.filter(Boolean).length > 0
-                        ? `✓ ${images.filter(Boolean).length} รูป พร้อม publish`
+                    <div style={{ fontSize: 11, color: images.filter(i => i?.media_id > 0).length > 0 ? "#4ade80" : "#444", alignSelf: "center", marginLeft: 4 }}>
+                      {images.filter(i => i?.media_id > 0).length > 0
+                        ? `✓ ${images.filter(i => i?.media_id > 0).length} รูป พร้อม publish`
                         : "ไม่มีรูปก็ publish ได้"}
                     </div>
                   </div>
