@@ -164,6 +164,13 @@ export default function PropertyReview() {
 
   async function handlePublish(p: Property) {
     const edit = editMap[p.id];
+    // Validate: ห้ามส่ง gallery slot ที่ media_id = 0 (URL มีแต่ยังไม่ได้ upload จริง)
+    const slots = mediaMap[p.id] ?? [];
+    const brokenSlots = slots.slice(1, 4).filter(s => s && !(s.media_id > 0));
+    if (brokenSlots.length > 0) {
+      alert(`Gallery มี ${brokenSlots.length} slot ที่ media_id = 0 — กรุณา re-upload รูปนั้นก่อน Approve`);
+      return;
+    }
     setPublishing(prev => ({ ...prev, [p.id]: true }));
     try {
       const res = await fetch("/api/property/publish", {
@@ -182,7 +189,7 @@ export default function PropertyReview() {
           land_sqm:       edit.land_sqm ? Number(edit.land_sqm) : null,
           notes:          edit.notes || null,
           featured_media: (mediaMap[p.id] ?? []).find(Boolean)?.media_id ?? null,
-          gallery_ids:    (mediaMap[p.id] ?? []).slice(1).filter(Boolean).map(i => i.media_id),
+          gallery_ids:    (mediaMap[p.id] ?? []).slice(1).filter(i => i?.media_id > 0).map(i => i.media_id),
         }),
       });
       const json = await res.json();
