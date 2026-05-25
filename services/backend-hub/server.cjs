@@ -939,8 +939,14 @@ app.post("/action/property/publish", async (req, res) => {
     return res.status(500).json({ ok: false, error: "WP credentials not configured" });
   }
 
-  // Call WordPress custom REST endpoint
   const basicAuth = Buffer.from(`${WP_USER}:${WP_APP_PASS}`).toString("base64");
+
+  // ── Step 1: Log what we're sending ───────────────────────────────────────
+  const featuredMediaId = Number(propertyData.featured_media) || 0;
+  const galleryIds = Array.isArray(propertyData.gallery_ids) ? propertyData.gallery_ids : [];
+  console.log(`[hub] publish → featured_media=${featuredMediaId} gallery_ids=[${galleryIds.join(",")}] supabase_id=${supabase_id}`);
+
+  // ── Step 2: Call WordPress custom REST endpoint ───────────────────────────
   let wpResult;
   try {
     const wpRes = await fetch(`${WP_URL}/wp-json/finnhouses/v1/property-intake`, {
@@ -953,7 +959,7 @@ app.post("/action/property/publish", async (req, res) => {
     });
     wpResult = await wpRes.json();
     if (!wpRes.ok) {
-      console.error("[hub] WP publish failed", wpResult);
+      console.error("[hub] WP publish failed", JSON.stringify(wpResult));
       return res.status(502).json({ ok: false, error: "WP error", detail: wpResult });
     }
   } catch (e) {
@@ -961,8 +967,31 @@ app.post("/action/property/publish", async (req, res) => {
   }
 
   const { wp_post_id, url } = wpResult;
+  const wpDebug = wpResult.debug || {};
+  console.log(`[hub] WP created post_id=${wp_post_id} | thumbnail_id=${wpDebug.thumbnail_id ?? "?"} has_thumbnail=${wpDebug.has_thumbnail ?? "?"} gallery_saved=[${(wpDebug.gallery_saved ?? []).join(",")}]`);
 
-  // Update Supabase: status → published, store wp_post_id
+  // ── Step 3: Belt-and-suspenders — set featured_media via standard WP REST API ─
+  // set_post_thumbnail() inside the custom endpoint can fail silently;
+  // this call ensures the featured image is always set correctly.
+  if (featuredMediaId > 0 && wp_post_id) {
+    try {
+      const patchRes = await fetch(`${WP_URL}/wp-json/wp/v2/property/${wp_post_id}`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Basic ${basicAuth}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ featured_media: featuredMediaId }),
+      });
+      const patchData = await patchRes.json();
+      const confirmedId = patchData.featured_media ?? "unknown";
+      console.log(`[hub] WP featured_media patch → confirmed=${confirmedId} (sent=${featuredMediaId})`);
+    } catch (e) {
+      console.warn(`[hub] WP featured_media patch failed (non-fatal): ${e.message}`);
+    }
+  }
+
+  // ── Step 4: Update Supabase ───────────────────────────────────────────────
   const sbResult = await supabaseUpdate(
     "properties",
     { id: `eq.${supabase_id}` },
@@ -973,8 +1002,19 @@ app.post("/action/property/publish", async (req, res) => {
     }
   );
 
-  console.log(`[hub] property published wp_post_id=${wp_post_id} supabase_id=${supabase_id}`, sbResult.ok ? "✅" : sbResult.error);
-  res.json({ ok: true, wp_post_id, url, supabase: sbResult });
+  console.log(`[hub] property published ✅ wp_post_id=${wp_post_id} supabase_id=${supabase_id}`, sbResult.ok ? "✅" : sbResult.error);
+  res.json({
+    ok: true,
+    wp_post_id,
+    url,
+    debug: {
+      sent_featured_media: featuredMediaId,
+      sent_gallery_ids: galleryIds,
+      wp_thumbnail_id: wpDebug.thumbnail_id,
+      wp_gallery_saved: wpDebug.gallery_saved,
+    },
+    supabase: sbResult,
+  });
 });
 
 // ── Get pending_review properties (for Dashboard review UI) ──────────────────
@@ -1118,58 +1158,4 @@ app.post("/action/property/append-line-image", async (req, res) => {
     console.log(`[hub] append-line-image RPC → property ${prop.id} media_id=${media_id}`, rpcRes.ok ? "✅" : rpcData);
 
     if (!rpcRes.ok) {
-      return res.status(500).json({ ok: false, error: rpcData?.message || JSON.stringify(rpcData) });
-    }
-
-    res.json({
-      ok: true,
-      property_id: prop.id,
-      image_count: rpcData?.image_count ?? null,
-      skipped: rpcData?.skipped ?? false,
-    });
-  } catch (e) {
-    res.status(500).json({ ok: false, error: e.message });
-  }
-});
-
-// ── Land Analyzer / Reno Estimator — Lead Capture ────────────────────────────
-app.post("/action/land-lead", async (req, res) => {
-  const { name, phone, source, notes, budget, roi } = req.body || {};
-  if (!name || !phone) return res.status(400).json({ ok: false, error: "name and phone required" });
-
-  const months = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
-  const d = new Date();
-  const lead_date = `${d.getDate()} ${months[d.getMonth()]}`;
-  const business_unit = source === "Reno Estimator" ? "renovation" : "broker";
-
-  const row = {
-    name,
-    phone,
-    stage:         "new",
-    source:        source || "Land Analyzer",
-    business_unit,
-    score:         70,
-    budget:        budget || null,
-    notes:         notes || null,
-    lead_date,
-    outcome:       "pending",
-  };
-
-  const result = await supabaseInsert("leads", row);
-
-  const roiLine = roi ? ` | ROI ≈ ${roi}` : "";
-  const msg = `🗺️ Lead ใหม่ — ${source || "Land Analyzer"}\n👤 ${name}\n📞 ${phone}\n💰 ${budget || "ไม่ระบุ"}${roiLine}\n📝 ${notes || "-"}`;
-  sendTelegram(msg).catch(() => {});
-
-  res.json({ ok: result.ok, error: result.error || null });
-});
-
-app.listen(PORT, HUB_HOST, () => {
-  const state = readState();
-  writeState(state);
-  console.log(`Backend Hub v2 running at ${HUB_PUBLIC_BASE_URL}`);
-  console.log(`Routes: /action/blog/queue/build|clear|run-next + /action/fb/queue/build|clear|run-next`);
-  console.log(`n8n blog webhook: ${N8N_BLOG_WEBHOOK_URL}`);
-  console.log(`fb backend: ${FB_BACKEND_URL}`);
-  console.log(`State file: ${STATE_FILE}`);
-});
+      return res.status(500).json

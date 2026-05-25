@@ -74,7 +74,7 @@ export default function PropertyReview() {
   const [error, setError] = useState("");
   const [editMap, setEditMap] = useState<Record<string, EditState>>({});
   const [publishing, setPublishing] = useState<Record<string, boolean>>({});
-  const [published, setPublished] = useState<Record<string, { url: string; wp_post_id: number }>>({});
+  const [published, setPublished] = useState<Record<string, { url: string; wp_post_id: number; debug?: { wp_thumbnail_id?: number; wp_gallery_saved?: number[]; sent_featured_media?: number; sent_gallery_ids?: number[] } }>>({});
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
   const [dismissing, setDismissing] = useState<Record<string, boolean>>({});
   const [mediaMap, setMediaMap] = useState<Record<string, Array<{ media_id: number; url: string }>>>({});
@@ -203,7 +203,7 @@ export default function PropertyReview() {
       });
       const json = await res.json();
       if (!json.ok) throw new Error(json.error ?? "publish failed");
-      setPublished(prev => ({ ...prev, [p.id]: { url: json.url, wp_post_id: json.wp_post_id } }));
+      setPublished(prev => ({ ...prev, [p.id]: { url: json.url, wp_post_id: json.wp_post_id, debug: json.debug } }));
     } catch (e: unknown) {
       alert(`Publish ไม่สำเร็จ: ${e instanceof Error ? e.message : "unknown error"}`);
     } finally {
@@ -404,20 +404,9 @@ export default function PropertyReview() {
                   </button>
                 </div>
               ) : (
-                <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                  <a href={pubData.url} target="_blank" rel="noreferrer"
-                    style={{ background: "#14532d", color: "#4ade80", padding: "10px 20px", borderRadius: 6, textDecoration: "none", fontSize: 14, fontWeight: 500 }}>
-                    ดูบนเว็บ
-                  </a>
-                  <span style={{ fontSize: 12, color: "#555" }}>WP Post #{pubData.wp_post_id}</span>
-                </div>
-              )}
-
-            </div>
-          );
-        })}
-      </div>
-
-    </div>
-  );
-}
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                    <a href={pubData.url} target="_blank" rel="noreferrer"
+                      style={{ background: "#14532d", color: "#4ade80", padding: "10px 20px", borderRadius: 6, textDecoration: "none", fontSize: 14, fontWeight: 500 }}>
+                      ดูบนเว็บ
+     
