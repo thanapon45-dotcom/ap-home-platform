@@ -1158,4 +1158,58 @@ app.post("/action/property/append-line-image", async (req, res) => {
     console.log(`[hub] append-line-image RPC → property ${prop.id} media_id=${media_id}`, rpcRes.ok ? "✅" : rpcData);
 
     if (!rpcRes.ok) {
-      return res.status(500).json
+      return res.status(500).json({ ok: false, error: rpcData?.message || JSON.stringify(rpcData) });
+    }
+
+    res.json({
+      ok: true,
+      property_id: prop.id,
+      image_count: rpcData?.image_count ?? null,
+      skipped: rpcData?.skipped ?? false,
+    });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// ── Land Analyzer / Reno Estimator — Lead Capture ────────────────────────────
+app.post("/action/land-lead", async (req, res) => {
+  const { name, phone, source, notes, budget, roi } = req.body || {};
+  if (!name || !phone) return res.status(400).json({ ok: false, error: "name and phone required" });
+
+  const months = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
+  const d = new Date();
+  const lead_date = `${d.getDate()} ${months[d.getMonth()]}`;
+  const business_unit = source === "Reno Estimator" ? "renovation" : "broker";
+
+  const row = {
+    name,
+    phone,
+    stage:         "new",
+    source:        source || "Land Analyzer",
+    business_unit,
+    score:         70,
+    budget:        budget || null,
+    notes:         notes || null,
+    lead_date,
+    outcome:       "pending",
+  };
+
+  const result = await supabaseInsert("leads", row);
+
+  const roiLine = roi ? ` | ROI ≈ ${roi}` : "";
+  const msg = `🗺️ Lead ใหม่ — ${source || "Land Analyzer"}\n👤 ${name}\n📞 ${phone}\n💰 ${budget || "ไม่ระบุ"}${roiLine}\n📝 ${notes || "-"}`;
+  sendTelegram(msg).catch(() => {});
+
+  res.json({ ok: result.ok, error: result.error || null });
+});
+
+app.listen(PORT, HUB_HOST, () => {
+  const state = readState();
+  writeState(state);
+  console.log(`Backend Hub v2 running at ${HUB_PUBLIC_BASE_URL}`);
+  console.log(`Routes: /action/blog/queue/build|clear|run-next + /action/fb/queue/build|clear|run-next`);
+  console.log(`n8n blog webhook: ${N8N_BLOG_WEBHOOK_URL}`);
+  console.log(`fb backend: ${FB_BACKEND_URL}`);
+  console.log(`State file: ${STATE_FILE}`);
+});
