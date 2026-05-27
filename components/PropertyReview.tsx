@@ -305,7 +305,7 @@ export default function PropertyReview() {
                   <input type="number" value={edit.area_sqm} onChange={e => updateField(p.id, "area_sqm", e.target.value)} style={inputStyle} disabled={isPub} />
                 </div>
                 <div>
-                  <label style={labelStyle}>ที่ดิน (ตร.ม.)</label>
+                  <label style={labelStyle}>ที่ดิน (ตร.ว.)</label>
                   <input type="number" value={edit.land_sqm} onChange={e => updateField(p.id, "land_sqm", e.target.value)} style={inputStyle} disabled={isPub} />
                 </div>
                 <div style={{ gridColumn: "1 / -1" }}>
@@ -409,4 +409,23 @@ export default function PropertyReview() {
                     <a href={pubData.url} target="_blank" rel="noreferrer"
                       style={{ background: "#14532d", color: "#4ade80", padding: "10px 20px", borderRadius: 6, textDecoration: "none", fontSize: 14, fontWeight: 500 }}>
                       ดูบนเว็บ
-     
+                    </a>
+                    <span style={{ fontSize: 12, color: "#555" }}>WP Post #{pubData.wp_post_id}</span>
+                  </div>
+                  {pubData.debug && (
+                    <div style={{ fontSize: 10, color: "#555", background: "#111", padding: "6px 10px", borderRadius: 4, fontFamily: "monospace" }}>
+                      WP saved: thumb=#{pubData.debug.wp_thumbnail_id ?? "none"} gallery=[{(pubData.debug.wp_gallery_saved ?? []).join(",")}]
+                      {" | "}sent: cover=#{pubData.debug.sent_featured_media} gallery=[{(pubData.debug.sent_gallery_ids ?? []).join(",")}]
+                    </div>
+                  )}
+                </div>
+              )}
+
+            </div>
+          );
+        })}
+      </div>
+
+    </div>
+  );
+}
