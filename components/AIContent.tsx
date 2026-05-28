@@ -1137,8 +1137,8 @@ function HistoryTab({ saved, onDelete, onStar }: {
                       title={item.starred ? "ยกเลิก Reference" : "เก็บเป็น Reference"}
                       style={{
                         background: "none", border: "none", cursor: "pointer", fontSize: 15,
-                        color: item.starred ? "#fbbf24" : "#334155",
-                        opacity: item.starred ? 1 : 0.5,
+                        color: item.starred ? "#fbbf24" : "#94a3b8",
+                        opacity: item.starred ? 1 : 0.7,
                       }}
                     >{item.starred ? "⭐" : "☆"}</button>
                     <button onClick={() => onDelete(item.id)} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", fontSize: 14 }}>✕</button>
