@@ -15,7 +15,8 @@ const BRAND_FACTS = `ข้อมูลแบรนด์ที่ต้อง�
 - ปรัชญา 3T:
   🔁 Transfer = ส่งมอบชัดเจน — Checklist ทุกเฟส, Weekly Update, BOQ โปร่งใส, ลูกค้ารู้ทุกขั้นตอนไม่ต้องเดา
   ⭐ Trust = สร้างความน่าเชื่อถือ — Portfolio จริง, ทีมมืออาชีพ, ราคาโปร่งใสไม่มีบวกซ้อน, รีวิวจากลูกค้าจริง
-  ❤️ Take Care = ดูแลต่อเนื่อง — ลูกค้าคือเพื่อน, ไม่หายหน้าหลังส่งมอบ, ใส่ใจรายละเอียด, ดูแลหลังการขายจริง`;
+  ❤️ Take Care = ดูแลต่อเนื่อง — ลูกค้าคือเพื่อน, ไม่หายหน้าหลังส่งมอบ, ใส่ใจรายละเอียด, ดูแลหลังการขายจริง
+- Buyer Emotional Reality: การสร้างบ้านคือหนึ่งในการตัดสินใจที่ยิ่งใหญ่ที่สุดในชีวิต — ลูกค้าไม่ได้ซื้อ "บ้าน" เขาซื้อ "ความรู้สึกปลอดภัย" "ความภาคภูมิใจ" และ "ชีวิตที่ดีขึ้น" content ที่โดนใจต้องทำให้เขารู้สึกว่า "Finnhouses เข้าใจฉัน" ไม่ใช่แค่ขายบ้าน`;
 
 // ── Keywords ─────────────────────────────────────────────────────────────────
 const KEYWORDS = [
@@ -47,6 +48,14 @@ const KEYWORDS = [
   "ลูกค้าคือเพื่อน — เราไม่หายหน้าหลังส่งมอบ",
   "หลังสร้างบ้านเสร็จ เราดูแลคุณต่อเนื่อง",
   "บ้านของคุณ ชีวิตของคุณ — เราสร้างให้ตอบจริงๆ",
+  // ── Life Moments (ดึงใจ) ──────────────────────
+  "บ้านหลังแรก — เริ่มต้นชีวิตใหม่ด้วยกัน",
+  "เก็บเงินมา 10 ปี เพื่อสร้างบ้านในฝัน",
+  "สร้างบ้านให้พ่อแม่อยู่สบายตอนแก่",
+  "ตอบแทนบุญคุณพ่อแม่ด้วยบ้านหลังใหม่",
+  "บ้านที่ลูกจะจำไปตลอด",
+  "สร้างรังให้ครอบครัวก่อนลูกโต",
+  "บ้านคือรากของชีวิต — สร้างให้มั่นคง",
 ];
 
 const STYLES = [
@@ -63,24 +72,24 @@ const TONES = [
     label: "เป็นกันเอง",
     emoji: "😊",
     color: "#f59e0b",
-    desc: "อบอุ่น พูดคุยเหมือนเพื่อน",
-    instruction: "เขียนแบบเพื่อนคุยกัน อบอุ่น เป็นกันเอง ใช้ภาษาพูดทั่วไป ไม่เป็นทางการ เหมือนแนะนำบ้านให้เพื่อนฟัง",
+    desc: "อบอุ่น เหมือนเพื่อนแนะนำ",
+    instruction: "เขียนแบบเพื่อนคุยกัน อบอุ่น เป็นกันเอง — เล่าเรื่องราวที่คนสร้างบ้านเข้าใจได้ทันที เชื่อมกับความรู้สึกหรือประสบการณ์จริงที่เขาอาจมีอยู่แล้ว ภาษาพูดธรรมชาติ เหมือนเพื่อนที่ผ่านเรื่องนี้มาแล้วแนะนำให้อย่างจริงใจ",
   },
   {
     value: "professional",
     label: "มืออาชีพ",
     emoji: "💼",
     color: "#6366f1",
-    desc: "น่าเชื่อถือ ดูเป็น premium brand",
-    instruction: "เขียนในโทนมืออาชีพ น่าเชื่อถือ แสดงความเชี่ยวชาญของแบรนด์ ภาษากึ่งทางการ อ่านแล้วรู้สึกว่าแบรนด์นี้จริงจังและมีคุณภาพ",
+    desc: "น่าเชื่อถือ ลดความกังวลลูกค้า",
+    instruction: "เขียนในโทนมืออาชีพ น่าเชื่อถือ — สะท้อนว่าเราเข้าใจความกังวลของลูกค้าและมีคำตอบให้ ทำให้เขารู้สึกมั่นใจว่าตัดสินใจถูกแล้ว แสดงความเชี่ยวชาญผ่านข้อเท็จจริง ภาษากึ่งทางการ อ่านแล้วรู้สึกปลอดภัยที่จะไว้วางใจ",
   },
   {
     value: "educate",
     label: "Educate",
     emoji: "📚",
     color: "#22d3ee",
-    desc: "ให้ความรู้ สร้าง trust",
-    instruction: "เขียนในโทนให้ความรู้ อธิบายเหตุผลและข้อมูลที่เป็นประโยชน์ ช่วยให้ผู้อ่านตัดสินใจได้ดีขึ้น แต่ไม่แห้งเกินไป ยังคง engage",
+    desc: "ให้ความรู้ ช่วยตัดสินใจ",
+    instruction: "ให้ความรู้ที่ทำให้ลูกค้า 'ตัดสินใจได้อย่างมั่นใจ' — อธิบายสิ่งที่เขาอาจกังวล สับสน หรือยังไม่รู้ ในแบบที่ทำให้รู้สึกว่า Finnhouses คือ 'คนที่เข้าใจ' และจะพาเขาผ่านขั้นตอนนี้ได้ ไม่แห้ง ยังมีอุณหภูมิ engage",
   },
   {
     value: "fun",
@@ -88,7 +97,15 @@ const TONES = [
     emoji: "🎉",
     color: "#10b981",
     desc: "ขำขัน สดใส ดึง engagement",
-    instruction: "เขียนแบบสนุกสนาน มีอารมณ์ขัน เบาสมอง ใช้ภาษาวัยรุ่น emoji เยอะหน่อย เหมือนเพื่อนที่ฮาและแนะนำของดี ๆ ให้",
+    instruction: "เขียนแบบสนุกสนาน มีอารมณ์ขัน เบาสมอง — ใช้ภาษาวัยรุ่น emoji เยอะหน่อย แต่ยังแอบซ่อนความจริงใจที่ว่า Finnhouses ใส่ใจลูกค้าจริงๆ อยู่ใต้ความสนุกเสมอ เหมือนเพื่อนที่ฮาและแนะนำของดีๆ ให้",
+  },
+  {
+    value: "heartfelt",
+    label: "ดึงใจ",
+    emoji: "💛",
+    color: "#fbbf24",
+    desc: "เล่าจากชีวิต กระทบอารมณ์",
+    instruction: "เขียนจากมุมชีวิตจริงของคนที่กำลังสร้างบ้าน — เริ่มจากช่วงเวลา ความรู้สึก หรือความฝันที่ buyer เข้าใจได้ทันที แล้วค่อย connect กับว่า Finnhouses เป็นคำตอบนั้นได้อย่างไร ภาษาอ่อนโยน ใกล้ชิด ให้คนอ่านแล้วรู้สึกว่า 'นี่คือเรื่องของฉัน'",
   },
   {
     value: "3t_story",
@@ -96,7 +113,7 @@ const TONES = [
     emoji: "🏠",
     color: "#f97316",
     desc: "Transfer · Trust · Take Care",
-    instruction: "เขียนในโทน 3T ของ Finnhouses — เล่าเรื่องจริงที่สะท้อนค่านิยมแบรนด์: โชว์ process ชัดเจน (Transfer) / สร้าง credibility จากหลักฐานจริง (Trust) / สะท้อนความใส่ใจดูแลลูกค้าเหมือนเพื่อน (Take Care) เลือก 1 มุมที่ตรงกับ keyword มากที่สุด แล้วเล่าให้เห็นภาพ",
+    instruction: "เขียนในโทน 3T ของ Finnhouses — เล่าเรื่องจริงที่สะท้อนค่านิยมแบรนด์: โชว์ process ชัดเจน (Transfer) / สร้าง credibility จากหลักฐานจริง (Trust) / สะท้อนความใส่ใจดูแลลูกค้าเหมือนเพื่อน (Take Care) เลือก 1 มุมที่ตรงกับ keyword มากที่สุด แล้วเล่าให้เห็นภาพ ให้คนอ่านแล้วรู้สึกปลอดภัยที่จะไว้วางใจ Finnhouses",
   },
 ];
 
@@ -116,6 +133,8 @@ type ContentItem = {
   imageUrl: string;
   date: string;
   source: "keyword" | "blog";
+  starred?: boolean;   // ⭐ เก็บเป็น Reference
+  note?: string;       // "ทำไมถึงใช่?"
 };
 
 type FbState = {
@@ -203,7 +222,7 @@ function Tag({ label, color }: { label: string; color: string }) {
 }
 
 // ── Tab: Keyword → FB Post ────────────────────────────────────────────────────
-function KeywordTab({ onSave }: { onSave: (item: ContentItem) => void }) {
+function KeywordTab({ onSave, starredRefs }: { onSave: (item: ContentItem) => void; starredRefs: ContentItem[] }) {
   const [keyword, setKeyword]   = useState(KEYWORDS[0]);
   const [custom, setCustom]     = useState("");
   const [style, setStyle]       = useState("contemporary");
@@ -247,7 +266,13 @@ function KeywordTab({ onSave }: { onSave: (item: ContentItem) => void }) {
     setLoading(true); setResult(""); setImageUrl("");
     const styleLabel = STYLES.find(s => s.value === style)?.label ?? style;
     const typeLabel  = POST_TYPES.find(t => t.value === type)?.label ?? type;
-    const is3T = tone === "3t_story";
+    const is3T        = tone === "3t_story";
+    const isHeartfelt = tone === "heartfelt";
+    const isLifeMoment = [
+      "บ้านหลังแรก", "เก็บเงินมา", "สร้างบ้านให้พ่อแม่",
+      "ตอบแทนบุญคุณ", "บ้านที่ลูก", "สร้างรัง", "บ้านคือราก",
+    ].some(kw => finalKeyword.includes(kw));
+
     const system = `คุณเป็น copywriter ภาษาไทยของแบรนด์ ${BRAND} บริษัทรับสร้างบ้านคุณภาพสูงในไทย
 งานของคุณคือเขียน Facebook Post ภาษาไทยที่คนไทยอ่านแล้วรู้สึก "เป็นธรรมชาติ" ไม่ใช่แปลจากภาษาอื่น
 
@@ -262,7 +287,19 @@ ${is3T ? `
 ⭐ Trust → เล่าจากหลักฐานจริง เช่น รีวิวลูกค้า, ผลงานจริง, ราคาที่โปร่งใส อย่า over-promise
 ❤️ Take Care → เล่าเรื่องความสัมพันธ์ เช่น "หลังส่งมอบบ้าน 6 เดือน..." แสดงว่าเราดูแลต่อเนื่องจริง
 Hook ต้องมาจากประสบการณ์ที่คนสร้างบ้านเข้าใจได้ทันที` : ""}
+${isHeartfelt ? `
+── Heartfelt Guidelines (สำคัญมาก) ──
+เปิดด้วย scene หรือช่วงเวลาจริงในชีวิต — ไม่ใช่คำถาม แต่เป็นภาพที่อ่านแล้วพยักหน้า เช่น:
+  "ตอนนั่งดูบ้านเก่าที่บ้านแม่ ก็คิดขึ้นมาเองว่า..."
+  "วันที่ลูกวิ่งเข้ามาถามว่า 'บ้านใหม่จะเสร็จเมื่อไหร่' ..."
+จากนั้นค่อย connect กับ keyword — อย่า rush ไปหา feature ทันที ให้ผู้อ่านรู้สึกก่อนว่า "นี่คือเรื่องของฉัน"
+ปิดด้วย brand philosophy ที่อบอุ่น "ถ้าลูกค้าคือเพื่อน เราจะสร้างบ้านที่ตอบชีวิตของแต่ละคน"` : ""}
 
+${starredRefs.length > 0 ? `
+── ตัวอย่าง Reference ที่ "ใช่" สำหรับ Finnhouses ──
+เรียนรู้ tone, pattern และความรู้สึกจากตัวอย่างเหล่านี้ — ห้ามคัดลอกคำต่อคำ แต่ให้ output มีคุณภาพในระดับเดียวกัน:
+${starredRefs.slice(0, 2).map((r, i) => `[${i + 1}]${r.note ? ` — "${r.note}"` : ""}\n${r.content}`).join("\n\n")}
+` : ""}
 กฎภาษาที่เข้มงวด:
 ❌ ห้ามใช้สรรพนาม "ชั้น" "ผม" "ฉัน" — เขียนในนามแบรนด์ ไม่ใช่ตัวบุคคล
 ❌ ห้ามปั้นตัวเลข เช่น "10+ ปี" หรือสถิติที่ไม่รู้จริง
@@ -273,8 +310,11 @@ Hook ต้องมาจากประสบการณ์ที่คนส
 ❌ ห้ามเกิน 220 คำ
 ❌ ห้ามแสดงกระบวนการคิด ข้อแม้ ร่าง หรือผลการตรวจสอบในผลลัพธ์เด็ดขาด
 ✅ hashtag ต้องมีความหมายเชิงบวก ตรวจสอบทุกตัวก่อนใส่
-${!is3T ? `✅ สไตล์บ้าน ${styleLabel} คือแกนหลัก — ทุก bullet ต้องสะท้อนลักษณะเด่นของ ${styleLabel} เท่านั้น ห้ามพูดถึงสไตล์อื่น` : `✅ 3T angle คือแกนหลัก — เลือก 1 มุม (Transfer/Trust/Take Care) แล้วเล่าให้ลึกและน่าเชื่อถือ`}
+${is3T ? `✅ 3T angle คือแกนหลัก — เลือก 1 มุม (Transfer/Trust/Take Care) แล้วเล่าให้ลึกและน่าเชื่อถือ`
+  : isHeartfelt ? `✅ Emotion-first — ทำให้คนรู้สึกก่อน จึงค่อยบอกว่า Finnhouses คือคำตอบ`
+  : `✅ สไตล์บ้าน ${styleLabel} คือแกนหลัก — ทุก bullet ต้องสะท้อนลักษณะเด่นของ ${styleLabel} เท่านั้น ห้ามพูดถึงสไตล์อื่น`}
 ✅ ผลลัพธ์ = Facebook Post เท่านั้น ไม่มีส่วนอื่นใดทั้งสิ้น`;
+
     const prompt = is3T
       ? `เขียน ${typeLabel} ลง Facebook page ของ ${BRAND}
 
@@ -282,12 +322,27 @@ ${!is3T ? `✅ สไตล์บ้าน ${styleLabel} คือแกนห�
 โทน: 3T Story — ${selectedTone.instruction}
 
 โครงสร้าง 3T Story (เขียนต่อกัน ไม่มี label นำหน้า):
-บรรทัด 1-2: Hook — ประโยคที่คนสร้างบ้านอ่านแล้วพยักหน้า หรือคำถามที่โดนใจจากประสบการณ์จริง
-3-5 บรรทัด: เล่าเรื่อง 3T จากมุมที่เลือก (Transfer/Trust/Take Care) ให้เห็นภาพว่า Finnhouses ทำอะไร อย่างไร เพื่อลูกค้า — เจาะจง ไม่ลอยๆ
+บรรทัด 1-2: Hook — ประโยคที่คนสร้างบ้านอ่านแล้วพยักหน้า หรือเล่าจาก scene จริงในชีวิต ไม่จำเป็นต้องเป็นคำถาม
+3-5 บรรทัด: เล่าเรื่อง 3T จากมุมที่เลือก (Transfer/Trust/Take Care) ให้เห็นภาพว่า Finnhouses ทำอะไร อย่างไร เพื่อลูกค้า — เจาะจง ไม่ลอยๆ รู้สึกได้ถึงความใส่ใจ
 1-2 ประโยคปิด: เชื่อมกลับสู่ปรัชญา "ลูกค้าคือเพื่อน" + CTA ("ลองดูผลงานที่ finnhouses.com" หรือ "ทักมาปรึกษาเลย 0627946152")
 Hashtag 6-8 อัน: #Finnhouses #สร้างบ้าน #3T #Transfer หรือ #Trust หรือ #TakeCare #บ้านกรุงเทพ #ออกแบบบ้าน
 
 ส่งเฉพาะ Facebook Post เท่านั้น — ไม่มีคำนำ ไม่มีหัวข้อ ไม่มีข้อสังเกต เริ่มต้นด้วย Hook โดยตรงเลย`
+
+      : isHeartfelt
+      ? `เขียน ${typeLabel} ลง Facebook page ของ ${BRAND}
+
+หัวข้อ: "${finalKeyword}"
+โทน: ดึงใจ — emotion-first เล่าจากชีวิตจริง
+
+โครงสร้าง Heartfelt (เขียนต่อกัน ไม่มี label นำหน้า):
+บรรทัด 1-2: เปิดด้วย scene หรือช่วงเวลาในชีวิตที่คนสร้างบ้านรู้จักดี — ภาพหรือความรู้สึกที่อ่านแล้วพยักหน้า ไม่ใช่คำถาม${isLifeMoment ? "\n   (keyword นี้เกี่ยวกับ life moment — เปิดด้วยอารมณ์แบบนั้นโดยตรงเลย)" : ""}
+2-3 บรรทัด: สะท้อนความรู้สึก ความฝัน หรือความกังวลที่ buyer อาจมี → แล้วค่อย connect กับว่า Finnhouses เป็น "คำตอบ" นั้นได้อย่างไร — เจาะจง ไม่ over-promise
+1 ประโยคปิด: brand philosophy อ่อนโยน + CTA ที่เชิญชวน ไม่กดดัน (ใช้ "ลองดูผลงานที่ finnhouses.com" หรือ "ทักมาคุยก่อนเลยก็ได้ 0627946152")
+Hashtag 5-6 อัน: #Finnhouses #สร้างบ้าน + hashtag ที่สะท้อน life moment เช่น #บ้านหลังแรก #ครอบครัว #ความฝัน
+
+ส่งเฉพาะ Facebook Post เท่านั้น — ไม่มีคำนำ ไม่มีหัวข้อ ไม่มีข้อสังเกต เริ่มต้นด้วย scene โดยตรงเลย`
+
       : `เขียน ${typeLabel} ลง Facebook page ของ ${BRAND}
 
 หัวข้อ: "${finalKeyword}"
@@ -295,9 +350,9 @@ Hashtag 6-8 อัน: #Finnhouses #สร้างบ้าน #3T #Transfer �
 โทน: ${selectedTone.label} — ${selectedTone.instruction}
 
 โครงสร้าง (เขียนต่อกัน ไม่มี label นำหน้า):
-บรรทัด 1-2: Hook — คำถามหรือประโยคสั้นที่โดนใจคนสนใจบ้านสไตล์ ${styleLabel} (ใช้โทน ${selectedTone.label})
-3-4 บรรทัด emoji: จุดเด่นของบ้านสไตล์ ${styleLabel} ที่เชื่อมกับ "${finalKeyword}" โดยตรง
-1-2 ประโยคปิด: ทำไม ${BRAND} ถึงเป็นตัวเลือกที่ดี + CTA (ใช้ "ลองดูผลงานที่ finnhouses.com" หรือ "ทักมาปรึกษาเลย 0627946152")
+บรรทัด 1-2: Hook — เปิดด้วยความรู้สึก scene จากชีวิต หรือคำถามที่โดนใจคนสนใจบ้านสไตล์ ${styleLabel} (ใช้โทน ${selectedTone.label}) ให้คนอ่านแล้วรู้สึกว่า "นี่คือเรื่องของฉัน"
+3-4 บรรทัด emoji: จุดเด่นของบ้านสไตล์ ${styleLabel} ที่เชื่อมกับ "${finalKeyword}" โดยตรง — เล่าให้เห็นภาพ ไม่แค่ list feature
+1-2 ประโยคปิด: สะท้อนว่า Finnhouses เข้าใจลูกค้าจริงๆ + CTA (ใช้ "ลองดูผลงานที่ finnhouses.com" หรือ "ทักมาปรึกษาเลย 0627946152")
 Hashtag 6-8 อัน: ทุกตัวต้องมีความหมายดี เช่น #Finnhouses #บ้าน${styleLabel.replace(/\s+/g, "")} #สร้างบ้าน #ออกแบบบ้าน #บ้านสวย
 
 ส่งเฉพาะ Facebook Post เท่านั้น — ไม่มีคำนำ ไม่มีหัวข้อ ไม่มีข้อสังเกต ไม่มีการตรวจสอบท้าย เริ่มต้นด้วย Hook โดยตรงเลย`;
@@ -983,8 +1038,14 @@ ${details}
 }
 
 // ── Tab: Saved & FB Status ────────────────────────────────────────────────────
-function HistoryTab({ saved, onDelete }: { saved: ContentItem[]; onDelete: (id: number) => void }) {
+function HistoryTab({ saved, onDelete, onStar }: {
+  saved: ContentItem[];
+  onDelete: (id: number) => void;
+  onStar: (id: number, starred: boolean, note?: string) => void;
+}) {
   const [fb, setFb] = useState<FbState>({ status: "unknown", queue: 0, drafts: 0, published: 0, lastUpdate: null });
+  const [starringId, setStarringId] = useState<number | null>(null);
+  const [starNote, setStarNote]     = useState("");
 
   const poll = useCallback(async () => {
     try {
@@ -1035,6 +1096,11 @@ function HistoryTab({ saved, onDelete }: { saved: ContentItem[]; onDelete: (id: 
           <div style={{ fontSize: 12, fontWeight: 700, color: "#94a3b8", letterSpacing: ".1em" }}>
             💾 SAVED CONTENT ({saved.length})
           </div>
+          {saved.some(i => i.starred) && (
+            <span style={{ fontSize: 10, color: "#fbbf24", background: "rgba(251,191,36,.1)", border: "1px solid rgba(251,191,36,.25)", borderRadius: 20, padding: "3px 10px" }}>
+              ⭐ {saved.filter(i => i.starred).length} Reference
+            </span>
+          )}
         </div>
         {saved.length === 0 ? (
           <Card style={{ textAlign: "center", padding: 40 }}>
@@ -1043,21 +1109,83 @@ function HistoryTab({ saved, onDelete }: { saved: ContentItem[]; onDelete: (id: 
           </Card>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {saved.map(item => (
-              <Card key={item.id} style={{ padding: 14 }}>
+            {[...saved].sort((a, b) => (b.starred ? 1 : 0) - (a.starred ? 1 : 0)).map(item => (
+              <Card key={item.id} style={{
+                padding: 14,
+                borderLeft: item.starred ? "3px solid #fbbf24" : undefined,
+                background: item.starred ? "rgba(251,191,36,.04)" : undefined,
+              }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
-                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+                    {item.starred && <span style={{ fontSize: 11 }}>⭐</span>}
                     <Tag label={item.source === "blog" ? "Blog→FB" : "Keyword"} color={item.source === "blog" ? "#a78bfa" : "#22d3ee"} />
                     <Tag label={POST_TYPES.find(t => t.value === item.type)?.label ?? item.type} color="#818cf8" />
                     <span style={{ fontSize: 11, color: "#334155" }}>{item.date}</span>
                   </div>
-                  <button onClick={() => onDelete(item.id)} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", fontSize: 14 }}>✕</button>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    {/* Star toggle */}
+                    <button
+                      onClick={() => {
+                        if (item.starred) {
+                          onStar(item.id, false);
+                          if (starringId === item.id) setStarringId(null);
+                        } else {
+                          setStarringId(item.id);
+                          setStarNote("");
+                        }
+                      }}
+                      title={item.starred ? "ยกเลิก Reference" : "เก็บเป็น Reference"}
+                      style={{
+                        background: "none", border: "none", cursor: "pointer", fontSize: 15,
+                        color: item.starred ? "#fbbf24" : "#334155",
+                        opacity: item.starred ? 1 : 0.5,
+                      }}
+                    >{item.starred ? "⭐" : "☆"}</button>
+                    <button onClick={() => onDelete(item.id)} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", fontSize: 14 }}>✕</button>
+                  </div>
                 </div>
-                <div style={{ fontSize: 12, color: "#64748b", marginBottom: 6, fontWeight: 600 }}>{item.keyword}</div>
+
+                <div style={{ fontSize: 12, color: "#64748b", marginBottom: 4, fontWeight: 600 }}>{item.keyword}</div>
+
+                {/* Note display */}
+                {item.starred && item.note && (
+                  <div style={{ fontSize: 11, color: "#fbbf24", marginBottom: 6, fontStyle: "italic", opacity: 0.8 }}>
+                    "{item.note}"
+                  </div>
+                )}
+
                 <pre style={{ fontSize: 11, color: "#94a3b8", margin: 0, whiteSpace: "pre-wrap", maxHeight: 80, overflow: "hidden", fontFamily: "inherit" }}>
                   {item.content.slice(0, 200)}{item.content.length > 200 ? "..." : ""}
                 </pre>
                 <CopyBtn text={item.content} />
+
+                {/* Inline star form */}
+                {starringId === item.id && !item.starred && (
+                  <div style={{ marginTop: 10, padding: "10px 12px", background: "rgba(251,191,36,.06)", border: "1px solid rgba(251,191,36,.2)", borderRadius: 10 }}>
+                    <div style={{ fontSize: 11, color: "#fbbf24", marginBottom: 6, fontWeight: 600 }}>⭐ เก็บเป็น Reference — ทำไมถึงใช่?</div>
+                    <input
+                      autoFocus
+                      value={starNote}
+                      onChange={e => setStarNote(e.target.value)}
+                      placeholder="เช่น 'hook โดนเพราะเริ่มจากความกลัว ไม่ใช่ feature' (ไม่ใส่ก็ได้)"
+                      onKeyDown={e => {
+                        if (e.key === "Enter") { onStar(item.id, true, starNote || undefined); setStarringId(null); }
+                        if (e.key === "Escape") setStarringId(null);
+                      }}
+                      style={{ ...inputStyle, marginBottom: 8, fontSize: 11 }}
+                    />
+                    <div style={{ display: "flex", gap: 6 }}>
+                      <button
+                        onClick={() => { onStar(item.id, true, starNote || undefined); setStarringId(null); }}
+                        style={{ ...btnStyle("#fbbf24"), fontSize: 11, padding: "5px 12px" }}
+                      >⭐ บันทึก Reference</button>
+                      <button
+                        onClick={() => setStarringId(null)}
+                        style={{ ...btnStyle("#475569"), fontSize: 11, padding: "5px 10px" }}
+                      >ยกเลิก</button>
+                    </div>
+                  </div>
+                )}
               </Card>
             ))}
           </div>
@@ -1384,6 +1512,15 @@ export default function AIContent() {
       return next;
     });
   }
+  function handleStar(id: number, starred: boolean, note?: string) {
+    setSaved(prev => {
+      const next = prev.map(i => i.id === id ? { ...i, starred, note: note ?? i.note } : i);
+      persistSaved(next);
+      return next;
+    });
+  }
+
+  const starredRefs = saved.filter(i => i.starred);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", gap: 0 }}>
@@ -1410,10 +1547,10 @@ export default function AIContent() {
 
       {/* Tab content */}
       <div style={{ flex: 1, overflow: "auto" }}>
-        {tab === "keyword" && <KeywordTab onSave={handleSave} />}
+        {tab === "keyword" && <KeywordTab onSave={handleSave} starredRefs={starredRefs} />}
         {tab === "blog"    && <BlogConvertTab onSave={handleSave} />}
         {tab === "listing" && <ListingTab onSave={handleSave} />}
-        {tab === "history" && <HistoryTab saved={saved} onDelete={handleDelete} />}
+        {tab === "history" && <HistoryTab saved={saved} onDelete={handleDelete} onStar={handleStar} />}
         {tab === "queue"   && <FbQueueTab />}
       </div>
     </div>
