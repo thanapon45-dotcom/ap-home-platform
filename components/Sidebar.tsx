@@ -9,6 +9,7 @@ const NAV = [
   { href: "/marketing",     icon: "📰", label: "Blog Runner",   desc: "n8n → finnhouses.com" },
   { href: "/land-analyzer", icon: "🗺️", label: "Land Analyzer", desc: "วิเคราะห์ที่ดิน" },
   { href: "/budget",        icon: "💰", label: "Budget Tool",   desc: "คำนวณงบสร้างบ้าน" },
+  { href: "/market-intel", icon: "🧠", label: "Market Intel",  desc: "สะสม market memory" },
 ];
 
 export default function Sidebar() {
@@ -73,10 +74,4 @@ export default function Sidebar() {
 
       {/* Footer */}
       <div style={{ padding: "12px", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
-        <div style={{ fontSize: 10, color: "#334155", textAlign: "center" }}>
-          Finnhouses<br/>v1.0.0
-        </div>
-      </div>
-    </aside>
-  );
-}
+        <div style={{ fontSize: 10, color: "#334155", t
