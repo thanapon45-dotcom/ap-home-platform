@@ -74,4 +74,10 @@ export default function Sidebar() {
 
       {/* Footer */}
       <div style={{ padding: "12px", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
-        <div style={{ fontSize: 10, color: "#334155", t
+        <div style={{ fontSize: 10, color: "#334155", textAlign: "center" }}>
+          Finnhouses<br/>v1.0.0
+        </div>
+      </div>
+    </aside>
+  );
+}

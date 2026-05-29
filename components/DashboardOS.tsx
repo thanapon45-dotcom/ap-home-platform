@@ -184,11 +184,194 @@ function BizCard({ id, count }: { id: string; count: number }) {
   );
 }
 
+// ── Market Intel Tab ─────────────────────────────────────────────────────────
+const N8N_INTEL_URL = "https://primary-production-8158a.up.railway.app/webhook/market-intel/manual";
+
+const AREA_LIST = [
+  "ลาดหลุมแก้ว", "รังสิต", "คลองสาม", "ธัญบุรี", "ลำลูกกา",
+  "ปทุมธานี", "นนทบุรี", "บางใหญ่", "บางบัวทอง", "สาทร",
+  "ลาดพร้าว", "มีนบุรี", "หนองจอก", "อื่นๆ",
+];
+
+const TIMING_LIST = [
+  { v: "none",       l: "ทั่วไป" },
+  { v: "bonus",      l: "📈 โบนัสออก" },
+  { v: "rate_up",    l: "💸 ดอกเบี้ยขึ้น" },
+  { v: "rainy",      l: "🌧️ หน้าฝน" },
+  { v: "new_year",   l: "🎊 ปีใหม่" },
+  { v: "marriage",   l: "💍 เพิ่งแต่งงาน" },
+  { v: "land_ready", l: "📐 มีที่ดินแล้ว" },
+];
+
+function MarketIntelTab() {
+  const [text, setText]     = useState("");
+  const [area, setArea]     = useState("ลาดหลุมแก้ว");
+  const [timing, setTiming] = useState("none");
+  const [loading, setLoading] = useState(false);
+  const [result, setResult]   = useState<"ok" | "error" | null>(null);
+  const [history, setHistory] = useState<{ text: string; area: string; timing: string; ts: string }[]>([]);
+
+  async function submit() {
+    if (!text.trim()) return;
+    setLoading(true); setResult(null);
+    try {
+      const r = await fetch(N8N_INTEL_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: text.trim(), area, timing }),
+      });
+      const ok = r.ok || r.status === 200;
+      setResult(ok ? "ok" : "error");
+      if (ok) {
+        setHistory(prev => [
+          { text: text.trim(), area, timing, ts: new Date().toLocaleString("th-TH") },
+          ...prev.slice(0, 9),
+        ]);
+        setText("");
+      }
+    } catch {
+      setResult("error");
+    } finally { setLoading(false); }
+  }
+
+  const card: React.CSSProperties = {
+    background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.07)",
+    borderRadius: 14, padding: "20px 22px",
+  };
+
+  return (
+    <div style={{ display: "flex", gap: 20, maxWidth: 900 }}>
+      {/* Left: Form */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 14 }}>
+
+        <div style={{ fontSize: 11, fontWeight: 700, color: "#e879f9", letterSpacing: ".1em" }}>
+          🧠 MARKET INTELLIGENCE — บันทึกสิ่งที่เห็นในตลาด
+        </div>
+
+        {/* Text */}
+        <div style={card}>
+          <div style={{ fontSize: 11, color: "#64748b", marginBottom: 6 }}>สิ่งที่สังเกตเห็น / ข้อมูลลูกค้า</div>
+          <textarea
+            value={text}
+            onChange={e => setText(e.target.value)}
+            placeholder="เช่น: ลูกค้าถามเรื่องน้ำท่วมก่อนเลย, บ้าน Modern ปิดไว, ลูกค้าส่วนใหญ่ทำงานนิคมสหรัตน์..."
+            rows={4}
+            style={{
+              width: "100%", background: "rgba(255,255,255,.04)",
+              border: "1px solid rgba(255,255,255,.1)", borderRadius: 10,
+              color: "#e2e8f0", fontSize: 13, padding: "10px 12px",
+              outline: "none", resize: "vertical", fontFamily: "inherit",
+              lineHeight: 1.6, boxSizing: "border-box",
+            }}
+          />
+        </div>
+
+        {/* Area + Timing */}
+        <div style={{ display: "flex", gap: 12 }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 11, color: "#64748b", marginBottom: 5 }}>พื้นที่</div>
+            <select
+              value={area}
+              onChange={e => setArea(e.target.value)}
+              style={{
+                width: "100%", background: "rgba(255,255,255,.04)",
+                border: "1px solid rgba(255,255,255,.1)", borderRadius: 10,
+                color: "#e2e8f0", fontSize: 13, padding: "9px 12px", outline: "none",
+              }}
+            >
+              {AREA_LIST.map(a => <option key={a} value={a}>{a}</option>)}
+            </select>
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 11, color: "#64748b", marginBottom: 5 }}>Timing Signal</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+              {TIMING_LIST.map(t => (
+                <button
+                  key={t.v}
+                  onClick={() => setTiming(t.v)}
+                  style={{
+                    padding: "5px 10px", borderRadius: 8, fontSize: 11, fontWeight: 600, cursor: "pointer",
+                    background: timing === t.v ? "rgba(232,121,249,.15)" : "rgba(255,255,255,.04)",
+                    color: timing === t.v ? "#e879f9" : "#64748b",
+                    border: timing === t.v ? "1px solid rgba(232,121,249,.3)" : "1px solid rgba(255,255,255,.06)",
+                  }}
+                >{t.l}</button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Submit */}
+        <button
+          onClick={submit}
+          disabled={loading || !text.trim()}
+          style={{
+            padding: "13px", borderRadius: 12, fontSize: 14, fontWeight: 700,
+            cursor: loading || !text.trim() ? "not-allowed" : "pointer",
+            background: loading ? "rgba(232,121,249,.05)" : "rgba(232,121,249,.15)",
+            color: loading || !text.trim() ? "#334155" : "#e879f9",
+            border: "1px solid rgba(232,121,249,.3)",
+          }}
+        >
+          {loading ? "⏳ กำลังส่ง..." : "🧠 บันทึก Market Intel"}
+        </button>
+
+        {result === "ok" && (
+          <div style={{ background: "rgba(16,185,129,.08)", border: "1px solid rgba(16,185,129,.25)", borderRadius: 10, padding: "12px 16px", fontSize: 13, color: "#34d399" }}>
+            ✅ บันทึกสำเร็จ! AI กำลังวิเคราะห์ → Positioned Content จะส่งมาใน Telegram
+          </div>
+        )}
+        {result === "error" && (
+          <div style={{ background: "rgba(239,68,68,.08)", border: "1px solid rgba(239,68,68,.25)", borderRadius: 10, padding: "12px 16px", fontSize: 13, color: "#f87171" }}>
+            ❌ ส่งไม่สำเร็จ — ตรวจสอบว่า n8n Market Intel workflow ถูก Publish แล้วหรือยัง
+          </div>
+        )}
+
+        {/* Info */}
+        <div style={{ background: "rgba(232,121,249,.05)", border: "1px solid rgba(232,121,249,.15)", borderRadius: 10, padding: "12px 16px", fontSize: 11, color: "#64748b", lineHeight: 1.7 }}>
+          <div style={{ color: "#e879f9", fontWeight: 700, marginBottom: 4 }}>💡 บันทึกอะไรได้บ้าง?</div>
+          · สิ่งที่ลูกค้าถามหรือกังวล เช่น "ถามน้ำท่วมก่อนเลย"<br/>
+          · พฤติกรรมตลาด เช่น "บ้าน Modern ปิดไวกว่าปกติ"<br/>
+          · Demand pattern เช่น "ลูกค้าส่วนใหญ่ทำงานนิคมสหรัตน์"<br/>
+          · Timing เช่น "ช่วงโบนัสออก มีคนทักเยอะผิดปกติ"
+        </div>
+      </div>
+
+      {/* Right: History */}
+      {history.length > 0 && (
+        <div style={{ width: 300, flexShrink: 0 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "#64748b", letterSpacing: ".08em", marginBottom: 10 }}>
+            📋 ส่งไปแล้ว (session นี้)
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {history.map((h, i) => (
+              <div key={i} style={card}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                  <span style={{ fontSize: 10, color: "#e879f9", fontWeight: 700 }}>📍 {h.area}</span>
+                  <span style={{ fontSize: 10, color: "#334155" }}>{h.ts}</span>
+                </div>
+                <div style={{ fontSize: 11, color: "#94a3b8", lineHeight: 1.5 }}>
+                  {h.text.slice(0, 80)}{h.text.length > 80 ? "..." : ""}
+                </div>
+                {h.timing !== "none" && (
+                  <div style={{ fontSize: 10, color: "#e879f9", marginTop: 4 }}>
+                    {TIMING_LIST.find(t => t.v === h.timing)?.l}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function DashboardOS() {
   const { data, live, lastSync } = useLiveData();
   const leadCounts = useLeadCounts();
   const [clock, setClock] = useState<Date | null>(null);
-  const [activeTab, setActiveTab] = useState<"overview" | "properties">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "properties" | "intel">("overview");
   useEffect(() => {
     setClock(new Date());
     const t = setInterval(() => setClock(new Date()), 1000);
@@ -228,10 +411,16 @@ export default function DashboardOS() {
         <button style={TAB_STYLE(activeTab === "properties")} onClick={() => setActiveTab("properties")}>
           🏠 ทรัพย์รอ Review
         </button>
+        <button style={TAB_STYLE(activeTab === "intel")} onClick={() => setActiveTab("intel")}>
+          🧠 Market Intel
+        </button>
       </div>
 
       {/* PROPERTIES TAB */}
       {activeTab === "properties" && <PropertyReview />}
+
+      {/* MARKET INTEL TAB */}
+      {activeTab === "intel" && <MarketIntelTab />}
 
       {/* OVERVIEW TAB */}
       {activeTab === "overview" && <>
