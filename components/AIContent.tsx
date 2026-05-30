@@ -16,7 +16,19 @@ const BRAND_FACTS = `ข้อมูลแบรนด์ที่ต้อง�
   🔁 Transfer = ส่งมอบชัดเจน — Checklist ทุกเฟส, Weekly Update, BOQ โปร่งใส, ลูกค้ารู้ทุกขั้นตอนไม่ต้องเดา
   ⭐ Trust = สร้างความน่าเชื่อถือ — Portfolio จริง, ทีมมืออาชีพ, ราคาโปร่งใสไม่มีบวกซ้อน, รีวิวจากลูกค้าจริง
   ❤️ Take Care = ดูแลต่อเนื่อง — ลูกค้าคือเพื่อน, ไม่หายหน้าหลังส่งมอบ, ใส่ใจรายละเอียด, ดูแลหลังการขายจริง
-- Buyer Emotional Reality: การสร้างบ้านคือหนึ่งในการตัดสินใจที่ยิ่งใหญ่ที่สุดในชีวิต — ลูกค้าไม่ได้ซื้อ "บ้าน" เขาซื้อ "ความรู้สึกปลอดภัย" "ความภาคภูมิใจ" และ "ชีวิตที่ดีขึ้น" content ที่โดนใจต้องทำให้เขารู้สึกว่า "Finnhouses เข้าใจฉัน" ไม่ใช่แค่ขายบ้าน`;
+- Buyer Emotional Reality: การสร้างบ้านคือหนึ่งในการตัดสินใจที่ยิ่งใหญ่ที่สุดในชีวิต — ลูกค้าไม่ได้ซื้อ "บ้าน" เขาซื้อ "ความรู้สึกปลอดภัย" "ความภาคภูมิใจ" และ "ชีวิตที่ดีขึ้น" content ที่โดนใจต้องทำให้เขารู้สึกว่า "Finnhouses เข้าใจฉัน" ไม่ใช่แค่ขายบ้าน
+- Buyer Psychology: สื่อสาร Level 2–3 เท่านั้น (ห้ามแค่ feature Level 1):
+  Level 1 Feature: "3 ห้องนอน วัสดุดี ทำเลดี" — คู่แข่งทุกรายพูดแบบนี้
+  Level 2 Emotion: "ปลอดภัย ภูมิใจ มั่นคง" — ทำให้เขารู้สึก
+  Level 3 Identity: "คนที่สร้างบ้านเองคือคนฉลาด ไม่ง้อโครงการ" — ทำให้เขาเห็นตัวเอง
+- Area Memory (ข้อมูลตลาดท้องถิ่นจากประสบการณ์จริง ห้ามเพิ่มเติมหรือแต่ง):
+  📍 ลาดหลุมแก้ว: คนซื้อบ้านกลัวปัญหาน้ำ — พูดถึงระบบป้องกัน ยกพื้นสูง ระบบระบายน้ำ
+  📍 รังสิต: Commuter demand สูง — เน้นระยะทางจากที่ทำงาน ใกล้นิคม/โรงงาน
+  📍 คลองสาม: บ้าน Modern ปิดไว ต้องการน้อย — เน้นดีไซน์โดดเด่น ราคาแข่งขันได้
+- Buyer Segments (3 กลุ่มหลัก ใช้กำหนด message ให้ตรงกลุ่ม):
+  🏗️ สร้างบ้าน Hands-off: กลัว "ผู้รับเหมาทิ้งงาน" → ต้องการ "ความเชื่อใจ + timeline" → message: "เราจัดการให้ครบ"
+  🔨 สร้างบ้าน Hands-on: กลัว "ได้ไม่ตรงที่ต้องการ" → ต้องการ "ความใส่ใจส่วนตัว" → message: "คุณเลือก เราแนะนำ"
+  🏠 บ้านมือสอง/Listing: กลัว "เดินทางไกล/ไม่ปลอดภัย" → ต้องการ "ชีวิตประจำวันที่ดีขึ้น" → message: เล่าชีวิตจริงที่ดีกว่า`;
 
 // ── Keywords ─────────────────────────────────────────────────────────────────
 const KEYWORDS = [
@@ -115,12 +127,77 @@ const TONES = [
     desc: "Transfer · Trust · Take Care",
     instruction: "เขียนในโทน 3T ของ Finnhouses — เล่าเรื่องจริงที่สะท้อนค่านิยมแบรนด์: โชว์ process ชัดเจน (Transfer) / สร้าง credibility จากหลักฐานจริง (Trust) / สะท้อนความใส่ใจดูแลลูกค้าเหมือนเพื่อน (Take Care) เลือก 1 มุมที่ตรงกับ keyword มากที่สุด แล้วเล่าให้เห็นภาพ ให้คนอ่านแล้วรู้สึกปลอดภัยที่จะไว้วางใจ Finnhouses",
   },
+  {
+    value: "positioned",
+    label: "Positioned",
+    emoji: "🎯",
+    color: "#e879f9",
+    desc: "ตรงกลุ่ม ตรงเวลา ตรงปัญหา",
+    instruction: "เขียนสำหรับ buyer กลุ่มที่เลือกโดยตรง — ใช้ Segment + Awareness Level + Timing Signal กำหนด hook และ message ทั้งหมด ทำให้คนอ่านรู้สึกว่า 'นี่คือเรื่องของฉัน' ไม่ใช่ content ทั่วไปสำหรับทุกคน",
+  },
 ];
 
 const POST_TYPES = [
   { value: "fb_post",   label: "FB Post",    emoji: "📘" },
   { value: "fb_story",  label: "FB Story",   emoji: "📱" },
   { value: "instagram", label: "Instagram",  emoji: "📸" },
+];
+
+// ── Intelligence Framework Constants ─────────────────────────────────────────
+const BUYER_SEGMENTS = [
+  {
+    value: "build_handsoff",
+    label: "สร้างบ้าน Hands-off",
+    emoji: "🏗️",
+    fear: "ผู้รับเหมาทิ้งงาน",
+    need: "ความเชื่อใจ + ทำทุกอย่างให้",
+    key_message: "บอกสิ่งที่อยากได้ เราจัดการให้ครบ",
+    framed: [
+      "สร้างบ้านไม่ต้องยุ่งยาก บอกเราแค่ว่าอยากได้อะไร เราดูแลตั้งแต่ออกแบบถึงส่งมอบ",
+      "ทุกขั้นตอนมี Weekly Update — คุณแค่ approve เราทำให้",
+    ],
+  },
+  {
+    value: "build_handson",
+    label: "สร้างบ้าน Hands-on",
+    emoji: "🔨",
+    fear: "ได้ไม่ตรงที่ต้องการ",
+    need: "ความใส่ใจส่วนตัว + ปรึกษาได้ทุกขั้น",
+    key_message: "คุณเลือก เราแนะนำ — อยู่ตรงนี้ทุกขั้นตอน",
+    framed: [
+      "อยากเลือกกระเบื้องเอง วางผังเอง เลือกโคมไฟเอง? เราพร้อมคุยทุกรายละเอียด",
+      "เพิ่มช่องใส่สบู่ก็ได้ เพิ่มไฟส่องก็ได้ — แจ้งค่าใช้จ่ายเพิ่มให้ชัดทันที",
+    ],
+  },
+  {
+    value: "resale",
+    label: "บ้านมือสอง / Listing",
+    emoji: "🏠",
+    fear: "เดินทางไกล / ไม่ปลอดภัย",
+    need: "ชีวิตประจำวันที่ดีขึ้น + ปลอดภัย",
+    key_message: "บ้านที่ดีคือบ้านที่ตอบชีวิตของคุณได้จริง",
+    framed: [
+      "เช้าส่งลูกโรงเรียน ตรงไปทำงาน เย็นกลับบ้านทัน — ชีวิตที่ไม่ต้องเสียเวลา",
+      "กะบ่ายออกดึก ถนนกว้าง ไฟสว่าง ภรรยาและลูกกลับบ้านปลอดภัย",
+    ],
+  },
+];
+
+const AWARENESS_LEVELS = [
+  { value: "unaware",        label: "Unaware",        desc: "ยังไม่รู้ว่ากำลังมองหาบ้าน",        hook: "เปิดด้วย context ชีวิตทั่วไปที่เขาเข้าใจได้" },
+  { value: "problem_aware",  label: "Problem Aware",  desc: "รู้ว่าอยากได้บ้าน ยังไม่รู้จะเริ่มอย่างไร", hook: "โชว์ว่าเข้าใจปัญหา แล้วบอกทางออก" },
+  { value: "solution_aware", label: "Solution Aware", desc: "กำลังเปรียบเทียบผู้รับเหมา",           hook: "แสดง differentiation ที่ชัดเจน" },
+  { value: "most_aware",     label: "Most Aware",     desc: "พร้อมตัดสินใจ รอแค่ยืนยัน",           hook: "CTA ตรงๆ + social proof" },
+];
+
+const TIMING_SIGNALS = [
+  { value: "none",       label: "ทั่วไป" },
+  { value: "bonus",      label: "📈 โบนัสออก" },
+  { value: "rate_up",    label: "💸 ดอกเบี้ยขึ้น" },
+  { value: "rainy",      label: "🌧️ หน้าฝน" },
+  { value: "new_year",   label: "🎊 ปีใหม่" },
+  { value: "marriage",   label: "💍 เพิ่งแต่งงาน" },
+  { value: "land_ready", label: "📐 มีที่ดินแล้ว" },
 ];
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -236,6 +313,10 @@ function KeywordTab({ onSave, starredRefs }: { onSave: (item: ContentItem) => vo
   const [savedOk, setSavedOk]       = useState(false);
   const [posting, setPosting]       = useState(false);
   const [postResult, setPostResult] = useState<"ok"|"error"|null>(null);
+  // Positioned mode state
+  const [buyerSeg, setBuyerSeg]   = useState("build_handsoff");
+  const [awareness, setAwareness] = useState("problem_aware");
+  const [timing, setTiming]       = useState("none");
 
   const finalKeyword  = custom.trim() || keyword;
   const selectedTone  = TONES.find(t => t.value === tone) ?? TONES[0];
@@ -266,8 +347,12 @@ function KeywordTab({ onSave, starredRefs }: { onSave: (item: ContentItem) => vo
     setLoading(true); setResult(""); setImageUrl("");
     const styleLabel = STYLES.find(s => s.value === style)?.label ?? style;
     const typeLabel  = POST_TYPES.find(t => t.value === type)?.label ?? type;
-    const is3T        = tone === "3t_story";
-    const isHeartfelt = tone === "heartfelt";
+    const is3T          = tone === "3t_story";
+    const isHeartfelt   = tone === "heartfelt";
+    const isPositioned  = tone === "positioned";
+    const selectedSeg   = BUYER_SEGMENTS.find(s => s.value === buyerSeg) ?? BUYER_SEGMENTS[0];
+    const selectedAw    = AWARENESS_LEVELS.find(a => a.value === awareness) ?? AWARENESS_LEVELS[1];
+    const selectedTiming = TIMING_SIGNALS.find(t => t.value === timing) ?? TIMING_SIGNALS[0];
     const isLifeMoment = [
       "บ้านหลังแรก", "เก็บเงินมา", "สร้างบ้านให้พ่อแม่",
       "ตอบแทนบุญคุณ", "บ้านที่ลูก", "สร้างรัง", "บ้านคือราก",
@@ -280,6 +365,21 @@ function KeywordTab({ onSave, starredRefs }: { onSave: (item: ContentItem) => vo
 ${selectedTone.instruction}
 
 ${BRAND_FACTS}
+${isPositioned ? `
+── Positioned Content Guidelines (สำคัญมาก) ──
+กลุ่มลูกค้าเป้าหมาย: ${selectedSeg.emoji} ${selectedSeg.label}
+  • สิ่งที่เขากลัว: "${selectedSeg.fear}"
+  • สิ่งที่เขาต้องการ: ${selectedSeg.need}
+  • Key Message: "${selectedSeg.key_message}"
+  • Framed Message ตัวอย่าง: "${selectedSeg.framed[0]}"
+
+Awareness Level: ${selectedAw.label} — ${selectedAw.desc}
+  • Hook approach: ${selectedAw.hook}
+
+${selectedTiming.value !== "none" ? `Timing Signal: ${selectedTiming.label} — ใช้ timing นี้เป็น context ใน hook เช่น "ช่วง${selectedTiming.label}..." หรือ เชื่อมกับสถานการณ์นี้ให้เป็นธรรมชาติ` : "ไม่มี Timing Signal พิเศษ — เขียนได้ตลอดเวลา"}
+
+สำคัญ: ห้ามเขียน content ทั่วไป — ต้องทำให้ ${selectedSeg.label} รู้สึกว่า "นี่คือเรื่องของฉัน"
+` : ""}
 ${is3T ? `
 ── 3T Story Guidelines (สำคัญมาก) ──
 เลือก 1 มุมจาก 3T ที่ตรงกับ keyword มากที่สุดแล้วเล่าให้เห็นภาพ:
@@ -312,10 +412,27 @@ ${starredRefs.slice(0, 2).map((r, i) => `[${i + 1}]${r.note ? ` — "${r.note}"`
 ✅ hashtag ต้องมีความหมายเชิงบวก ตรวจสอบทุกตัวก่อนใส่
 ${is3T ? `✅ 3T angle คือแกนหลัก — เลือก 1 มุม (Transfer/Trust/Take Care) แล้วเล่าให้ลึกและน่าเชื่อถือ`
   : isHeartfelt ? `✅ Emotion-first — ทำให้คนรู้สึกก่อน จึงค่อยบอกว่า Finnhouses คือคำตอบ`
+  : isPositioned ? `✅ Positioned — เขียนตรงกลุ่ม ${selectedSeg.emoji}${selectedSeg.label} เท่านั้น ทุกประโยคต้องตอบ fear หรือ need ของกลุ่มนี้`
   : `✅ สไตล์บ้าน ${styleLabel} คือแกนหลัก — ทุก bullet ต้องสะท้อนลักษณะเด่นของ ${styleLabel} เท่านั้น ห้ามพูดถึงสไตล์อื่น`}
 ✅ ผลลัพธ์ = Facebook Post เท่านั้น ไม่มีส่วนอื่นใดทั้งสิ้น`;
 
-    const prompt = is3T
+    const prompt = isPositioned
+      ? `เขียน ${typeLabel} ลง Facebook page ของ ${BRAND}
+
+หัวข้อ: "${finalKeyword}"
+กลุ่มลูกค้า: ${selectedSeg.emoji} ${selectedSeg.label}
+Awareness Level: ${selectedAw.label} — ${selectedAw.desc}
+${selectedTiming.value !== "none" ? `Timing Signal: ${selectedTiming.label}` : ""}
+
+โครงสร้าง Positioned Content (เขียนต่อกัน ไม่มี label นำหน้า):
+บรรทัด 1-2: Hook — ${selectedAw.hook}${selectedTiming.value !== "none" ? ` บวก context "${selectedTiming.label}" ให้เป็นธรรมชาติ` : ""}
+2-3 บรรทัด: ตอบตรงๆ ว่า Finnhouses แก้ปัญหา "${selectedSeg.fear}" ได้อย่างไร — ใช้ message "${selectedSeg.key_message}" เป็นแกน เจาะจง ไม่ลอยๆ
+1 ประโยคปิด: CTA${selectedAw.value === "most_aware" ? ' — "ทักมาปรึกษาเลย 0627946152" (พร้อมตัดสินใจแล้ว)' : ' — "ลองดูผลงานที่ finnhouses.com" (ยังต้องการข้อมูลเพิ่ม)'}
+Hashtag 5-6 อัน: #Finnhouses #สร้างบ้าน + hashtag ที่ตรงกับ ${selectedSeg.label}
+
+ส่งเฉพาะ Facebook Post เท่านั้น — ไม่มีคำนำ ไม่มีหัวข้อ เริ่มต้นด้วย Hook โดยตรงเลย`
+
+      : is3T
       ? `เขียน ${typeLabel} ลง Facebook page ของ ${BRAND}
 
 หัวข้อ: "${finalKeyword}"
@@ -456,6 +573,62 @@ Hashtag 6-8 อัน: ทุกตัวต้องมีความหมา
             ))}
           </div>
         </div>
+
+        {/* Positioned Mode: Buyer Segment + Awareness + Timing */}
+        {tone === "positioned" && (
+          <>
+            <div style={{ borderTop: "1px solid rgba(232,121,249,.15)", paddingTop: 12 }}>
+              <div style={{ fontSize: 11, color: "#e879f9", fontWeight: 700, marginBottom: 8, letterSpacing: ".08em" }}>🎯 POSITIONED MODE</div>
+
+              {/* Buyer Segment */}
+              <div style={{ marginBottom: 10 }}>
+                <div style={{ fontSize: 11, color: "#64748b", marginBottom: 5 }}>กลุ่มลูกค้าเป้าหมาย</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                  {BUYER_SEGMENTS.map(s => (
+                    <button key={s.value} onClick={() => setBuyerSeg(s.value)} style={{
+                      display: "flex", alignItems: "center", gap: 8,
+                      padding: "7px 10px", borderRadius: 9, fontSize: 11, fontWeight: 600, cursor: "pointer", textAlign: "left" as const,
+                      background: buyerSeg === s.value ? "rgba(232,121,249,.12)" : "rgba(255,255,255,.03)",
+                      color: buyerSeg === s.value ? "#e879f9" : "#64748b",
+                      border: buyerSeg === s.value ? "1px solid rgba(232,121,249,.35)" : "1px solid rgba(255,255,255,.06)",
+                    }}>
+                      <span style={{ fontSize: 14, flexShrink: 0 }}>{s.emoji}</span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontWeight: 700 }}>{s.label}</div>
+                        <div style={{ fontSize: 10, opacity: 0.65, marginTop: 1 }}>กลัว: {s.fear}</div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Awareness Level */}
+              <div style={{ marginBottom: 10 }}>
+                <div style={{ fontSize: 11, color: "#64748b", marginBottom: 5 }}>Awareness Level</div>
+                <select value={awareness} onChange={e => setAwareness(e.target.value)} style={selectStyle}>
+                  {AWARENESS_LEVELS.map(a => (
+                    <option key={a.value} value={a.value}>{a.label} — {a.desc}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Timing Signal */}
+              <div>
+                <div style={{ fontSize: 11, color: "#64748b", marginBottom: 5 }}>Timing Signal</div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                  {TIMING_SIGNALS.map(t => (
+                    <button key={t.value} onClick={() => setTiming(t.value)} style={{
+                      padding: "4px 9px", borderRadius: 7, fontSize: 10, fontWeight: 600, cursor: "pointer",
+                      background: timing === t.value ? "rgba(232,121,249,.12)" : "rgba(255,255,255,.04)",
+                      color: timing === t.value ? "#e879f9" : "#64748b",
+                      border: timing === t.value ? "1px solid rgba(232,121,249,.3)" : "1px solid rgba(255,255,255,.06)",
+                    }}>{t.label}</button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </>
+        )}
 
         {/* Options */}
         <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
@@ -1216,11 +1389,18 @@ function btnStyle(color: string): React.CSSProperties {
 
 // ── TABS ──────────────────────────────────────────────────────────────────────
 const TABS = [
-  { key: "keyword", label: "สร้างจาก Keyword", icon: "✨" },
-  { key: "blog",    label: "แปลงจาก Blog",      icon: "📰" },
-  { key: "listing", label: "จาก Listing",        icon: "🏠" },
-  { key: "history", label: "History & Status",   icon: "📡" },
-  { key: "queue",   label: "Content Queue",      icon: "📅" },
+  { key: "keyword",      label: "สร้างจาก Keyword", icon: "✨" },
+  { key: "blog",         label: "แปลงจาก Blog",      icon: "📰" },
+  { key: "listing",      label: "จาก Listing",        icon: "🏠" },
+  { key: "history",      label: "History & Status",   icon: "📡" },
+  { key: "queue",        label: "Content Queue",      icon: "📅" },
+  { key: "market-intel", label: "Market Intel",       icon: "🧠" },
+];
+
+// ── Market Intel Areas ──────────────────────────────────────────────────────
+const AREAS = [
+  "ลาดหลุมแก้ว", "รังสิต", "คลองสาม", "บางบัวทอง", "นนทบุรี",
+  "ปทุมธานี", "ธัญบุรี", "ลำลูกกา", "บึงยี่โต", "สามโคก",
 ];
 
 // ── FB Queue Types & Helpers ───────────────────────────────────────────────────
@@ -1472,6 +1652,143 @@ function FbQueueTab() {
   );
 }
 
+// ── Tab: Market Intelligence Input ───────────────────────────────────────────
+function MarketIntelTab() {
+  const [text, setText]         = useState("");
+  const [area, setArea]         = useState("");
+  const [customArea, setCustom] = useState("");
+  const [loading, setLoading]   = useState(false);
+  const [result, setResult]     = useState<"ok"|"error"|null>(null);
+  const [history, setHistory]   = useState<{text:string;area:string;ts:string}[]>([]);
+
+  const finalArea = customArea.trim() || area;
+
+  async function submit() {
+    if (!text.trim()) return;
+    setLoading(true); setResult(null);
+    try {
+      const r = await fetch("/api/market-intel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: text.trim(), area: finalArea || null }),
+      });
+      const ok = r.ok;
+      setResult(ok ? "ok" : "error");
+      if (ok) {
+        setHistory(prev => [{ text: text.trim(), area: finalArea, ts: new Date().toLocaleTimeString("th-TH") }, ...prev.slice(0, 9)]);
+        setText(""); setArea(""); setCustom("");
+      }
+    } catch { setResult("error"); }
+    setLoading(false);
+  }
+
+  return (
+    <div style={{ display: "flex", gap: 20 }}>
+      {/* Left: Input */}
+      <Card style={{ width: 360, flexShrink: 0, display: "flex", flexDirection: "column", gap: 14 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: "#e879f9", letterSpacing: ".1em" }}>🧠 MARKET INTELLIGENCE</div>
+        <div style={{ fontSize: 12, color: "#475569", lineHeight: 1.6 }}>
+          บันทึกสิ่งที่เห็นในตลาด → AI วิเคราะห์ → บันทึก Supabase → Positioned Content ส่งมา Telegram
+        </div>
+
+        {/* Text */}
+        <div>
+          <div style={{ fontSize: 11, color: "#64748b", marginBottom: 5 }}>สิ่งที่เห็นในตลาด</div>
+          <textarea
+            value={text}
+            onChange={e => setText(e.target.value)}
+            placeholder={"เช่น: ลูกค้าถามเรื่องน้ำท่วมก่อนเลย\nหรือ: บ้าน Modern คลองสามขายไวมาก\nหรือ: ช่วงนี้มีคนทัก เรื่องโบนัสออก"}
+            rows={5}
+            style={{ ...inputStyle, resize: "vertical", fontFamily: "inherit", lineHeight: 1.6 }}
+          />
+        </div>
+
+        {/* Area selector */}
+        <div>
+          <div style={{ fontSize: 11, color: "#64748b", marginBottom: 5 }}>พื้นที่ (ไม่บังคับ)</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 8 }}>
+            {AREAS.map(a => (
+              <button key={a} onClick={() => { setArea(a); setCustom(""); }} style={{
+                padding: "4px 10px", borderRadius: 7, fontSize: 11, fontWeight: 600, cursor: "pointer",
+                background: area === a && !customArea ? "rgba(232,121,249,.15)" : "rgba(255,255,255,.04)",
+                color: area === a && !customArea ? "#e879f9" : "#64748b",
+                border: area === a && !customArea ? "1px solid rgba(232,121,249,.3)" : "1px solid rgba(255,255,255,.06)",
+              }}>{a}</button>
+            ))}
+          </div>
+          <input
+            value={customArea}
+            onChange={e => { setCustom(e.target.value); setArea(""); }}
+            placeholder="หรือพิมพ์พื้นที่เอง..."
+            style={{ ...inputStyle, marginBottom: 0 }}
+          />
+        </div>
+
+        {/* Submit */}
+        <button onClick={submit} disabled={loading || !text.trim()} style={{
+          background: loading ? "rgba(232,121,249,.05)" : "rgba(232,121,249,.12)",
+          color: loading ? "#334155" : "#e879f9",
+          border: "1px solid rgba(232,121,249,.3)", borderRadius: 12,
+          padding: "12px", fontSize: 13, fontWeight: 700, cursor: loading || !text.trim() ? "not-allowed" : "pointer",
+        }}>
+          {loading ? "⏳ กำลังส่ง..." : "📡 ส่งข้อมูลตลาด"}
+        </button>
+
+        {/* Result feedback */}
+        {result === "ok" && (
+          <div style={{ background: "rgba(52,211,153,.08)", border: "1px solid rgba(52,211,153,.2)", borderRadius: 10, padding: "10px 14px", fontSize: 12, color: "#34d399" }}>
+            ✅ ส่งแล้ว! AI กำลังวิเคราะห์ → Positioned Content จะส่งมา Telegram เดี๋ยวนี้
+          </div>
+        )}
+        {result === "error" && (
+          <div style={{ background: "rgba(244,63,94,.08)", border: "1px solid rgba(244,63,94,.2)", borderRadius: 10, padding: "10px 14px", fontSize: 12, color: "#f43f5e" }}>
+            ❌ ส่งไม่สำเร็จ — ตรวจสอบว่า n8n Market Intel workflow Publish แล้วหรือยัง
+          </div>
+        )}
+
+        {/* Tip */}
+        <div style={{ background: "rgba(232,121,249,.05)", border: "1px solid rgba(232,121,249,.12)", borderRadius: 10, padding: "10px 14px", fontSize: 11, color: "#64748b", lineHeight: 1.6 }}>
+          💡 <strong style={{ color: "#e879f9" }}>Tip:</strong> ส่งผ่าน Telegram ได้เหมือนกัน — พิมพ์<br/>
+          <span style={{ color: "#e879f9", fontFamily: "monospace" }}>intel: ข้อความ area:พื้นที่</span><br/>
+          ส่งหา bot <span style={{ color: "#e879f9" }}>finnhousesAI</span>
+        </div>
+      </Card>
+
+      {/* Right: History */}
+      <div style={{ flex: 1 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b", letterSpacing: ".1em", marginBottom: 14 }}>
+          🕐 รายการที่เพิ่งส่ง (Session นี้)
+        </div>
+        {history.length === 0 ? (
+          <Card style={{ textAlign: "center", padding: 48 }}>
+            <div style={{ fontSize: 40, marginBottom: 10 }}>🧠</div>
+            <div style={{ fontSize: 14, color: "#475569" }}>ยังไม่มีข้อมูลที่ส่งใน session นี้</div>
+            <div style={{ fontSize: 11, color: "#334155", marginTop: 6 }}>ข้อมูลจะสะสมใน Supabase market_insights</div>
+          </Card>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {history.map((h, i) => (
+              <Card key={i} style={{ padding: 14, borderLeft: "3px solid rgba(232,121,249,.4)" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    {h.area && (
+                      <span style={{ fontSize: 10, fontWeight: 700, background: "rgba(232,121,249,.12)", color: "#e879f9", border: "1px solid rgba(232,121,249,.25)", borderRadius: 5, padding: "2px 7px" }}>
+                        📍 {h.area}
+                      </span>
+                    )}
+                  </div>
+                  <span style={{ fontSize: 10, color: "#334155" }}>{h.ts}</span>
+                </div>
+                <div style={{ fontSize: 12, color: "#94a3b8", lineHeight: 1.5 }}>{h.text}</div>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 const LS_KEY = "finnhouses_ai_content_v1";
 
 function loadSaved(): ContentItem[] {
@@ -1547,11 +1864,12 @@ export default function AIContent() {
 
       {/* Tab content */}
       <div style={{ flex: 1, overflow: "auto" }}>
-        {tab === "keyword" && <KeywordTab onSave={handleSave} starredRefs={starredRefs} />}
-        {tab === "blog"    && <BlogConvertTab onSave={handleSave} />}
-        {tab === "listing" && <ListingTab onSave={handleSave} />}
-        {tab === "history" && <HistoryTab saved={saved} onDelete={handleDelete} onStar={handleStar} />}
-        {tab === "queue"   && <FbQueueTab />}
+        {tab === "keyword"      && <KeywordTab onSave={handleSave} starredRefs={starredRefs} />}
+        {tab === "blog"         && <BlogConvertTab onSave={handleSave} />}
+        {tab === "listing"      && <ListingTab onSave={handleSave} />}
+        {tab === "history"      && <HistoryTab saved={saved} onDelete={handleDelete} onStar={handleStar} />}
+        {tab === "queue"        && <FbQueueTab />}
+        {tab === "market-intel" && <MarketIntelTab />}
       </div>
     </div>
   );
