@@ -187,6 +187,18 @@ function pushHistory(state, entry) {
   state.history = state.history.slice(0, 100);
 }
 
+// ── Retry helper ─────────────────────────────────────────────────────────────
+async function withRetry(fn, retries = 2, delayMs = 4000, label = "") {
+  for (let i = 0; i <= retries; i++) {
+    try { return await fn(); }
+    catch (err) {
+      if (i === retries) throw err;
+      console.warn(`[hub] retry ${i + 1}/${retries} for ${label}: ${err.message}`);
+      await new Promise(r => setTimeout(r, delayMs));
+    }
+  }
+}
+
 async function sendTelegram(text) {
   if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) return false;
   const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
@@ -606,20 +618,22 @@ app.post("/action/fb/publish", async (req, res) => {
   writeState(state);
 
   try {
-    const response = await fetch(`${FB_BACKEND_URL}/api/fb/publish`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json; charset=utf-8" },
-      body: JSON.stringify({
-        runId,
-        source: req.body.source || "dashboard-react",
-        content,
-      }),
-    });
-
-    const bodyText = await response.text();
-    if (!response.ok) {
-      throw new Error(`fb-backend returned HTTP ${response.status}${bodyText ? ` ${bodyText}` : ""}`);
-    }
+    const { bodyText } = await withRetry(async () => {
+      const response = await fetch(`${FB_BACKEND_URL}/api/fb/publish`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json; charset=utf-8" },
+        body: JSON.stringify({
+          runId,
+          source: req.body.source || "dashboard-react",
+          content,
+        }),
+      });
+      const bodyText = await response.text();
+      if (!response.ok) {
+        throw new Error(`fb-backend returned HTTP ${response.status}${bodyText ? ` ${bodyText}` : ""}`);
+      }
+      return { bodyText };
+    }, 2, 4000, "fb-publish");
 
     res.json({ ok: true, runId, accepted: true, upstream: bodyText || "accepted" });
   } catch (error) {
@@ -715,15 +729,17 @@ app.post("/action/fb/queue/run-next", async (req, res) => {
   writeState(state);
 
   try {
-    const response = await fetch(`${FB_BACKEND_URL}/api/fb/publish`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json; charset=utf-8" },
-      body: JSON.stringify({ runId, source: "fb-queue", content: nextItem.content }),
-    });
-    const bodyText = await response.text();
-    if (!response.ok) {
-      throw new Error(`fb-backend returned HTTP ${response.status}${bodyText ? ` ${bodyText}` : ""}`);
-    }
+    await withRetry(async () => {
+      const response = await fetch(`${FB_BACKEND_URL}/api/fb/publish`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json; charset=utf-8" },
+        body: JSON.stringify({ runId, source: "fb-queue", content: nextItem.content }),
+      });
+      const bodyText = await response.text();
+      if (!response.ok) {
+        throw new Error(`fb-backend returned HTTP ${response.status}${bodyText ? ` ${bodyText}` : ""}`);
+      }
+    }, 2, 4000, "fb-queue-run-next");
 
     const s = readState();
     const qi = s.fb_queue?.find(i => i.id === nextItem.id);
