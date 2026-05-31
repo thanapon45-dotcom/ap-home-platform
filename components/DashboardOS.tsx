@@ -185,7 +185,7 @@ function BizCard({ id, count }: { id: string; count: number }) {
 }
 
 // ── Market Intel Tab ─────────────────────────────────────────────────────────
-const N8N_INTEL_URL = "https://primary-production-8158a.up.railway.app/webhook/market-intel/manual";
+const N8N_INTEL_URL = "/api/market-intel";
 
 const AREA_LIST = [
   "ลาดหลุมแก้ว", "รังสิต", "คลองสาม", "ธัญบุรี", "ลำลูกกา",

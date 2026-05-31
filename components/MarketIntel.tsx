@@ -71,6 +71,8 @@ type Insight = {
 };
 
 // ── Submit Tab ────────────────────────────────────────────────────────────────
+type GpsState = { lat: number; lng: number } | null;
+
 function SubmitTab() {
   const [text, setText]           = useState("");
   const [area, setArea]           = useState("ลาดหลุมแก้ว");
@@ -79,8 +81,23 @@ function SubmitTab() {
   const [loading, setLoading]     = useState(false);
   const [result, setResult]       = useState<"ok"|"error"|null>(null);
   const [generatedContent, setGeneratedContent] = useState("");
+  const [gps, setGps]             = useState<GpsState>(null);
+  const [gpsLoading, setGpsLoading] = useState(false);
+  const [gpsError, setGpsError]   = useState("");
 
   const finalArea = area === "อื่นๆ (พิมพ์เอง)" ? customArea.trim() : area;
+
+  function getLocation() {
+    if (!navigator.geolocation) { setGpsError("Browser ไม่รองรับ GPS"); return; }
+    setGpsLoading(true); setGpsError("");
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        setGps({ lat: +pos.coords.latitude.toFixed(6), lng: +pos.coords.longitude.toFixed(6) });
+        setGpsLoading(false);
+      },
+      () => { setGpsError("ไม่สามารถดึงพิกัดได้ — ตรวจสอบ permission"); setGpsLoading(false); }
+    );
+  }
 
   async function submit() {
     if (!text.trim() || !finalArea) return;
@@ -89,7 +106,12 @@ function SubmitTab() {
       const res = await fetch("/api/market-intel/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, area: finalArea, timing_signal: timing }),
+        body: JSON.stringify({
+          text,
+          area: finalArea,
+          timing_signal: timing,
+          ...(gps ? { lat: gps.lat, lng: gps.lng } : {}),
+        }),
       });
       const data = await res.json();
       setResult(res.ok && data.ok !== false ? "ok" : "error");
@@ -142,6 +164,44 @@ function SubmitTab() {
               style={{ ...inputStyle, marginTop: 8 }}
             />
           )}
+        </div>
+
+        {/* GPS Location */}
+        <div>
+          <div style={{ fontSize: 11, color: "#64748b", marginBottom: 6 }}>พิกัด GPS (ไม่บังคับ)</div>
+          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+            <button
+              onClick={getLocation}
+              disabled={gpsLoading}
+              style={{
+                padding: "7px 14px", borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: gpsLoading ? "not-allowed" : "pointer",
+                background: gps ? "rgba(52,211,153,.12)" : "rgba(255,255,255,.04)",
+                color: gps ? "#34d399" : "#64748b",
+                border: gps ? "1px solid rgba(52,211,153,.3)" : "1px solid rgba(255,255,255,.1)",
+                flexShrink: 0,
+              }}
+            >
+              {gpsLoading ? "⏳ กำลังดึง..." : gps ? "📍 มีพิกัดแล้ว" : "📍 ใช้ตำแหน่งปัจจุบัน"}
+            </button>
+            {gps && (
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 11, color: "#34d399", fontFamily: "monospace" }}>
+                  {gps.lat}, {gps.lng}
+                </span>
+                <button
+                  onClick={() => setGps(null)}
+                  style={{ fontSize: 11, color: "#475569", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                >✕</button>
+                <a
+                  href={`https://www.google.com/maps?q=${gps.lat},${gps.lng}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ fontSize: 11, color: "#60a5fa" }}
+                >ดูบน Maps ↗</a>
+              </div>
+            )}
+            {gpsError && <span style={{ fontSize: 11, color: "#f87171" }}>{gpsError}</span>}
+          </div>
         </div>
 
         {/* Timing Signal */}

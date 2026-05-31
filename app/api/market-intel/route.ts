@@ -8,7 +8,11 @@ export async function POST(req: NextRequest) {
     const res = await fetch(N8N_WEBHOOK, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text: body.text, area: body.area || null }),
+      body: JSON.stringify({
+        text: body.text,
+        area: body.area || null,
+        timing_signal: body.timing_signal || body.timing || null,
+      }),
       signal: AbortSignal.timeout(30000),
     });
     const text = await res.text();
