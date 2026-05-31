@@ -643,6 +643,7 @@ app.post("/action/fb/publish", async (req, res) => {
       message: error.message,
     });
     writeState(state);
+    sendTelegram(`❌ FB Publish Error\n${error.message}\nrunId: ${runId}`).catch(() => {});
     res.status(500).json({ ok: false, error: error.message });
   }
 });
@@ -743,6 +744,7 @@ app.post("/action/fb/queue/run-next", async (req, res) => {
     pushHistory(s, { type: "fb_queue_item_failed", engine: "fb", runId, status: "failed",
       message: error.message });
     writeState(s);
+    sendTelegram(`❌ FB Queue Error\n${error.message}\nrunId: ${runId}`).catch(() => {});
     res.status(500).json({ ok: false, error: error.message });
   }
 });
@@ -855,6 +857,7 @@ app.post("/action/blog/queue/run-next", async (req, res) => {
       s.blog.message = errMsg; s.blog.finishedAt = nowIso(); s.blog.updatedAt = nowIso();
       s.system.lastError = errMsg;
       writeState(s);
+      sendTelegram(`❌ Blog Queue Error\nn8n ตอบ ${r.status}\n${errMsg}`).catch(() => {});
     } else {
       console.log("[hub] queue run-next n8n OK — runId:", runId);
     }
@@ -866,6 +869,7 @@ app.post("/action/blog/queue/run-next", async (req, res) => {
     s.blog.finishedAt = nowIso(); s.blog.updatedAt = nowIso();
     s.system.lastError = err.message;
     writeState(s);
+    sendTelegram(`❌ Blog Queue Error\nn8n unreachable: ${err.message}`).catch(() => {});
   });
 });
 
