@@ -1158,43 +1158,33 @@ ${details}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 12, overflow: "hidden", minHeight: 0 }}>
         {selected ? (
           <>
-            <Card style={{ display: "flex", flexDirection: "column", gap: 10, flexShrink: 0 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: "#fb7185" }}>📝 สร้าง Post สำหรับ</div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: "#f1f5f9" }}
-                dangerouslySetInnerHTML={{ __html: selected.title }} />
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                {[
-                  selected.property_type && `🏷️ ${selected.property_type}`,
-                  selected.location      && `📍 ${selected.location}`,
-                  selected.price         && `💰 ${formatPriceTh(selected.price)}`,
-                  selected.bedrooms      && `🛏 ${selected.bedrooms} ห้องนอน`,
-                  selected.area_sqm      && `📐 ${selected.area_sqm} ตร.ม.`,
-                ].filter(Boolean).map((tag, i) => (
-                  <Tag key={i} label={tag as string} color="#fb7185" />
+            <Card style={{ display: "flex", flexDirection: "column", gap: 6, flexShrink: 0, padding: "10px 14px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "#fb7185", flexShrink: 0 }}>📝</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#f1f5f9", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                  dangerouslySetInnerHTML={{ __html: selected.title }} />
+                {selected.price && <span style={{ fontSize: 11, color: "#fb7185", fontWeight: 700, flexShrink: 0 }}>{formatPriceTh(selected.price)}</span>}
+                {selected.location && <span style={{ fontSize: 11, color: "#64748b", flexShrink: 0 }}>📍 {selected.location}</span>}
+              </div>
+              <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                <div style={{ fontSize: 11, color: "#64748b", flexShrink: 0 }}>แปลงเป็น</div>
+                {POST_TYPES.map(t => (
+                  <button key={t.value} onClick={() => setType(t.value)} style={{
+                    padding: "4px 10px", borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer",
+                    background: type === t.value ? "rgba(251,113,133,.15)" : "rgba(255,255,255,.04)",
+                    color: type === t.value ? "#fb7185" : "#64748b",
+                    border: type === t.value ? "1px solid rgba(251,113,133,.3)" : "1px solid rgba(255,255,255,.06)",
+                  }}>{t.emoji} {t.label}</button>
                 ))}
+                <button onClick={generate} disabled={loading} style={{
+                  marginLeft: "auto", background: loading ? "rgba(251,113,133,.05)" : "rgba(251,113,133,.12)",
+                  color: loading ? "#334155" : "#fb7185",
+                  border: "1px solid rgba(251,113,133,.25)", borderRadius: 8,
+                  padding: "5px 14px", fontSize: 12, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", whiteSpace: "nowrap",
+                }}>
+                  {loading ? "⏳ กำลังสร้าง..." : "✨ สร้าง FB Post"}
+                </button>
               </div>
-              <div>
-                <div style={{ fontSize: 11, color: "#64748b", marginBottom: 6 }}>แปลงเป็น</div>
-                <div style={{ display: "flex", gap: 6 }}>
-                  {POST_TYPES.map(t => (
-                    <button key={t.value} onClick={() => setType(t.value)} style={{
-                      flex: 1, padding: "8px 4px", borderRadius: 8, fontSize: 11, fontWeight: 600, cursor: "pointer",
-                      background: type === t.value ? "rgba(251,113,133,.15)" : "rgba(255,255,255,.04)",
-                      color: type === t.value ? "#fb7185" : "#64748b",
-                      border: type === t.value ? "1px solid rgba(251,113,133,.3)" : "1px solid rgba(255,255,255,.06)",
-                      textAlign: "center" as const,
-                    }}>{t.emoji}<br />{t.label}</button>
-                  ))}
-                </div>
-              </div>
-              <button onClick={generate} disabled={loading} style={{
-                background: loading ? "rgba(251,113,133,.05)" : "rgba(251,113,133,.12)",
-                color: loading ? "#334155" : "#fb7185",
-                border: "1px solid rgba(251,113,133,.25)", borderRadius: 12,
-                padding: "12px", fontSize: 13, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer",
-              }}>
-                {loading ? "⏳ กำลังสร้าง..." : "✨ สร้าง FB Post"}
-              </button>
             </Card>
             {result && (
               <Card style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minHeight: 0 }}>
