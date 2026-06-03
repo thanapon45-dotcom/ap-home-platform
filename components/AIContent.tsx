@@ -1067,16 +1067,18 @@ function ListingTab({ onSave }: { onSave: (item: ContentItem) => void }) {
 ✅ CTA: ใช้ลิงก์ทรัพย์นี้โดยตรง — "ดูรายละเอียดเพิ่มเติมที่ [PROPERTY_URL]" หรือ "ทักมาปรึกษาเลย 0627946152"
 ✅ Hashtag 5-7 อัน รวม #Finnhouses #ขายบ้าน #โบรกเกอร์`;
 
+    const decodedLink = (() => { try { return decodeURIComponent(selected.link ?? ""); } catch { return selected.link ?? ""; } })();
+
     const prompt = `รายละเอียดทรัพย์:
 ชื่อ: "${selected.title.replace(/<[^>]+>/g, "")}"
 ${details}
-ลิงก์ทรัพย์: ${selected.link}
+ลิงก์ทรัพย์: ${decodedLink}
 
 เขียน ${typeLabel} สำหรับ Facebook page ของ ${BRAND}:
 • Hook 1-2 บรรทัดแรก — ดึงใจคนที่กำลังมองหาบ้าน
 • Highlight จุดเด่น 3-4 ข้อ (emoji bullet)
 • ราคา (ต้องแสดง ถ้ามีข้อมูล)
-• CTA: ใช้ลิงก์ทรัพย์นี้โดยตรง (${selected.link}) ให้คนคลิกดูรายละเอียดเพิ่มเติม
+• CTA: ใช้ลิงก์ทรัพย์นี้โดยตรง (${decodedLink}) ให้คนคลิกดูรายละเอียดเพิ่มเติม
 • Hashtag
 
 เขียนตรงๆ ห้ามใส่ label "Hook:" หรือ "CTA:" นำหน้า`;
@@ -1209,7 +1211,17 @@ ${details}
                     </button>
                   </div>
                 </div>
-                <pre style={{ whiteSpace: "pre-wrap", fontSize: 13, color: "#e2e8f0", lineHeight: 1.7, margin: 0, fontFamily: "inherit", overflowY: "auto", flex: 1 }}>{result}</pre>
+                <textarea
+                  value={result}
+                  onChange={e => setResult(e.target.value)}
+                  style={{
+                    flex: 1, minHeight: 280, width: "100%", resize: "vertical",
+                    background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.08)",
+                    borderRadius: 10, padding: "14px 16px", fontSize: 13, color: "#e2e8f0",
+                    lineHeight: 1.8, fontFamily: "inherit", overflowY: "auto",
+                    outline: "none", boxSizing: "border-box",
+                  }}
+                />
               </Card>
             )}
           </>
