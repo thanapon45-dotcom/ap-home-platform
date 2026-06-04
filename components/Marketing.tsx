@@ -49,7 +49,7 @@ const KEYWORD_POOLS: Record<number, { label: string; color: string; emoji: strin
       "รับสร้างบ้าน ปทุมธานี นนทบุรี สมุทรปราการ แนะนำ",
     ],
   },
-  14: {
+  33: {
     label: "Land (ที่ดิน & ทำเล)", color: "#10b981", emoji: "🗺️",
     keywords: [
       // High-intent: คนมีเงินพร้อมซื้อที่ดิน
@@ -63,8 +63,8 @@ const KEYWORD_POOLS: Record<number, { label: string; color: string; emoji: strin
       "ลงทุนซื้อที่ดินสร้างบ้านขาย กรุงเทพ กำไรจริงไหม",
     ],
   },
-  15: {
-    label: "Renovation Flip (ลำลูกกา)", color: "#f97316", emoji: "🔧",
+  34: {
+    label: "Renovation Flip (รีโนเวทเพื่อขาย)", color: "#f97316", emoji: "🔧",
     keywords: [
       // ค่ารีโนเวทปี 2026
       "ค่ารีโนเวทบ้านเก่า ลำลูกกา ปทุมธานี ราคาจริงปี 2026",
@@ -80,7 +80,7 @@ const KEYWORD_POOLS: Record<number, { label: string; color: string; emoji: strin
       "บ้านรีโนเวทแบบไหนขายออกเร็วที่สุด ลำลูกกา ปทุมธานี",
     ],
   },
-  16: {
+  35: {
     label: "Zone Data (ราคารายโซน)", color: "#e879f9", emoji: "📊",
     keywords: [
       // ลำลูกกา
@@ -97,7 +97,7 @@ const KEYWORD_POOLS: Record<number, { label: string; color: string; emoji: strin
       "ราคาบ้าน สมุทรปราการ บางพลี บางนา ลาดกระบัง เทียบกัน 2026",
     ],
   },
-  17: {
+  36: {
     label: "Seller Acquisition (ฝากขาย)", color: "#fb7185", emoji: "🏷️",
     keywords: [
       // คนอยากขายบ้าน — ค้นหา "ฝากขาย" + "โบรกเกอร์"
