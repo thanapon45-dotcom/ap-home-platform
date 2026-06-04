@@ -1,0 +1,49 @@
+
+═══════════════════════════════════════════════════
+DDPROPERTY
+URL: https://www.ddproperty.com/th/property-for-sale?freetext=%E0%B8%A5%E0%B8%B3%E0%B8%A5%E0%B8%B9%E0%B8%81%E0%B8%81%E0%B8%B2&property_type_code[]=HP
+Title: 403 ไม่อนุญาตให้เข้าถึงข้อมูลดังกล่าว | DDproperty.com
+Body class: 
+Container: <undefined class="undefined">
+
+── Price Elements (ที่มีข้อความ ล้าน/,000) ──
+
+
+── Property Links ──
+  <a class=""> /ขายบ้านเดี่ยว
+  <a class=""> /property-commercial-sale
+  <a class=""> /เช่าบ้านเดี่ยว
+  <a class=""> /property-commercial-rent
+
+── Container HTML (500 chars) ──
+(ไม่พบ)
+═══════════════════════════════════════════════════
+
+❌ Baania: page.goto: Timeout 30000ms exceeded.
+Call log:
+[2m  - navigating to "https://www.baania.com/th/search?keyword=%E0%B8%A5%E0%B8%B3%E0%B8%A5%E0%B8%B9%E0%B8%81%E0%B8%81%E0%B8%B2&for_sale=1", waiting until "networkidle"[22m
+
+
+❌ Livinginsider: page.goto: Timeout 30000ms exceeded.
+Call log:
+[2m  - navigating to "https://www.livinginsider.com/searchagent/%E0%B8%97%E0%B8%B2%E0%B8%A7%E0%B8%99%E0%B9%8C%E0%B9%80%E0%B8%AE%E0%B9%89%E0%B8%B2%E0%B8%AA%E0%B9%8C/buy/%E0%B8%A5%E0%B8%B3%E0%B8%A5%E0%B8%B9%E0%B8%81%E0%B8%81%E0%B8%B2", waiting until "networkidle"[22m
+
+
+═══════════════════════════════════════════════════
+KAIDEE
+URL: https://www.kaidee.com/property?q=%E0%B8%A5%E0%B8%B3%E0%B8%A5%E0%B8%B9%E0%B8%81%E0%B8%81%E0%B8%B2&category=40
+Title: ขออภัย ไม่พบข้อมูลที่คุณกำลังมองหา | 404
+Body class: 
+Container: <DIV class="kaidee-layout w-full overflow-x-hidden bg-sl100 md:pt-header-desktop">
+
+── Price Elements (ที่มีข้อความ ล้าน/,000) ──
+[1] <SCRIPT class=""> "{"props":{"pageProps":{"__lang":"th","__namespaces":{"header":{"LANG":"TH","AUTO"
+     parent: ""
+     grandparent: ""
+
+── Property Links ──
+  <a class="flex cursor-pointer flex-col items-center overflow-hidden ro"> https://baan.kaidee.com/c16-realestate-townhouse
+
+── Container HTML (500 chars) ──
+<div class="sc-a1daf8e3-0 gHkahE header" data-testid="header"><div class="h-4xl px-md bg-sl100 py-md flex w-full items-center justify-between !tracking-normal md:hidden"><div class="flex items-center"><img data-testid="header-menu-button" alt="menu-icon" aria-label="menu button" class="p-0 mr-lg h-lg w-lg" height="24px" src="https://ast.kaidee.com/blackpearl/_static/images/shared/icon/kaidee-hamburger.svg" width="24px"><a href="https://www.kaidee.com/"><img alt="Kaidee logo" class="ml-sm h-3xl w
+═══════════════════════════════════════════════════

@@ -1,0 +1,111 @@
+
+════════════════════════════════════════════════
+ baan.kaidee.com — ad-card HTML Inspector
+════════════════════════════════════════════════
+จำนวน [data-testid='ad-card']: 24
+
+── data-testid ทั้งหมดใน page ──
+kaidee-layout | header | header-menu-button | header-drawerv2 | header-vertical-submenu-mobile-component | kaidee-logo | header-vertical-sub-menu | new-header-user-menu-container | mkp-search-result | breadcrumbs | listing-title | total-listing-ad | top-navigation-desktop | top-navigation-menu | saved-criteria-button | desktop-sort | listing-desktop | desktop-aside | kaidee-certified-checkbox | npa-on-checkbox | npa-off-checkbox | search-result-filter | category-nav-modal | single-selection-furniture | single-selection-built_at | price-filter | province-filter | single-selection-condition-box | single-selection-purpose-box | top-location-bar
+
+── Listing Links (href pattern /p-XXXXX) ──
+  href: https://baan.kaidee.com/product-371287153
+  text: HOT฿4,290,000ทาวน์เฮ้าส์ 2 ชั้น 25 ตร.ว. หมู่บ้าน 
+  cls: 
+---
+  href: https://baan.kaidee.com/product-371377942
+  text: HOTขายโดยเจ้าของที่ยืนยันตัวตนแล้ว฿1,790,000ทาวน์เ
+  cls: 
+---
+  href: https://baan.kaidee.com/product-371376045
+  text: HOT฿4,500,000ทาวน์เฮ้าส์ 2 ชั้น 22 ตร.ว. ทาวน์เฮ้า
+  cls: 
+---
+  href: https://baan.kaidee.com/product-371372295
+  text: HOT฿1,590,000ทาวน์เฮ้าส์ 2 ชั้น 18 ตร.ว. หมู่บ้านพ
+  cls: 
+---
+  href: https://baan.kaidee.com/product-371371773
+  text: HOT฿2,250,000ทาวน์เฮ้าส์ 2 ชั้น 18 ตร.ว. หมู่บ้านล
+  cls: 
+---
+  href: https://baan.kaidee.com/product-371376212
+  text: HOT฿4,900ให้เช่าทาวน์เฮ้าส์ชั้นเดียว เพียงเดือนละ 
+  cls: 
+---
+  href: https://baan.kaidee.com/product-370982999
+  text: HOTเจ้าของขายเอง฿7,500,000ลุมพินี ทาวน์เพลส สุขุมว
+  cls: 
+---
+  href: https://baan.kaidee.com/product-371373772
+  text: HOTเจ้าของขายเอง฿1,490,000ขายบ้านรีโนเวทดอนเมือง ข
+  cls: 
+---
+  href: https://baan.kaidee.com/product-371355501
+  text: HOTเจ้าของขายเอง฿45,000Eigen Premium Townhome Rama
+  cls: 
+---
+  href: https://baan.kaidee.com/product-371327422
+  text: HOT฿2,190,000ทาวน์เฮ้าส์ 2 ชั้น 18.7 ตร.ว. หมู่บาน
+  cls: 
+
+════ CARD #1 ════
+innerHTML (300 chars):
+<div class="relative w-full col-span-1 rounded-md" data-testid="AdCardImage"><span class="sc-161ff7f5-0 ebAfVQ sc-7813cf59-0 fQonGA absolute left-0 top-0" scale="medium"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="16px" height="16px"><path d="M15.67 8.145c-.382-.39
+
+allLinks: []
+allText (200 chars): HOT
+฿4,290,000
+ทาวน์เฮ้าส์ 2 ชั้น 25 ตร.ว. หมู่บ้าน ป.ธนานิเวศน์ เสนานิคม1 ซอย28 แยก1 ถนนเสนานิคม1 ถนนซอยเสนานิคม1 ซอย28 เขตจตุจักร กรุงเทพมหานคร
+จตุจักร กรุงเทพมหานคร
+ทาวน์เฮ้าส์
+ขาย
+25 ตารางวา
+3 ห้อ
+
+priceEls:
+  <SPAN class="mr-xs text-title-7 font-bold text-sd100"> "฿"
+  <SPAN class="text-title-7 font-bold text-sd100"> "4,290,000"
+
+dataTestIds inside: ["AdCardImage","thumbnail","ad-card-price","area-attr","bathroom-attr","bedroom-attr"]
+
+════ CARD #2 ════
+innerHTML (300 chars):
+<div class="relative w-full col-span-1 rounded-md" data-testid="AdCardImage"><span class="sc-161ff7f5-0 ebAfVQ sc-7813cf59-0 fQonGA absolute left-0 top-0" scale="medium"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="16px" height="16px"><path d="M15.67 8.145c-.382-.39
+
+allLinks: []
+allText (200 chars): HOT
+ขายโดยเจ้าของที่ยืนยันตัวตนแล้ว
+฿1,790,000
+ทาวน์เฮ้าส์2ชั้นในเมือง สไตล์มินิมอล เกาหลีเกาใจ😍🌤☁️
+เมืองพิษณุโลก พิษณุโลก
+ทาวน์เฮ้าส์
+ขาย
+20 ตารางวา
+2 ห้องนอน
+2 ห้องน้ำ
+
+priceEls:
+  <SPAN class="mr-xs text-title-7 font-bold text-sd100"> "฿"
+  <SPAN class="text-title-7 font-bold text-sd100"> "1,790,000"
+
+dataTestIds inside: ["AdCardImage","thumbnail","new-verified-seller-badge","ad-card-price","area-attr","bathroom-attr","bedroom-attr"]
+
+════ CARD #3 ════
+innerHTML (300 chars):
+<div class="relative w-full col-span-1 rounded-md" data-testid="AdCardImage"><span class="sc-161ff7f5-0 ebAfVQ sc-7813cf59-0 fQonGA absolute left-0 top-0" scale="medium"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="16px" height="16px"><path d="M15.67 8.145c-.382-.39
+
+allLinks: []
+allText (200 chars): HOT
+฿4,500,000
+ทาวน์เฮ้าส์ 2 ชั้น 22 ตร.ว. ทาวน์เฮ้าส์ ใกล้ตลาดดินแดง ตลาดห้วยขวาง ซอยประชาสงเคราะห์16 แยก2 ถนนรัชดาภิเษก ถนนประชาสงเคราะห์16 เขตดินแดง
+ดินแดง กรุงเทพมหานคร
+ทาวน์เฮ้าส์
+ขาย
+22 ตารางวา
+
+
+priceEls:
+  <SPAN class="mr-xs text-title-7 font-bold text-sd100"> "฿"
+  <SPAN class="text-title-7 font-bold text-sd100"> "4,500,000"
+
+dataTestIds inside: ["AdCardImage","thumbnail","ad-card-price","area-attr","bathroom-attr","bedroom-attr"]
