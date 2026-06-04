@@ -31,7 +31,7 @@ function useLeadCounts() {
         .from("leads")
         .select("stage, business_unit");
       if (error || !data) return;
-      const bu = (l: { business_unit?: string }) => l.business_unit ?? "build";
+      const bu = (l: { business_unit?: string }) => l.business_unit || "build";
       setCounts({
         total:     data.length,
         new:       data.filter(l => l.stage === "new").length,

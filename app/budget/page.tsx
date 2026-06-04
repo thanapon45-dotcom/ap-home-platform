@@ -38,7 +38,7 @@ export default function BudgetPage() {
       budget:        budgetLabel,
       stage:         "new",
       source:        "Budget Tool",
-      business_unit: "build",
+      business_unit: intent === "renovate" ? "reno" : intent === "buy" ? "list" : "build",
       style:         "Modern Minimal",
       score:         urgency === "hot" ? 85 : urgency === "warm" ? 70 : 55,
       intent,
