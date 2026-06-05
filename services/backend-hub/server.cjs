@@ -1,6 +1,4 @@
 const express = require("express");
-const fs = require("fs");
-const path = require("path");
 const crypto = require("crypto");
 
 const app = express();
@@ -16,10 +14,12 @@ const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "";
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || "";
 const SUPABASE_URL = process.env.SUPABASE_URL || "";
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || "";
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || "";
+const SUPABASE_REST_KEY = SUPABASE_SERVICE_KEY || SUPABASE_ANON_KEY;
+const HUB_STATE_KEY = process.env.HUB_STATE_KEY || "default";
 const WP_URL = process.env.WP_URL || "https://finnhouses.com";
 const WP_USER = process.env.WP_USER || "";
 const WP_APP_PASS = process.env.WP_APP_PASS || "";
-const STATE_FILE = path.join(__dirname, "hub-state.json");
 
 // ── Supabase REST Helper ──────────────────────────────────────────────────────
 async function supabaseInsert(table, payload) {
@@ -97,7 +97,8 @@ function baseState() {
       hubStatus: "idle",
       lastError: "",
       updatedAt: nowIso(),
-      stateFile: STATE_FILE,
+      stateStore: "supabase:hub_state",
+      stateKey: HUB_STATE_KEY,
     },
     blog: {
       engine: "blog",
@@ -161,21 +162,88 @@ function normalizeState(raw) {
   };
 }
 
-function readState() {
-  if (!fs.existsSync(STATE_FILE)) return baseState();
+let stateCache = null;
+
+function stateCredentialsAvailable() {
+  return Boolean(SUPABASE_URL && SUPABASE_REST_KEY);
+}
+
+async function readState() {
+  if (!stateCredentialsAvailable()) {
+    if (!stateCache) {
+      stateCache = normalizeState({
+        ...baseState(),
+        system: {
+          ...baseState().system,
+          lastError: "Supabase credentials missing; using in-memory Hub state",
+        },
+      });
+    }
+    return normalizeState(stateCache);
+  }
+
   try {
-    const raw = JSON.parse(fs.readFileSync(STATE_FILE, "utf8"));
-    return normalizeState(raw);
-  } catch {
-    return baseState();
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/hub_state?key=eq.${encodeURIComponent(HUB_STATE_KEY)}&select=value&limit=1`,
+      {
+        headers: {
+          "apikey": SUPABASE_REST_KEY,
+          "Authorization": `Bearer ${SUPABASE_REST_KEY}`,
+        },
+      }
+    );
+    if (!res.ok) throw new Error(`Supabase hub_state read failed: HTTP ${res.status}`);
+    const rows = await res.json().catch(() => []);
+    const state = normalizeState(rows?.[0]?.value || baseState());
+    stateCache = state;
+    return state;
+  } catch (e) {
+    console.error("[hub] readState Supabase error:", e.message);
+    if (!stateCache) stateCache = baseState();
+    stateCache.system.lastError = `Supabase hub_state read failed: ${e.message}`;
+    stateCache.system.updatedAt = nowIso();
+    return normalizeState(stateCache);
   }
 }
 
-function writeState(state) {
+async function writeState(state) {
   const next = normalizeState(state);
   next.system.updatedAt = nowIso();
-  next.system.stateFile = STATE_FILE;
-  fs.writeFileSync(STATE_FILE, JSON.stringify(next, null, 2), "utf8");
+  next.system.stateStore = "supabase:hub_state";
+  next.system.stateKey = HUB_STATE_KEY;
+  stateCache = next;
+
+  if (!stateCredentialsAvailable()) {
+    console.warn("[hub] Supabase credentials missing; Hub state persisted in memory only");
+    return { ok: false, error: "No Supabase credentials" };
+  }
+
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/hub_state?on_conflict=key`, {
+      method: "POST",
+      headers: {
+        "apikey": SUPABASE_REST_KEY,
+        "Authorization": `Bearer ${SUPABASE_REST_KEY}`,
+        "Content-Type": "application/json",
+        "Prefer": "resolution=merge-duplicates,return=minimal",
+      },
+      body: JSON.stringify({
+        key: HUB_STATE_KEY,
+        value: next,
+        updated_at: nowIso(),
+      }),
+    });
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      throw new Error(`HTTP ${res.status}${text ? ` ${text}` : ""}`);
+    }
+    return { ok: true };
+  } catch (e) {
+    console.error("[hub] writeState Supabase error:", e.message);
+    stateCache.system.lastError = `Supabase hub_state write failed: ${e.message}`;
+    stateCache.system.updatedAt = nowIso();
+    return { ok: false, error: e.message };
+  }
 }
 
 function pushHistory(state, entry) {
@@ -236,16 +304,16 @@ app.use((req, res, next) => {
   next();
 });
 
-app.get("/api/state", (req, res) => {
-  res.json(readState());
+app.get("/api/state", async (req, res) => {
+  res.json(await readState());
 });
 
 app.get("/health", (req, res) => {
   res.json({ ok: true, time: nowIso() });
 });
 
-app.post("/action/blog/reset", (req, res) => {
-  const state = readState();
+app.post("/action/blog/reset", async (req, res) => {
+  const state = await readState();
   const oldRunId = state.blog.runId || "";
   const oldKeyword = state.blog.keyword || "";
   state.blog = {
@@ -271,12 +339,12 @@ app.post("/action/blog/reset", (req, res) => {
     status: "idle",
     message: "Manual reset",
   });
-  writeState(state);
+  await writeState(state);
   res.json({ ok: true });
 });
 
 app.post("/action/blog/run", async (req, res) => {
-  const state = readState();
+  const state = await readState();
   const keyword = String(req.body.keyword || "").trim();
   const category = Number(req.body.category || 13);
   const slot = String(req.body.slot || "morning");
@@ -322,7 +390,7 @@ app.post("/action/blog/run", async (req, res) => {
     status: "running",
     message: "Hub accepted request from dashboard",
   });
-  writeState(state);
+  await writeState(state);
 
   const payload = {
     keyword,
@@ -350,7 +418,7 @@ app.post("/action/blog/run", async (req, res) => {
       const text = await r.text().catch(() => "");
       const errMsg = `n8n webhook returned HTTP ${r.status}${text ? `: ${text}` : ""}`;
       console.error("[hub] n8n trigger failed:", errMsg);
-      const s = readState();
+      const s = await readState();
       s.blog.status = "failed";
       s.blog.failed = 1;
       s.blog.message = errMsg;
@@ -358,14 +426,14 @@ app.post("/action/blog/run", async (req, res) => {
       s.blog.updatedAt = nowIso();
       s.system.lastError = errMsg;
       pushHistory(s, { type: "blog_run_failed_at_dispatch", engine: "blog", runId, keyword, status: "failed", message: errMsg });
-      writeState(s);
+      await writeState(s);
       sendTelegram(formatBlogMessage(s.blog)).catch(() => {});
     } else {
       console.log("[hub] n8n triggered OK — runId:", runId);
     }
-  }).catch((err) => {
+  }).catch(async (err) => {
     console.error("[hub] n8n fetch error:", err.message);
-    const s = readState();
+    const s = await readState();
     s.blog.status = "failed";
     s.blog.failed = 1;
     s.blog.message = `n8n unreachable: ${err.message}`;
@@ -373,13 +441,13 @@ app.post("/action/blog/run", async (req, res) => {
     s.blog.updatedAt = nowIso();
     s.system.lastError = err.message;
     pushHistory(s, { type: "blog_run_failed_at_dispatch", engine: "blog", runId, keyword, status: "failed", message: err.message });
-    writeState(s);
+    await writeState(s);
     sendTelegram(formatBlogMessage(s.blog)).catch(() => {});
   });
 });
 
 app.post("/webhook/n8n", async (req, res) => {
-  const state = readState();
+  const state = await readState();
   const payload = req.body || {};
   const status = String(payload.status || "").toLowerCase();
   const normalizedStatus = status === "published" ? "published" : "failed";
@@ -431,7 +499,7 @@ app.post("/webhook/n8n", async (req, res) => {
     postUrl: state.blog.postUrl,
     message: state.blog.message,
   });
-  writeState(state);
+  await writeState(state);
 
   try {
     await sendTelegram(formatBlogMessage(state.blog));
@@ -443,10 +511,10 @@ app.post("/webhook/n8n", async (req, res) => {
       keyword: state.blog.keyword,
       message: "Telegram sent",
     });
-    writeState(state);
+    await writeState(state);
   } catch (error) {
     state.system.lastError = error.message;
-    writeState(state);
+    await writeState(state);
   }
 
   res.json({ ok: true });
@@ -454,7 +522,7 @@ app.post("/webhook/n8n", async (req, res) => {
 
 // ── WF2 Image-done callback ───────────────────────────────────────────────────
 app.post("/webhook/image-done", async (req, res) => {
-  const state = readState();
+  const state = await readState();
   const payload = req.body || {};
   const status = String(payload.status || "patched");
   const postId = String(payload.post_id || "");
@@ -478,7 +546,7 @@ app.post("/webhook/image-done", async (req, res) => {
     status,
     message: `WF2 image ${status}`,
   });
-  writeState(state);
+  await writeState(state);
 
   if (status === "patched") {
     const msg = `🖼️ Image patched\nPost ID: ${postId}\nMedia ID: ${mediaId}\nURL: ${mediaUrl}`;
@@ -554,8 +622,8 @@ app.post("/webhook/property-saved", async (req, res) => {
   res.json({ ok: result.ok, wp_post_id: wpPostId, supabase: result });
 });
 
-app.post("/webhook/fb", (req, res) => {
-  const state = readState();
+app.post("/webhook/fb", async (req, res) => {
+  const state = await readState();
   const payload = req.body || {};
   const status = String(payload.status || "idle").toLowerCase();
 
@@ -584,12 +652,12 @@ app.post("/webhook/fb", (req, res) => {
     status: state.fb.status,
     message: state.fb.message || "FB webhook received",
   });
-  writeState(state);
+  await writeState(state);
   res.json({ ok: true });
 });
 
 app.post("/action/fb/publish", async (req, res) => {
-  const state = readState();
+  const state = await readState();
   const content = String(req.body.content || "").trim();
   if (!content) {
     return res.status(400).json({ ok: false, error: "content is required" });
@@ -615,7 +683,7 @@ app.post("/action/fb/publish", async (req, res) => {
     status: "running",
     message: "Hub accepted FB publish request",
   });
-  writeState(state);
+  await writeState(state);
 
   try {
     const { bodyText } = await withRetry(async () => {
@@ -656,7 +724,7 @@ app.post("/action/fb/publish", async (req, res) => {
       status: "failed",
       message: error.message,
     });
-    writeState(state);
+    await writeState(state);
     sendTelegram(`❌ FB Publish Error\n${error.message}\nrunId: ${runId}`).catch(() => {});
     res.status(500).json({ ok: false, error: error.message });
   }
@@ -664,12 +732,12 @@ app.post("/action/fb/publish", async (req, res) => {
 
 // ── FB Queue endpoints ────────────────────────────────────────────────────────
 
-app.post("/action/fb/queue/build", (req, res) => {
+app.post("/action/fb/queue/build", async (req, res) => {
   const items = req.body.items;
   if (!Array.isArray(items) || items.length === 0) {
     return res.status(400).json({ ok: false, error: "items array required" });
   }
-  const state = readState();
+  const state = await readState();
   state.fb_queue = items.map(item => ({
     id: String(item.id || crypto.randomUUID()),
     date: String(item.date || ""),
@@ -679,19 +747,19 @@ app.post("/action/fb/queue/build", (req, res) => {
     createdAt: nowIso(),
     updatedAt: nowIso(),
   }));
-  writeState(state);
+  await writeState(state);
   res.json({ ok: true, count: state.fb_queue.length, queue: state.fb_queue });
 });
 
-app.post("/action/fb/queue/clear", (req, res) => {
-  const state = readState();
+app.post("/action/fb/queue/clear", async (req, res) => {
+  const state = await readState();
   state.fb_queue = [];
-  writeState(state);
+  await writeState(state);
   res.json({ ok: true });
 });
 
 app.post("/action/fb/queue/run-next", async (req, res) => {
-  const state = readState();
+  const state = await readState();
   if (!Array.isArray(state.fb_queue) || state.fb_queue.length === 0) {
     return res.json({ ok: true, skipped: true, message: "FB queue is empty" });
   }
@@ -726,7 +794,7 @@ app.post("/action/fb/queue/run-next", async (req, res) => {
     status: "running",
     message: `FB Queue: ${nextItem.date} item started`,
   });
-  writeState(state);
+  await writeState(state);
 
   try {
     await withRetry(async () => {
@@ -741,17 +809,17 @@ app.post("/action/fb/queue/run-next", async (req, res) => {
       }
     }, 2, 4000, "fb-queue-run-next");
 
-    const s = readState();
+    const s = await readState();
     const qi = s.fb_queue?.find(i => i.id === nextItem.id);
     if (qi) { qi.status = "published"; qi.updatedAt = nowIso(); }
     s.fb = { ...s.fb, runId, status: "published", published: (s.fb.published || 0) + 1,
       message: "FB Queue post published", lastUpdate: nowIso(), finishedAt: nowIso(), updatedAt: nowIso() };
     pushHistory(s, { type: "fb_queue_item_published", engine: "fb", runId, status: "published",
       message: `FB Queue: ${nextItem.date} published` });
-    writeState(s);
+    await writeState(s);
     res.json({ ok: true, runId, item: nextItem });
   } catch (error) {
-    const s = readState();
+    const s = await readState();
     const qi = s.fb_queue?.find(i => i.id === nextItem.id);
     if (qi) { qi.status = "failed"; qi.updatedAt = nowIso(); }
     s.fb = { ...s.fb, runId, status: "failed", failed: (s.fb.failed || 0) + 1,
@@ -759,7 +827,7 @@ app.post("/action/fb/queue/run-next", async (req, res) => {
     s.system.lastError = error.message;
     pushHistory(s, { type: "fb_queue_item_failed", engine: "fb", runId, status: "failed",
       message: error.message });
-    writeState(s);
+    await writeState(s);
     sendTelegram(`❌ FB Queue Error\n${error.message}\nrunId: ${runId}`).catch(() => {});
     res.status(500).json({ ok: false, error: error.message });
   }
@@ -767,12 +835,12 @@ app.post("/action/fb/queue/run-next", async (req, res) => {
 
 // ── Content Queue endpoints ───────────────────────────────────────────────────
 
-app.post("/action/blog/queue/build", (req, res) => {
+app.post("/action/blog/queue/build", async (req, res) => {
   const items = req.body.items;
   if (!Array.isArray(items) || items.length === 0) {
     return res.status(400).json({ ok: false, error: "items array required" });
   }
-  const state = readState();
+  const state = await readState();
   state.content_queue = items.map(item => ({
     id: String(item.id || crypto.randomUUID()),
     date: String(item.date || ""),
@@ -786,19 +854,19 @@ app.post("/action/blog/queue/build", (req, res) => {
     createdAt: nowIso(),
     updatedAt: nowIso(),
   }));
-  writeState(state);
+  await writeState(state);
   res.json({ ok: true, count: state.content_queue.length, queue: state.content_queue });
 });
 
-app.post("/action/blog/queue/clear", (req, res) => {
-  const state = readState();
+app.post("/action/blog/queue/clear", async (req, res) => {
+  const state = await readState();
   state.content_queue = [];
-  writeState(state);
+  await writeState(state);
   res.json({ ok: true });
 });
 
 app.post("/action/blog/queue/run-next", async (req, res) => {
-  const state = readState();
+  const state = await readState();
   if (!Array.isArray(state.content_queue) || state.content_queue.length === 0) {
     return res.json({ ok: true, skipped: true, message: "Queue is empty" });
   }
@@ -841,7 +909,7 @@ app.post("/action/blog/queue/run-next", async (req, res) => {
     runId, keyword: nextItem.keyword,
     status: "running", message: `Queue: ${nextItem.date} item started`,
   });
-  writeState(state);
+  await writeState(state);
 
   res.json({ ok: true, runId, item: nextItem });
 
@@ -866,25 +934,25 @@ app.post("/action/blog/queue/run-next", async (req, res) => {
       const text = await r.text().catch(() => "");
       const errMsg = `n8n returned HTTP ${r.status}${text ? `: ${text}` : ""}`;
       console.error("[hub] queue run-next n8n failed:", errMsg);
-      const s = readState();
+      const s = await readState();
       const qi = s.content_queue?.find(i => i.id === nextItem.id);
       if (qi) { qi.status = "failed"; qi.updatedAt = nowIso(); }
       s.blog.status = "failed"; s.blog.failed = 1;
       s.blog.message = errMsg; s.blog.finishedAt = nowIso(); s.blog.updatedAt = nowIso();
       s.system.lastError = errMsg;
-      writeState(s);
+      await writeState(s);
       sendTelegram(`❌ Blog Queue Error\nn8n ตอบ ${r.status}\n${errMsg}`).catch(() => {});
     } else {
       console.log("[hub] queue run-next n8n OK — runId:", runId);
     }
-  }).catch((err) => {
-    const s = readState();
+  }).catch(async (err) => {
+    const s = await readState();
     const qi = s.content_queue?.find(i => i.id === nextItem.id);
     if (qi) { qi.status = "failed"; qi.updatedAt = nowIso(); }
     s.blog.status = "failed"; s.blog.message = `n8n unreachable: ${err.message}`;
     s.blog.finishedAt = nowIso(); s.blog.updatedAt = nowIso();
     s.system.lastError = err.message;
-    writeState(s);
+    await writeState(s);
     sendTelegram(`❌ Blog Queue Error\nn8n unreachable: ${err.message}`).catch(() => {});
   });
 });
@@ -1224,12 +1292,12 @@ app.post("/action/land-lead", async (req, res) => {
   res.json({ ok: result.ok, error: result.error || null });
 });
 
-app.listen(PORT, HUB_HOST, () => {
-  const state = readState();
-  writeState(state);
+app.listen(PORT, HUB_HOST, async () => {
+  const state = await readState();
+  await writeState(state);
   console.log(`Backend Hub v2 running at ${HUB_PUBLIC_BASE_URL}`);
   console.log(`Routes: /action/blog/queue/build|clear|run-next + /action/fb/queue/build|clear|run-next`);
   console.log(`n8n blog webhook: ${N8N_BLOG_WEBHOOK_URL}`);
   console.log(`fb backend: ${FB_BACKEND_URL}`);
-  console.log(`State file: ${STATE_FILE}`);
+  console.log(`State store: Supabase hub_state key=${HUB_STATE_KEY}`);
 });
