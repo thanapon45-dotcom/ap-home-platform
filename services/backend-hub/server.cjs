@@ -14,7 +14,7 @@ const HUB_SECRET = process.env.HUB_SECRET || "";
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "";
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || "";
 const SUPABASE_URL = process.env.SUPABASE_URL || "";
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || "";
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY || "";
 const SUPABASE_REST_KEY = SUPABASE_SERVICE_KEY || "";
 const HUB_STATE_KEY = process.env.HUB_STATE_KEY || "default";
 const WP_URL = process.env.WP_URL || "https://finnhouses.com";
@@ -1182,7 +1182,7 @@ app.post("/action/property/publish", async (req, res) => {
 
 // ── Get pending_review properties (for Dashboard review UI) ──────────────────
 app.get("/api/properties/pending", async (req, res) => {
-  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+  if (!SUPABASE_URL || !SUPABASE_REST_KEY) {
     return res.status(500).json({ ok: false, error: "No Supabase credentials" });
   }
   try {
@@ -1190,8 +1190,8 @@ app.get("/api/properties/pending", async (req, res) => {
       `${SUPABASE_URL}/rest/v1/properties?status=eq.pending_review&order=listed_at.desc`,
       {
         headers: {
-          "apikey": SUPABASE_ANON_KEY,
-          "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+          "apikey": SUPABASE_REST_KEY,
+          "Authorization": `Bearer ${SUPABASE_REST_KEY}`,
         },
       }
     );
@@ -1257,15 +1257,15 @@ app.get("/api/properties/wp-published", async (req, res) => {
 app.post("/action/property/dismiss", async (req, res) => {
   const { supabase_id } = req.body || {};
   if (!supabase_id) return res.status(400).json({ ok: false, error: "supabase_id required" });
-  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return res.status(500).json({ ok: false, error: "No Supabase credentials" });
+  if (!SUPABASE_URL || !SUPABASE_REST_KEY) return res.status(500).json({ ok: false, error: "No Supabase credentials" });
   try {
     const patchRes = await fetch(
       `${SUPABASE_URL}/rest/v1/properties?id=eq.${supabase_id}`,
       {
         method: "PATCH",
         headers: {
-          "apikey": SUPABASE_ANON_KEY,
-          "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+          "apikey": SUPABASE_REST_KEY,
+          "Authorization": `Bearer ${SUPABASE_REST_KEY}`,
           "Content-Type": "application/json",
           "Prefer": "return=minimal",
         },
@@ -1290,7 +1290,7 @@ app.post("/action/property/append-line-image", async (req, res) => {
   if (!line_user_id || !media_id || !url) {
     return res.status(400).json({ ok: false, error: "line_user_id, media_id, url required" });
   }
-  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+  if (!SUPABASE_URL || !SUPABASE_REST_KEY) {
     return res.status(500).json({ ok: false, error: "No Supabase credentials" });
   }
   try {
@@ -1298,7 +1298,7 @@ app.post("/action/property/append-line-image", async (req, res) => {
     const since = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
     const findRes = await fetch(
       `${SUPABASE_URL}/rest/v1/properties?line_user_id=eq.${encodeURIComponent(line_user_id)}&status=eq.pending_review&listed_at=gte.${since}&order=listed_at.desc&limit=1`,
-      { headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": `Bearer ${SUPABASE_ANON_KEY}` } }
+      { headers: { "apikey": SUPABASE_REST_KEY, "Authorization": `Bearer ${SUPABASE_REST_KEY}` } }
     );
     const rows = await findRes.json();
     if (!rows?.length) {
@@ -1311,8 +1311,8 @@ app.post("/action/property/append-line-image", async (req, res) => {
     const rpcRes = await fetch(`${SUPABASE_URL}/rest/v1/rpc/append_line_image_atomic`, {
       method: "POST",
       headers: {
-        "apikey": SUPABASE_ANON_KEY,
-        "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+        "apikey": SUPABASE_REST_KEY,
+        "Authorization": `Bearer ${SUPABASE_REST_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ p_id: prop.id, p_media_id: media_id, p_url: url }),
