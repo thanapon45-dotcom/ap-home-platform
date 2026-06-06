@@ -10,12 +10,12 @@ const HUB_PUBLIC_BASE_URL = process.env.HUB_PUBLIC_BASE_URL || `http://${HUB_HOS
 const DASHBOARD_ORIGIN = process.env.DASHBOARD_ORIGIN || "http://127.0.0.1:5173";
 const N8N_BLOG_WEBHOOK_URL = process.env.N8N_BLOG_WEBHOOK_URL || "http://127.0.0.1:5678/webhook/blog-run";
 const FB_BACKEND_URL = process.env.FB_BACKEND_URL || "http://127.0.0.1:3001";
+const HUB_SECRET = process.env.HUB_SECRET || "";
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "";
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || "";
 const SUPABASE_URL = process.env.SUPABASE_URL || "";
-const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || "";
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || "";
-const SUPABASE_REST_KEY = SUPABASE_SERVICE_KEY || SUPABASE_ANON_KEY;
+const SUPABASE_REST_KEY = SUPABASE_SERVICE_KEY || "";
 const HUB_STATE_KEY = process.env.HUB_STATE_KEY || "default";
 const WP_URL = process.env.WP_URL || "https://finnhouses.com";
 const WP_USER = process.env.WP_USER || "";
@@ -23,13 +23,13 @@ const WP_APP_PASS = process.env.WP_APP_PASS || "";
 
 // ── Supabase REST Helper ──────────────────────────────────────────────────────
 async function supabaseInsert(table, payload) {
-  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return { ok: false, error: "No Supabase credentials" };
+  if (!SUPABASE_URL || !SUPABASE_REST_KEY) return { ok: false, error: "No Supabase credentials" };
   try {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
       method: "POST",
       headers: {
-        "apikey": SUPABASE_ANON_KEY,
-        "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+        "apikey": SUPABASE_REST_KEY,
+        "Authorization": `Bearer ${SUPABASE_REST_KEY}`,
         "Content-Type": "application/json",
         "Prefer": "return=representation",
       },
@@ -43,13 +43,13 @@ async function supabaseInsert(table, payload) {
 }
 
 async function supabaseUpsert(table, payload, onConflict = "id") {
-  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return { ok: false, error: "No Supabase credentials" };
+  if (!SUPABASE_URL || !SUPABASE_REST_KEY) return { ok: false, error: "No Supabase credentials" };
   try {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?on_conflict=${onConflict}`, {
       method: "POST",
       headers: {
-        "apikey": SUPABASE_ANON_KEY,
-        "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+        "apikey": SUPABASE_REST_KEY,
+        "Authorization": `Bearer ${SUPABASE_REST_KEY}`,
         "Content-Type": "application/json",
         "Prefer": "resolution=merge-duplicates,return=representation",
       },
@@ -63,14 +63,14 @@ async function supabaseUpsert(table, payload, onConflict = "id") {
 }
 
 async function supabaseUpdate(table, match, payload) {
-  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return { ok: false, error: "No Supabase credentials" };
+  if (!SUPABASE_URL || !SUPABASE_REST_KEY) return { ok: false, error: "No Supabase credentials" };
   const params = new URLSearchParams(match).toString();
   try {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${params}`, {
       method: "PATCH",
       headers: {
-        "apikey": SUPABASE_ANON_KEY,
-        "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+        "apikey": SUPABASE_REST_KEY,
+        "Authorization": `Bearer ${SUPABASE_REST_KEY}`,
         "Content-Type": "application/json",
         "Prefer": "return=representation",
       },
@@ -89,6 +89,54 @@ function nowIso() {
 
 function makeId(prefix = "blog") {
   return `${prefix}_${crypto.randomUUID()}`;
+}
+
+function timingSafeEq(a, b) {
+  const left = Buffer.from(String(a || ""));
+  const right = Buffer.from(String(b || ""));
+  return left.length === right.length && left.length > 0 && crypto.timingSafeEqual(left, right);
+}
+
+function hmacHex(value, secret) {
+  return crypto.createHmac("sha256", secret).update(String(value)).digest("hex");
+}
+
+function signRunToken(runId) {
+  if (!HUB_SECRET) return "";
+  return hmacHex(`n8n:${runId}`, HUB_SECRET);
+}
+
+function signWebhookBody(payload, timestamp) {
+  if (!HUB_SECRET) return "";
+  const canonical = JSON.stringify({
+    engine: String(payload.engine || ""),
+    runId: String(payload.runId || ""),
+    status: String(payload.status || ""),
+    queue: Number(payload.queue || 0),
+    drafts: Number(payload.drafts || 0),
+    published: Number(payload.published || 0),
+    failed: Number(payload.failed || 0),
+    postUrl: String(payload.postUrl || ""),
+    lastAction: String(payload.lastAction || ""),
+    lastUpdate: String(payload.lastUpdate || ""),
+    message: String(payload.message || ""),
+  });
+  return hmacHex(`${timestamp}.${canonical}`, HUB_SECRET);
+}
+
+function verifyWebhookSignature(payload, timestamp, signature) {
+  if (!HUB_SECRET || !timestamp || !signature) return false;
+  const issued = Number(timestamp);
+  if (!Number.isFinite(issued)) return false;
+  const ageMs = Math.abs(Date.now() - issued);
+  if (ageMs > 10 * 60 * 1000) return false;
+  const expected = signWebhookBody(payload, timestamp);
+  return timingSafeEq(expected, signature);
+}
+
+function verifyRunToken(runId, token) {
+  if (!HUB_SECRET || !runId || !token) return false;
+  return timingSafeEq(signRunToken(runId), token);
 }
 
 function baseState() {
@@ -297,10 +345,35 @@ function formatBlogMessage(payload) {
 }
 
 app.use((req, res, next) => {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  const allowedOrigins = new Set([
+    DASHBOARD_ORIGIN,
+    `https://${new URL(DASHBOARD_ORIGIN).hostname}`,
+  ]);
+  const origin = req.headers.origin || "";
+  if (allowedOrigins.has(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Vary", "Origin");
+  }
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Hub-Token, X-Webhook-Signature, X-Webhook-Timestamp");
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
   if (req.method === "OPTIONS") return res.sendStatus(204);
+  next();
+});
+
+app.use((req, res, next) => {
+  if (req.method === "OPTIONS") return next();
+  if (req.path === "/health") return next();
+  if (req.path === "/webhook/n8n" || req.path === "/webhook/fb") return next();
+
+  if (!HUB_SECRET) {
+    return res.status(500).json({ ok: false, error: "HUB_SECRET not configured" });
+  }
+
+  const token = String(req.headers["x-hub-token"] || "");
+  if (!timingSafeEq(token, HUB_SECRET)) {
+    return res.status(401).json({ ok: false, error: "Unauthorized" });
+  }
+
   next();
 });
 
@@ -355,7 +428,8 @@ app.post("/action/blog/run", async (req, res) => {
   }
 
   const runId = makeId("blog");
-  const callbackUrl = `${HUB_PUBLIC_BASE_URL}/webhook/n8n`;
+  const callbackToken = signRunToken(runId);
+  const callbackUrl = `${HUB_PUBLIC_BASE_URL}/webhook/n8n?token=${encodeURIComponent(callbackToken)}`;
 
   state.blog = {
     ...state.blog,
@@ -689,7 +763,7 @@ app.post("/action/fb/publish", async (req, res) => {
     const { bodyText } = await withRetry(async () => {
       const response = await fetch(`${FB_BACKEND_URL}/api/fb/publish`, {
         method: "POST",
-        headers: { "Content-Type": "application/json; charset=utf-8" },
+        headers: { "Content-Type": "application/json; charset=utf-8", "x-hub-token": HUB_SECRET },
         body: JSON.stringify({
           runId,
           source: req.body.source || "dashboard-react",
@@ -800,7 +874,7 @@ app.post("/action/fb/queue/run-next", async (req, res) => {
     await withRetry(async () => {
       const response = await fetch(`${FB_BACKEND_URL}/api/fb/publish`, {
         method: "POST",
-        headers: { "Content-Type": "application/json; charset=utf-8" },
+        headers: { "Content-Type": "application/json; charset=utf-8", "x-hub-token": HUB_SECRET },
         body: JSON.stringify({ runId, source: "fb-queue", content: nextItem.content }),
       });
       const bodyText = await response.text();
@@ -879,7 +953,8 @@ app.post("/action/blog/queue/run-next", async (req, res) => {
   }
 
   const runId = makeId("blog");
-  const callbackUrl = `${HUB_PUBLIC_BASE_URL}/webhook/n8n`;
+  const callbackToken = signRunToken(runId);
+  const callbackUrl = `${HUB_PUBLIC_BASE_URL}/webhook/n8n?token=${encodeURIComponent(callbackToken)}`;
 
   nextItem.status = "running";
   nextItem.runId = runId;

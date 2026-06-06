@@ -1,17 +1,39 @@
 require("dotenv").config();
 const express = require("express");
+const crypto = require("crypto");
 
 const app = express();
 app.use(express.json({ limit: "2mb" }));
 
 const PORT = Number(process.env.PORT || 3001);
 const HUB_WEBHOOK_URL = process.env.HUB_FB_WEBHOOK_URL || "http://127.0.0.1:4000/webhook/fb";
+const HUB_SECRET = process.env.HUB_SECRET || "";
 
 // Facebook Graph API config
 // ตั้งค่าใน .env: FB_PAGE_ACCESS_TOKEN และ FB_PAGE_ID
 const FB_PAGE_ACCESS_TOKEN = process.env.FB_PAGE_ACCESS_TOKEN || "";
 const FB_PAGE_ID = process.env.FB_PAGE_ID || "";
 const FB_API_VERSION = process.env.FB_API_VERSION || "v21.0";
+
+function timingSafeEq(a, b) {
+  const left = Buffer.from(String(a || ""));
+  const right = Buffer.from(String(b || ""));
+  return left.length === right.length && left.length > 0 && crypto.timingSafeEqual(left, right);
+}
+
+// Auth middleware — ทุก route ยกเว้น /health
+app.use((req, res, next) => {
+  if (req.method === "OPTIONS") return next();
+  if (req.path === "/health") return next();
+  if (!HUB_SECRET) {
+    return res.status(500).json({ ok: false, error: "HUB_SECRET not configured" });
+  }
+  const token = String(req.headers["x-hub-token"] || "");
+  if (!timingSafeEq(token, HUB_SECRET)) {
+    return res.status(401).json({ ok: false, error: "Unauthorized" });
+  }
+  next();
+});
 
 function safeText(text) {
   try {
