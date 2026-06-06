@@ -92,7 +92,7 @@ function SubmitTab() {
     if (!text.trim() || !finalArea) return;
     setLoading(true); setResult(null); setGeneratedContent("");
     try {
-      const res = await fetch("/api/market-intel/submit", {
+      const res = await fetch("/api/market-intel", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

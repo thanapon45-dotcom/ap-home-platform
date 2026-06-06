@@ -13,6 +13,7 @@ export async function POST(req: NextRequest) {
       headers: {
         "Content-Type": mimetype,
         "x-filename": filename,
+        "x-hub-token": process.env.HUB_SECRET ?? "",
       },
       body: blob,
     });

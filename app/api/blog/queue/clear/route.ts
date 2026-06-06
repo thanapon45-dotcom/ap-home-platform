@@ -6,7 +6,7 @@ export async function POST(_req: NextRequest) {
   try {
     const r = await fetch(`${HUB}/action/blog/queue/clear`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "x-hub-token": process.env.HUB_SECRET ?? "" },
       body: JSON.stringify({}),
       signal: AbortSignal.timeout(8000),
     });

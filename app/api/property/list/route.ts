@@ -5,7 +5,7 @@ const HUB = process.env.HUB_URL ?? "https://ap-home-platform-production.up.railw
 export async function GET() {
   try {
     const r = await fetch(`${HUB}/api/properties/wp-published`, {
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "x-hub-token": process.env.HUB_SECRET ?? "" },
     });
     const data = await r.json().catch(() => ({ ok: false, properties: [] }));
     return NextResponse.json(data, { status: r.status });

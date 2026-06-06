@@ -11,6 +11,7 @@ export async function POST() {
   try {
     const r = await fetch(`${HUB}/action/blog/reset`, {
       method: "POST",
+      headers: { "x-hub-token": process.env.HUB_SECRET ?? "" },
       signal: AbortSignal.timeout(8000),
     });
     if (!r.ok) {

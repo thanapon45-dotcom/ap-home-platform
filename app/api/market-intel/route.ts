@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const N8N_WEBHOOK = "https://primary-production-8158a.up.railway.app/webhook/market-intel/manual";
+const N8N_WEBHOOK = process.env.N8N_MARKET_INTEL_WEBHOOK ?? "https://primary-production-8158a.up.railway.app/webhook/market-intel/manual";
 
 export async function POST(req: NextRequest) {
   try {

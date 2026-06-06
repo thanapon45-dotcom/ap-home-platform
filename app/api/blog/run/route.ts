@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const r = await fetch(`${HUB}/action/blog/run`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "x-hub-token": process.env.HUB_SECRET ?? "" },
       body: JSON.stringify(body),
       signal: AbortSignal.timeout(8000),
     });

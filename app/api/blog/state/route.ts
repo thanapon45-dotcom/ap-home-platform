@@ -11,6 +11,7 @@ export async function GET() {
   try {
     const r = await fetch(`${HUB}/api/state`, {
       cache: "no-store",
+      headers: { "x-hub-token": process.env.HUB_SECRET ?? "" },
       signal: AbortSignal.timeout(8000), // ป้องกัน Vercel 10s platform timeout
     });
     if (!r.ok) {
