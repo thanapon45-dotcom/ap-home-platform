@@ -871,27 +871,40 @@ app.post("/action/fb/queue/run-next", async (req, res) => {
   await writeState(state);
 
   try {
-    await withRetry(async () => {
+    const { fbBody } = await withRetry(async () => {
       const response = await fetch(`${FB_BACKEND_URL}/api/fb/publish`, {
         method: "POST",
         headers: { "Content-Type": "application/json; charset=utf-8", "x-hub-token": HUB_SECRET },
         body: JSON.stringify({ runId, source: "fb-queue", content: nextItem.content }),
       });
-      const bodyText = await response.text();
+      const fbBody = await response.text();
       if (!response.ok) {
-        throw new Error(`fb-backend returned HTTP ${response.status}${bodyText ? ` ${bodyText}` : ""}`);
+        throw new Error(`fb-backend returned HTTP ${response.status}${fbBody ? ` ${fbBody}` : ""}`);
       }
+      return { fbBody };
     }, 2, 4000, "fb-queue-run-next");
+
+    // Write fb_post_id back to Supabase content_posts
+    let fbPostId = null;
+    try { fbPostId = JSON.parse(fbBody || "{}").postId || null; } catch {}
+    if (fbPostId) {
+      supabaseInsert("content_posts", {
+        content_id: runId,
+        fb_post_id: fbPostId,
+        source_channel: "fb_queue",
+        published_at: nowIso(),
+      }).catch(() => {});
+    }
 
     const s = await readState();
     const qi = s.fb_queue?.find(i => i.id === nextItem.id);
-    if (qi) { qi.status = "published"; qi.updatedAt = nowIso(); }
+    if (qi) { qi.status = "published"; qi.postUrl = fbPostId ? `https://www.facebook.com/${fbPostId.replace("_", "/posts/")}` : ""; qi.updatedAt = nowIso(); }
     s.fb = { ...s.fb, runId, status: "published", published: (s.fb.published || 0) + 1,
       message: "FB Queue post published", lastUpdate: nowIso(), finishedAt: nowIso(), updatedAt: nowIso() };
     pushHistory(s, { type: "fb_queue_item_published", engine: "fb", runId, status: "published",
       message: `FB Queue: ${nextItem.date} published` });
     await writeState(s);
-    res.json({ ok: true, runId, item: nextItem });
+    res.json({ ok: true, runId, fbPostId, item: nextItem });
   } catch (error) {
     const s = await readState();
     const qi = s.fb_queue?.find(i => i.id === nextItem.id);
