@@ -17,7 +17,10 @@ export async function POST(req: NextRequest) {
 
     const r = await fetch(`${FB_BACKEND}/api/fb/publish`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "x-hub-token": process.env.HUB_SECRET ?? "",
+      },
       body: JSON.stringify(body),
       signal: AbortSignal.timeout(25_000), // 25s — Railway cold-start can take ~20s
     });
