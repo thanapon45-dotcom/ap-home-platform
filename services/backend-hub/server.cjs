@@ -14,7 +14,7 @@ const HUB_SECRET = process.env.HUB_SECRET || "";
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "";
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || "";
 const SUPABASE_URL = process.env.SUPABASE_URL || "";
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY || "";
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || "";
 const SUPABASE_REST_KEY = SUPABASE_SERVICE_KEY || "";
 const HUB_STATE_KEY = process.env.HUB_STATE_KEY || "default";
 const WP_URL = process.env.WP_URL || "https://finnhouses.com";
@@ -81,6 +81,159 @@ async function supabaseUpdate(table, match, payload) {
   } catch (e) {
     return { ok: false, error: e.message };
   }
+}
+
+async function supabaseRequest(path, init = {}) {
+  if (!SUPABASE_URL || !SUPABASE_REST_KEY) {
+    return { ok: false, status: 0, data: null, error: "No Supabase credentials" };
+  }
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+      ...init,
+      headers: {
+        apikey: SUPABASE_REST_KEY,
+        Authorization: `Bearer ${SUPABASE_REST_KEY}`,
+        ...(init.headers || {}),
+      },
+    });
+    const text = await res.text();
+    let data = null;
+    try {
+      data = text ? JSON.parse(text) : null;
+    } catch {
+      data = text;
+    }
+    return { ok: res.ok, status: res.status, data, text };
+  } catch (error) {
+    return { ok: false, status: 0, data: null, error: error.message };
+  }
+}
+
+function envEntry(name, value, required = false, description = "") {
+  const configured = Boolean(String(value || "").trim());
+  return {
+    name,
+    required,
+    configured,
+    missing: required && !configured,
+    description,
+  };
+}
+
+function getEnvValidation() {
+  const entries = [
+    envEntry("HUB_SECRET", HUB_SECRET, true, "Shared secret for Hub auth and webhook signatures"),
+    envEntry("SUPABASE_URL", SUPABASE_URL, true, "Supabase REST API base URL"),
+    envEntry("SUPABASE_SERVICE_KEY", SUPABASE_SERVICE_KEY, true, "Service key for Hub state and DLQ access"),
+    envEntry("DASHBOARD_ORIGIN", DASHBOARD_ORIGIN, true, "Allowed browser origin for Hub CORS"),
+    envEntry("FB_BACKEND_URL", FB_BACKEND_URL, false, "Facebook publish backend"),
+    envEntry("N8N_BLOG_WEBHOOK_URL", N8N_BLOG_WEBHOOK_URL, false, "Blog workflow trigger URL"),
+    envEntry("TELEGRAM_BOT_TOKEN", TELEGRAM_BOT_TOKEN, false, "Telegram alert transport"),
+    envEntry("TELEGRAM_CHAT_ID", TELEGRAM_CHAT_ID, false, "Telegram alert destination"),
+    envEntry("WP_USER", WP_USER, false, "WordPress upload/publish user"),
+    envEntry("WP_APP_PASS", WP_APP_PASS, false, "WordPress application password"),
+  ];
+  return {
+    ok: entries.filter(item => item.required).every(item => item.configured),
+    entries,
+    missing: entries.filter(item => item.missing).map(item => item.name),
+    ready: entries.filter(item => item.required).every(item => item.configured),
+    generatedAt: nowIso(),
+  };
+}
+
+function createCorrelationId(req) {
+  return String(req.headers["x-correlation-id"] || crypto.randomUUID());
+}
+
+function logEvent(level, message, details = {}) {
+  const entry = {
+    at: nowIso(),
+    service: "backend-hub",
+    level,
+    message,
+    ...details,
+  };
+  const line = JSON.stringify(entry);
+  if (level === "error") {
+    console.error(line);
+  } else if (level === "warn") {
+    console.warn(line);
+  } else {
+    console.log(line);
+  }
+  return entry;
+}
+
+async function getSupabaseDlq(limit = 25) {
+  const safeLimit = Math.max(1, Math.min(100, Number(limit) || 25));
+  const result = await supabaseRequest(`hub_dlq?select=*&order=updated_at.desc&limit=${safeLimit}`);
+  return result.ok ? (Array.isArray(result.data) ? result.data : []) : [];
+}
+
+async function recordDlq(entry) {
+  const row = {
+    service: "backend-hub",
+    operation: String(entry.operation || "unknown"),
+    route: String(entry.route || ""),
+    target_url: String(entry.targetUrl || ""),
+    method: String(entry.method || "POST"),
+    status: "open",
+    attempts: Number(entry.attempts || 1),
+    correlation_id: String(entry.correlationId || ""),
+    request_headers: entry.requestHeaders && typeof entry.requestHeaders === "object" ? entry.requestHeaders : {},
+    request_body: entry.requestBody && typeof entry.requestBody === "object" ? entry.requestBody : {},
+    error_message: String(entry.errorMessage || ""),
+    last_attempt_at: nowIso(),
+    next_retry_at: nowIso(),
+    created_at: nowIso(),
+    updated_at: nowIso(),
+  };
+  const result = await supabaseInsert("hub_dlq", row);
+  if (!result.ok) {
+    logEvent("error", "DLQ insert failed", {
+      correlationId: entry.correlationId || "",
+      operation: row.operation,
+      error: result.error || "unknown",
+    });
+  }
+  return result;
+}
+
+async function retryDlqEntry(row, correlationId) {
+  const requestHeaders = row.request_headers && typeof row.request_headers === "object" ? row.request_headers : {};
+  const requestBody = row.request_body && typeof row.request_body === "object" ? row.request_body : {};
+  const headers = {
+    "Content-Type": "application/json; charset=utf-8",
+    ...requestHeaders,
+    "x-correlation-id": correlationId,
+  };
+  const method = String(row.method || "POST").toUpperCase();
+  const init = {
+    method,
+    headers,
+  };
+  if (method !== "GET" && method !== "HEAD") {
+    init.body = JSON.stringify(requestBody);
+  }
+  const response = await fetch(String(row.target_url || ""), init);
+  const text = await response.text().catch(() => "");
+  const update = {
+    attempts: Number(row.attempts || 1) + 1,
+    last_attempt_at: nowIso(),
+    next_retry_at: nowIso(),
+    updated_at: nowIso(),
+  };
+  if (response.ok) {
+    update.status = "resolved";
+    update.resolved_at = nowIso();
+    update.error_message = "";
+  } else {
+    update.status = "open";
+    update.error_message = text || `HTTP ${response.status}`;
+  }
+  await supabaseUpdate("hub_dlq", { id: `eq.${row.id}` }, update);
+  return { ok: response.ok, status: response.status, body: text, update };
 }
 
 function nowIso() {
@@ -304,15 +457,60 @@ function pushHistory(state, entry) {
 }
 
 // ── Retry helper ─────────────────────────────────────────────────────────────
-async function withRetry(fn, retries = 2, delayMs = 4000, label = "") {
+async function withRetry(fn, retries = 2, delayMs = 4000, label = "", dlqMeta = null) {
   for (let i = 0; i <= retries; i++) {
     try { return await fn(); }
     catch (err) {
-      if (i === retries) throw err;
-      console.warn(`[hub] retry ${i + 1}/${retries} for ${label}: ${err.message}`);
+      if (i === retries) {
+        if (dlqMeta) {
+          await recordDlq({
+            ...dlqMeta,
+            attempts: retries + 1,
+            errorMessage: err.message,
+          });
+        }
+        throw err;
+      }
+      logEvent("warn", "retrying operation", {
+        label,
+        attempt: i + 1,
+        retries,
+        error: err.message,
+        correlationId: dlqMeta?.correlationId || "",
+      });
       await new Promise(r => setTimeout(r, delayMs));
     }
   }
+}
+
+async function checkUrlHealth(url, timeoutMs = 2500) {
+  if (!url) return { ok: false, configured: false, status: "missing" };
+  try {
+    const response = await fetch(url, { signal: AbortSignal.timeout(timeoutMs) });
+    return {
+      ok: response.ok,
+      configured: true,
+      status: response.ok ? "ok" : `http_${response.status}`,
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      configured: true,
+      status: error.message || "unreachable",
+    };
+  }
+}
+
+async function checkSupabaseHealth() {
+  if (!SUPABASE_URL || !SUPABASE_REST_KEY) {
+    return { ok: false, configured: false, status: "missing" };
+  }
+  const result = await supabaseRequest(`hub_state?select=key&limit=1`);
+  return {
+    ok: result.ok,
+    configured: true,
+    status: result.ok ? "ok" : `http_${result.status || 0}`,
+  };
 }
 
 async function sendTelegram(text) {
@@ -361,8 +559,25 @@ app.use((req, res, next) => {
 });
 
 app.use((req, res, next) => {
+  const correlationId = createCorrelationId(req);
+  req.correlationId = correlationId;
+  res.setHeader("x-correlation-id", correlationId);
+  const startedAt = Date.now();
+  res.on("finish", () => {
+    logEvent("info", "request_complete", {
+      correlationId,
+      method: req.method,
+      path: req.originalUrl || req.path,
+      status: res.statusCode,
+      durationMs: Date.now() - startedAt,
+    });
+  });
+  next();
+});
+
+app.use((req, res, next) => {
   if (req.method === "OPTIONS") return next();
-  if (req.path === "/health") return next();
+  if (req.path.startsWith("/health")) return next();
   if (req.path === "/webhook/n8n" || req.path === "/webhook/fb") return next();
 
   if (!HUB_SECRET) {
@@ -382,7 +597,117 @@ app.get("/api/state", async (req, res) => {
 });
 
 app.get("/health", (req, res) => {
-  res.json({ ok: true, time: nowIso() });
+  res.json({
+    ok: true,
+    service: "backend-hub",
+    time: nowIso(),
+    uptimeMs: Math.round(process.uptime() * 1000),
+    correlationId: req.correlationId,
+  });
+});
+
+app.get("/health/live", (req, res) => {
+  res.json({
+    ok: true,
+    service: "backend-hub",
+    live: true,
+    time: nowIso(),
+    correlationId: req.correlationId,
+  });
+});
+
+app.get("/health/config", (req, res) => {
+  const validation = getEnvValidation();
+  res.status(validation.ok ? 200 : 500).json({
+    ok: validation.ok,
+    service: "backend-hub",
+    validation,
+    correlationId: req.correlationId,
+  });
+});
+
+app.get("/health/ready", async (req, res) => {
+  const [supabase, fbBackend] = await Promise.all([
+    checkSupabaseHealth(),
+    checkUrlHealth(`${FB_BACKEND_URL}/health`, 2500),
+  ]);
+  const validation = getEnvValidation();
+  const ok = validation.ok && supabase.ok && fbBackend.ok;
+  res.status(ok ? 200 : 503).json({
+    ok,
+    service: "backend-hub",
+    ready: ok,
+    correlationId: req.correlationId,
+    validation,
+    checks: {
+      supabase,
+      fbBackend,
+    },
+  });
+});
+
+app.get("/api/ops/summary", async (req, res) => {
+  const [state, validation, supabase, fbBackend, dlq] = await Promise.all([
+    readState(),
+    Promise.resolve(getEnvValidation()),
+    checkSupabaseHealth(),
+    checkUrlHealth(`${FB_BACKEND_URL}/health`, 2500),
+    getSupabaseDlq(25),
+  ]);
+  res.json({
+    ok: true,
+    service: "backend-hub",
+    generatedAt: nowIso(),
+    correlationId: req.correlationId,
+    validation,
+    checks: {
+      supabase,
+      fbBackend,
+    },
+    state: {
+      system: state.system,
+      blog: state.blog,
+      fb: state.fb,
+    },
+    dlq: {
+      total: dlq.length,
+      items: dlq,
+    },
+  });
+});
+
+app.get("/api/ops/dlq", async (req, res) => {
+  const limit = Number(req.query.limit || 25);
+  const items = await getSupabaseDlq(limit);
+  res.json({ ok: true, correlationId: req.correlationId, items });
+});
+
+app.post("/api/ops/dlq/:id/retry", async (req, res) => {
+  const id = String(req.params.id || "");
+  if (!id) {
+    return res.status(400).json({ ok: false, error: "id is required" });
+  }
+  const result = await supabaseRequest(`hub_dlq?id=eq.${encodeURIComponent(id)}&select=*&limit=1`);
+  const row = Array.isArray(result.data) ? result.data[0] : null;
+  if (!row) {
+    return res.status(404).json({ ok: false, error: "DLQ entry not found" });
+  }
+  if (!row.target_url) {
+    return res.status(400).json({ ok: false, error: "DLQ entry missing target_url" });
+  }
+  const retryResult = await retryDlqEntry(row, req.correlationId);
+  logEvent(retryResult.ok ? "info" : "warn", "dlq_retry", {
+    correlationId: req.correlationId,
+    dlqId: id,
+    status: retryResult.status,
+    targetUrl: row.target_url,
+  });
+  res.status(retryResult.ok ? 200 : 502).json({
+    ok: retryResult.ok,
+    correlationId: req.correlationId,
+    dlqId: id,
+    result: retryResult,
+  });
 });
 
 app.post("/action/blog/reset", async (req, res) => {
@@ -430,6 +755,7 @@ app.post("/action/blog/run", async (req, res) => {
   const runId = makeId("blog");
   const callbackToken = signRunToken(runId);
   const callbackUrl = `${HUB_PUBLIC_BASE_URL}/webhook/n8n?token=${encodeURIComponent(callbackToken)}`;
+  const correlationId = req.correlationId;
 
   state.blog = {
     ...state.blog,
@@ -485,13 +811,27 @@ app.post("/action/blog/run", async (req, res) => {
   // Fire-and-forget: trigger n8n in background
   fetch(N8N_BLOG_WEBHOOK_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "x-correlation-id": correlationId,
+    },
     body: JSON.stringify(payload),
   }).then(async (r) => {
     if (!r.ok) {
       const text = await r.text().catch(() => "");
       const errMsg = `n8n webhook returned HTTP ${r.status}${text ? `: ${text}` : ""}`;
       console.error("[hub] n8n trigger failed:", errMsg);
+      await recordDlq({
+        operation: "blog.dispatch",
+        route: "/action/blog/run",
+        targetUrl: N8N_BLOG_WEBHOOK_URL,
+        method: "POST",
+        requestHeaders: { "Content-Type": "application/json", "x-correlation-id": correlationId },
+        requestBody: payload,
+        correlationId,
+        errorMessage: errMsg,
+        attempts: 1,
+      });
       const s = await readState();
       s.blog.status = "failed";
       s.blog.failed = 1;
@@ -507,6 +847,17 @@ app.post("/action/blog/run", async (req, res) => {
     }
   }).catch(async (err) => {
     console.error("[hub] n8n fetch error:", err.message);
+    await recordDlq({
+      operation: "blog.dispatch",
+      route: "/action/blog/run",
+      targetUrl: N8N_BLOG_WEBHOOK_URL,
+      method: "POST",
+      requestHeaders: { "Content-Type": "application/json", "x-correlation-id": correlationId },
+      requestBody: payload,
+      correlationId,
+      errorMessage: err.message,
+      attempts: 1,
+    });
     const s = await readState();
     s.blog.status = "failed";
     s.blog.failed = 1;
@@ -521,6 +872,12 @@ app.post("/action/blog/run", async (req, res) => {
 });
 
 app.post("/webhook/n8n", async (req, res) => {
+  const token = String(req.query.token || "");
+  const runIdForToken = String(req.body?.runId || "");
+  if (!verifyRunToken(runIdForToken, token)) {
+    return res.status(401).json({ ok: false, error: "Invalid webhook token" });
+  }
+
   const state = await readState();
   const payload = req.body || {};
   const status = String(payload.status || "").toLowerCase();
@@ -697,8 +1054,14 @@ app.post("/webhook/property-saved", async (req, res) => {
 });
 
 app.post("/webhook/fb", async (req, res) => {
-  const state = await readState();
   const payload = req.body || {};
+  const signature = String(req.headers["x-webhook-signature"] || "");
+  const timestamp = String(req.headers["x-webhook-timestamp"] || "");
+  if (!verifyWebhookSignature(payload, timestamp, signature)) {
+    return res.status(401).json({ ok: false, error: "Invalid webhook signature" });
+  }
+
+  const state = await readState();
   const status = String(payload.status || "idle").toLowerCase();
 
   state.fb = {
@@ -763,7 +1126,11 @@ app.post("/action/fb/publish", async (req, res) => {
     const { bodyText } = await withRetry(async () => {
       const response = await fetch(`${FB_BACKEND_URL}/api/fb/publish`, {
         method: "POST",
-        headers: { "Content-Type": "application/json; charset=utf-8", "x-hub-token": HUB_SECRET },
+        headers: {
+          "Content-Type": "application/json; charset=utf-8",
+          "x-hub-token": HUB_SECRET,
+          "x-correlation-id": req.correlationId,
+        },
         body: JSON.stringify({
           runId,
           source: req.body.source || "dashboard-react",
@@ -775,7 +1142,22 @@ app.post("/action/fb/publish", async (req, res) => {
         throw new Error(`fb-backend returned HTTP ${response.status}${bodyText ? ` ${bodyText}` : ""}`);
       }
       return { bodyText };
-    }, 2, 4000, "fb-publish");
+    }, 2, 4000, "fb-publish", {
+      operation: "fb.publish.dispatch",
+      route: "/action/fb/publish",
+      targetUrl: `${FB_BACKEND_URL}/api/fb/publish`,
+      method: "POST",
+      requestHeaders: {
+        "Content-Type": "application/json; charset=utf-8",
+        "x-hub-token": HUB_SECRET,
+      },
+      requestBody: {
+        runId,
+        source: req.body.source || "dashboard-react",
+        content,
+      },
+      correlationId: req.correlationId,
+    });
 
     res.json({ ok: true, runId, accepted: true, upstream: bodyText || "accepted" });
   } catch (error) {
@@ -874,7 +1256,11 @@ app.post("/action/fb/queue/run-next", async (req, res) => {
     const { fbBody } = await withRetry(async () => {
       const response = await fetch(`${FB_BACKEND_URL}/api/fb/publish`, {
         method: "POST",
-        headers: { "Content-Type": "application/json; charset=utf-8", "x-hub-token": HUB_SECRET },
+        headers: {
+          "Content-Type": "application/json; charset=utf-8",
+          "x-hub-token": HUB_SECRET,
+          "x-correlation-id": req.correlationId,
+        },
         body: JSON.stringify({ runId, source: "fb-queue", content: nextItem.content }),
       });
       const fbBody = await response.text();
@@ -882,7 +1268,18 @@ app.post("/action/fb/queue/run-next", async (req, res) => {
         throw new Error(`fb-backend returned HTTP ${response.status}${fbBody ? ` ${fbBody}` : ""}`);
       }
       return { fbBody };
-    }, 2, 4000, "fb-queue-run-next");
+    }, 2, 4000, "fb-queue-run-next", {
+      operation: "fb.queue.run-next",
+      route: "/action/fb/queue/run-next",
+      targetUrl: `${FB_BACKEND_URL}/api/fb/publish`,
+      method: "POST",
+      requestHeaders: {
+        "Content-Type": "application/json; charset=utf-8",
+        "x-hub-token": HUB_SECRET,
+      },
+      requestBody: { runId, source: "fb-queue", content: nextItem.content },
+      correlationId: req.correlationId,
+    });
 
     // Write fb_post_id back to Supabase content_posts
     let fbPostId = null;
@@ -1380,9 +1777,241 @@ app.post("/action/land-lead", async (req, res) => {
   res.json({ ok: result.ok, error: result.error || null });
 });
 
+// ══════════════════════════════════════════════════════════════════════════════
+// QC LINE SYSTEM — /api/qc/*
+// ══════════════════════════════════════════════════════════════════════════════
+
+const QC_DAILY_BUDGET_THB = Number(process.env.QC_DAILY_BUDGET_THB || 300);
+const QC_THB_PER_1K_IN    = Number(process.env.QC_THB_PER_1K_IN    || 0.18);
+const QC_THB_PER_1K_OUT   = Number(process.env.QC_THB_PER_1K_OUT   || 0.54);
+
+const QC_SYSTEM_PROMPT = `คุณคือ QC Inspector งานก่อสร้างและรีโนเวทในประเทศไทย
+หมวดตรวจ: structure, plaster, electric, plumbing, ceiling, floor, paint, safety, cleanliness, other
+ระดับ severity: none | low | medium | high | critical
+
+กติกา:
+1. ตอบเป็น JSON เท่านั้น ห้ามมีข้อความอื่นนอก JSON
+2. ถ้ารูปไม่ใช่งานก่อสร้าง/รีโนเวท ให้ pass=true severity=none defects=[] ai_summary="รูปไม่ใช่หน้างาน"
+3. defects เรียงจากสำคัญสุดลงมา สูงสุด 5 รายการ
+4. description ให้ specific เช่น "รอยร้าวลายแตกที่มุมขวาบนฝ้ายาวประมาณ 20 ซม." ไม่ใช่ "มีรอยร้าว"
+5. suggested_action ต้องทำได้จริง เช่น "ฉาบ skim coat ปาดเรียบ ทาสีทับ"
+6. ถ้า defect severity เป็น high หรือ critical อย่างน้อย 1 รายการ → pass=false
+
+Schema ที่ต้องตอบ:
+{"pass":boolean,"severity":"none|low|medium|high|critical","confidence":0.0-1.0,"ai_summary":"1-2 ประโยคภาษาไทย","defects":[{"category":"plaster","description":"...","severity":"...","location_hint":"...","suggested_action":"..."}]}`;
+
+function qcExtractSiteCode(caption = "") {
+  const m = caption.match(/\b[A-Z]{2,4}-\d{2,4}\b/);
+  return m ? m[0] : null;
+}
+
+async function qcResolveSite(caption, lineUserId) {
+  const code = qcExtractSiteCode(caption || "");
+  if (code) {
+    const r = await supabaseRequest(`sites?code=eq.${encodeURIComponent(code)}&select=id,code,stage&limit=1`);
+    if (r.ok && r.data?.[0]) return r.data[0];
+  }
+  if (lineUserId) {
+    const r = await supabaseRequest(`line_users?line_id=eq.${encodeURIComponent(lineUserId)}&select=default_site_id&limit=1`);
+    const siteId = r.data?.[0]?.default_site_id;
+    if (siteId) {
+      const s = await supabaseRequest(`sites?id=eq.${siteId}&select=id,code,stage&limit=1`);
+      if (s.ok && s.data?.[0]) return s.data[0];
+    }
+  }
+  return null;
+}
+
+async function qcUpsertLineUser(lineUserId) {
+  if (!lineUserId) return;
+  await supabaseUpsert("line_users", { line_id: lineUserId, last_seen_at: new Date().toISOString() }, "line_id");
+}
+
+async function qcFindExisting(lineMessageId) {
+  const r = await supabaseRequest(`qc_inspections?line_message_id=eq.${encodeURIComponent(lineMessageId)}&select=id,pass,severity,ai_summary,confidence&limit=1`);
+  return r.data?.[0] || null;
+}
+
+async function qcGetDailyUsage() {
+  const day = new Date().toISOString().slice(0, 10);
+  const r = await supabaseRequest(`qc_daily_usage?day=eq.${day}&limit=1`);
+  return r.data?.[0] || { inspections: 0, est_cost_thb: 0 };
+}
+
+async function qcBumpDailyUsage(tokensIn, tokensOut, costThb) {
+  const day = new Date().toISOString().slice(0, 10);
+  const cur = await qcGetDailyUsage();
+  await supabaseUpsert("qc_daily_usage", {
+    day,
+    inspections:  (cur.inspections   || 0) + 1,
+    ai_tokens_in: (cur.ai_tokens_in  || 0) + tokensIn,
+    ai_tokens_out:(cur.ai_tokens_out || 0) + tokensOut,
+    est_cost_thb: Number(cur.est_cost_thb || 0) + costThb
+  }, "day");
+}
+
+async function qcCallOpenAI({ photoUrl, caption, stage, siteCode }) {
+  const userText = [
+    siteCode ? `Site: ${siteCode}` : "",
+    stage    ? `Stage: ${stage}`   : "",
+    caption  ? `Caption: ${caption}` : "",
+    "โปรดตรวจรูปนี้และตอบ JSON ตาม schema"
+  ].filter(Boolean).join("\n");
+
+  const body = {
+    model: process.env.OPENAI_MODEL || "gpt-4o",
+    temperature: 0,
+    max_tokens: 800,
+    response_format: { type: "json_object" },
+    messages: [
+      { role: "system", content: QC_SYSTEM_PROMPT },
+      { role: "user", content: [
+        { type: "text", text: userText },
+        { type: "image_url", image_url: { url: photoUrl, detail: "high" } }
+      ]}
+    ]
+  };
+
+  const res = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: { "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`, "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) throw new Error(`OpenAI ${res.status}: ${await res.text()}`);
+
+  const data  = await res.json();
+  const raw   = data.choices?.[0]?.message?.content || "{}";
+  let parsed;
+  try { parsed = JSON.parse(raw); } catch { throw new Error(`AI non-JSON: ${raw.slice(0, 200)}`); }
+
+  parsed.pass       = !!parsed.pass;
+  parsed.severity   = parsed.severity   || "none";
+  parsed.confidence = typeof parsed.confidence === "number" ? parsed.confidence : 0.7;
+  parsed.ai_summary = parsed.ai_summary || "";
+  parsed.defects    = Array.isArray(parsed.defects) ? parsed.defects.slice(0, 5) : [];
+
+  return { ...parsed, _model: body.model, _raw: data,
+    _tokens_in:  data.usage?.prompt_tokens     || 0,
+    _tokens_out: data.usage?.completion_tokens || 0 };
+}
+
+// ── POST /api/qc/ingest ────────────────────────────────────────────────────
+app.post("/api/qc/ingest", async (req, res) => {
+  if (!HUB_SECRET || !timingSafeEq(req.headers["x-hub-token"] || "", HUB_SECRET))
+    return res.status(401).json({ error: "unauthorized" });
+
+  const started = Date.now();
+  const { line_message_id, line_user_id, photo_url, caption } = req.body || {};
+  if (!line_message_id || !photo_url)
+    return res.status(400).json({ error: "line_message_id and photo_url required" });
+
+  const existing = await qcFindExisting(line_message_id);
+  if (existing) return res.json({ inspection_id: existing.id, duplicate: true, ...existing });
+
+  const usage = await qcGetDailyUsage();
+  if (Number(usage.est_cost_thb || 0) >= QC_DAILY_BUDGET_THB)
+    return res.status(429).json({ error: "daily_budget_exceeded", usage });
+
+  await qcUpsertLineUser(line_user_id);
+  const site = await qcResolveSite(caption, line_user_id);
+
+  const ins = await supabaseInsert("qc_inspections", {
+    line_message_id, line_user_id, photo_url,
+    caption: caption || null,
+    site_id: site?.id || null,
+    status: "processing"
+  });
+  if (!ins.ok) return res.status(500).json({ error: "db_error", detail: ins.error });
+  const inspection = ins.data?.[0];
+
+  let ai;
+  try {
+    ai = await qcCallOpenAI({ photoUrl: photo_url, caption, stage: site?.stage, siteCode: site?.code });
+  } catch (err) {
+    await supabaseUpdate("qc_inspections", { id: `eq.${inspection.id}` }, {
+      status: "failed", error_message: String(err.message).slice(0, 500),
+      latency_ms: Date.now() - started
+    });
+    return res.status(502).json({ error: "ai_failed", inspection_id: inspection.id, detail: String(err.message) });
+  }
+
+  await supabaseUpdate("qc_inspections", { id: `eq.${inspection.id}` }, {
+    ai_summary: ai.ai_summary, pass: ai.pass, severity: ai.severity,
+    confidence: ai.confidence, defects_json: ai.defects,
+    ai_model: ai._model, ai_raw: ai._raw, status: "done",
+    latency_ms: Date.now() - started
+  });
+
+  if (ai.defects.length) {
+    const defectRows = ai.defects.map(d => ({
+      inspection_id: inspection.id, category: d.category || "other",
+      description: d.description || "", severity: d.severity || "low",
+      location_hint: d.location_hint || null, suggested_action: d.suggested_action || null
+    }));
+    await supabaseInsert("qc_defects", defectRows);
+  }
+
+  const costThb = (ai._tokens_in / 1000) * QC_THB_PER_1K_IN + (ai._tokens_out / 1000) * QC_THB_PER_1K_OUT;
+  await qcBumpDailyUsage(ai._tokens_in, ai._tokens_out, costThb);
+
+  sendTelegram(
+    `🏗️ QC ${ai.pass ? "✅ ผ่าน" : "❌ ไม่ผ่าน"} [${site?.code || "?"}]\n` +
+    `Severity: ${ai.severity} | ${ai.defects.length} defect(s)\n${ai.ai_summary}`
+  ).catch(() => {});
+
+  res.json({
+    inspection_id: inspection.id,
+    site_code: site?.code || null,
+    pass: ai.pass, severity: ai.severity, confidence: ai.confidence,
+    ai_summary: ai.ai_summary, defects: ai.defects,
+    latency_ms: Date.now() - started
+  });
+});
+
+// ── GET /api/qc/list ───────────────────────────────────────────────────────
+app.get("/api/qc/list", async (req, res) => {
+  if (!HUB_SECRET || !timingSafeEq(req.headers["x-hub-token"] || "", HUB_SECRET))
+    return res.status(401).json({ error: "unauthorized" });
+
+  const { site_id, from, to, limit } = req.query;
+  const lim = Math.min(Number(limit) || 50, 500);
+  let path = `qc_inspections_view?order=created_at.desc&limit=${lim}`;
+  if (site_id) path += `&site_id=eq.${encodeURIComponent(site_id)}`;
+  if (from)    path += `&created_at=gte.${encodeURIComponent(from)}`;
+  if (to)      path += `&created_at=lte.${encodeURIComponent(to)}`;
+
+  const r = await supabaseRequest(path);
+  if (!r.ok) return res.status(500).json({ error: "db_error" });
+  res.json({ items: r.data || [] });
+});
+
+// ── POST /api/qc/log-latency ───────────────────────────────────────────────
+app.post("/api/qc/log-latency", async (req, res) => {
+  if (!HUB_SECRET || !timingSafeEq(req.headers["x-hub-token"] || "", HUB_SECRET))
+    return res.status(401).json({ error: "unauthorized" });
+
+  const { line_message_id, total_ms } = req.body || {};
+  if (!line_message_id) return res.status(400).json({ error: "missing" });
+  const existing = await qcFindExisting(line_message_id);
+  if (!existing) return res.status(404).json({ error: "not_found" });
+  await supabaseUpdate("qc_inspections", { id: `eq.${existing.id}` }, { latency_ms: total_ms });
+  res.json({ ok: true });
+});
+
+// ── GET /api/qc/health ─────────────────────────────────────────────────────
+app.get("/api/qc/health", (_req, res) => res.json({ ok: true, service: "qc" }));
+
+// ══════════════════════════════════════════════════════════════════════════════
+
 app.listen(PORT, HUB_HOST, async () => {
   const state = await readState();
   await writeState(state);
+  const validation = getEnvValidation();
+  logEvent(validation.ok ? "info" : "warn", "startup_env_validation", {
+    correlationId: "startup",
+    ok: validation.ok,
+    missing: validation.missing,
+  });
   console.log(`Backend Hub v2 running at ${HUB_PUBLIC_BASE_URL}`);
   console.log(`Routes: /action/blog/queue/build|clear|run-next + /action/fb/queue/build|clear|run-next`);
   console.log(`n8n blog webhook: ${N8N_BLOG_WEBHOOK_URL}`);
