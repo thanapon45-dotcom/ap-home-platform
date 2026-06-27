@@ -1866,13 +1866,70 @@ async function qcBumpDailyUsage(tokensIn, tokensOut, costThb) {
   }, "day");
 }
 
+// ── QC Standards cache (lazy-loaded) ──────────────────────────────────────
+let _qcStandardsCache = null;
+let _qcStandardsCacheAt = 0;
+async function qcGetStandards() {
+  // Refresh cache every 10 minutes
+  if (_qcStandardsCache && Date.now() - _qcStandardsCacheAt < 600_000) return _qcStandardsCache;
+  const r = await supabaseRequest("qc_standards?active=eq.true&select=category,label_th,photo_url,description");
+  _qcStandardsCache = (r.ok && Array.isArray(r.data)) ? r.data : [];
+  _qcStandardsCacheAt = Date.now();
+  return _qcStandardsCache;
+}
+
+// Guess category from caption keywords (Thai + English)
+function qcGuessCategory(caption = "") {
+  const t = caption.toLowerCase();
+  if (/ฉาบ|plaster|ก่อ/.test(t))          return "plaster";
+  if (/คอนกรีต|concrete|เท|เสา|คาน/.test(t)) return "concrete";
+  if (/สี|paint/.test(t))                  return "paint";
+  if (/ระดับ|level|เส้น|mark/.test(t))     return "level";
+  if (/ไฟ|สาย|electric/.test(t))           return "electrical";
+  if (/น้ำ|ท่อ|plumb/.test(t))             return "plumbing";
+  if (/finish|ประตู|หน้าต่าง|กระเบื้อง/.test(t)) return "finishing";
+  return null; // unknown → pass all references
+}
+
 async function qcCallOpenAI({ photoUrl, caption, stage, siteCode }) {
-  const userText = [
+  // Fetch reference standards
+  const standards   = await qcGetStandards();
+  const guessed     = qcGuessCategory(caption);
+  const refs        = guessed
+    ? standards.filter(s => s.category === guessed)
+    : standards; // pass all if unknown
+
+  // Build system prompt — add comparison instruction if references exist
+  const hasRefs = refs.length > 0;
+  const systemPrompt = hasRefs
+    ? QC_SYSTEM_PROMPT + `\n\nโหมด: เปรียบเทียบกับภาพมาตรฐาน
+คุณจะได้รับภาพมาตรฐาน (reference) ก่อน แล้วตามด้วยภาพงานจริงที่ต้องตรวจ
+ให้ระบุว่างานตรงกับมาตรฐานมากน้อยแค่ไหน และอธิบายความแตกต่างที่เห็นเป็น defects`
+    : QC_SYSTEM_PROMPT;
+
+  // Build user message content
+  const userContent = [];
+
+  // Add reference images first
+  if (hasRefs) {
+    refs.forEach(ref => {
+      userContent.push({ type: "text", text: `📐 ภาพมาตรฐาน${ref.label_th ? ` (${ref.label_th})` : ""}: ${ref.description || ""}` });
+      userContent.push({ type: "image_url", image_url: { url: ref.photo_url, detail: "low" } });
+    });
+    userContent.push({ type: "text", text: "─────────────────────" });
+  }
+
+  // Add submitted photo
+  const contextText = [
     siteCode ? `Site: ${siteCode}` : "",
     stage    ? `Stage: ${stage}`   : "",
     caption  ? `Caption: ${caption}` : "",
-    "โปรดตรวจรูปนี้และตอบ JSON ตาม schema"
+    hasRefs
+      ? "🔍 ภาพงานที่ต้องตรวจ — เปรียบเทียบกับมาตรฐานข้างต้นและตอบ JSON"
+      : "โปรดตรวจรูปนี้และตอบ JSON ตาม schema"
   ].filter(Boolean).join("\n");
+  userContent.push({ type: "text",      text: contextText });
+  userContent.push({ type: "image_url", image_url: { url: photoUrl, detail: "high" } });
 
   const body = {
     model: process.env.OPENAI_MODEL || "gpt-4o",
@@ -1880,11 +1937,8 @@ async function qcCallOpenAI({ photoUrl, caption, stage, siteCode }) {
     max_tokens: 800,
     response_format: { type: "json_object" },
     messages: [
-      { role: "system", content: QC_SYSTEM_PROMPT },
-      { role: "user", content: [
-        { type: "text", text: userText },
-        { type: "image_url", image_url: { url: photoUrl, detail: "high" } }
-      ]}
+      { role: "system", content: systemPrompt },
+      { role: "user",   content: userContent }
     ]
   };
 
