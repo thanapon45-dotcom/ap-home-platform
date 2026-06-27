@@ -2072,6 +2072,58 @@ app.post("/api/qc/log-latency", async (req, res) => {
 app.get("/api/qc/health", (_req, res) => res.json({ ok: true, service: "qc" }));
 
 // ══════════════════════════════════════════════════════════════════════════════
+// ── ACTIVE HEALTH MONITOR ──────────────────────────────────────────────────
+// Runs every 30 min, sends Telegram alert when issues detected
+// ──────────────────────────────────────────────────────────────────────────
+
+const HEALTH_INTERVAL_MS = 30 * 60 * 1000;  // 30 minutes
+const BLOG_STUCK_MS      = 45 * 60 * 1000;  // 45 minutes = blog considered stuck
+let _lastAlertHash = "";                      // dedupe consecutive alerts
+
+async function runHealthMonitor() {
+  try {
+    const issues = [];
+
+    // 1. Supabase connectivity
+    const sb = await checkSupabaseHealth();
+    if (!sb.ok) issues.push(`🔴 Supabase: ${sb.status}`);
+
+    // 2. FB Backend reachability
+    const fb = await checkUrlHealth(`${FB_BACKEND_URL}/health`, 3000);
+    if (!fb.ok) issues.push(`🔴 FB Backend: ${fb.status}`);
+
+    // 3. Blog Runner stuck (status=running too long)
+    const state = await readState();
+    if (state.blog?.status === "running" && state.blog?.startedAt) {
+      const stuckMs = Date.now() - new Date(state.blog.startedAt).getTime();
+      if (stuckMs > BLOG_STUCK_MS) {
+        issues.push(`🔴 Blog Runner ค้าง ${Math.round(stuckMs / 60000)} นาที (runId: ${state.blog.runId || "-"})`);
+      }
+    }
+
+    // 4. DLQ — new failures in last 2 hours
+    const dlq = await getSupabaseDlq(10);
+    const freshDlq = dlq.filter(d => {
+      try { return Date.now() - new Date(d.created_at).getTime() < 7_200_000; } catch { return false; }
+    });
+    if (freshDlq.length > 0) issues.push(`⚠️ DLQ ${freshDlq.length} รายการใหม่ใน 2 ชม.`);
+
+    if (issues.length === 0) return; // all healthy
+
+    const alertHash = [...issues].sort().join("|");
+    if (alertHash === _lastAlertHash) return; // same as last alert, skip
+    _lastAlertHash = alertHash;
+
+    const ts = new Date().toLocaleString("th-TH", { timeZone: "Asia/Bangkok" });
+    const msg = [`🚨 Hub Health Alert — ${ts}`, ...issues].join("\n");
+    await sendTelegram(msg);
+    logEvent("warn", "health_monitor_alert", { issues });
+  } catch (e) {
+    logEvent("error", "health_monitor_error", { message: e.message });
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
 
 app.listen(PORT, HUB_HOST, async () => {
   const state = await readState();
@@ -2087,4 +2139,9 @@ app.listen(PORT, HUB_HOST, async () => {
   console.log(`n8n blog webhook: ${N8N_BLOG_WEBHOOK_URL}`);
   console.log(`fb backend: ${FB_BACKEND_URL}`);
   console.log(`State store: Supabase hub_state key=${HUB_STATE_KEY}`);
+
+  // Start active health monitor
+  setTimeout(runHealthMonitor, 5 * 60 * 1000); // first check 5 min after startup
+  setInterval(runHealthMonitor, HEALTH_INTERVAL_MS);
+  console.log(`Health monitor: every ${HEALTH_INTERVAL_MS / 60000} min → Telegram`);
 });
