@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { randomUUID } from "crypto";
 
 /**
  * POST /api/blog/run
@@ -6,14 +7,22 @@ import { NextRequest, NextResponse } from "next/server";
  * Body: { keyword, category, slot?, visual_hint? }
  */
 
-const HUB = process.env.HUB_URL ?? "https://ap-home-platform-production.up.railway.app";
+const HUB = process.env.HUB_URL ?? "";
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
+    if (!HUB) {
+      return NextResponse.json({ ok: false, error: "HUB_URL not configured" }, { status: 500 });
+    }
+    const correlationId = req.headers.get("x-correlation-id") ?? randomUUID();
     const r = await fetch(`${HUB}/action/blog/run`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", "x-hub-token": process.env.HUB_SECRET ?? "" },
+      headers: {
+        "Content-Type": "application/json",
+        "x-hub-token": process.env.HUB_SECRET ?? "",
+        "x-correlation-id": correlationId,
+      },
       body: JSON.stringify(body),
       signal: AbortSignal.timeout(8000),
     });

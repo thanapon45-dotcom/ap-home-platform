@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AP Home Platform — Market Analyst Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --card: #21253a;
+    --border: #2e3354;
+    --accent: #6c8cff;
+    --green: #4ade80;
+    --yellow: #fbbf24;
+    --red: #f87171;
+    --text: #e2e8f0;
+    --muted: #8892b0;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; min-height: 100vh; }
+
+  /* Header */
+  .header {
+    background: linear-gradient(135deg, #1a1d27 0%, #12162a 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 20px 32px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .header h1 { font-size: 20px; font-weight: 700; }
+  .header h1 span { color: var(--accent); }
+  .header-right { display: flex; align-items: center; gap: 12px; }
+  .refresh-btn {
+    background: var(--accent); color: #fff; border: none; border-radius: 8px;
+    padding: 8px 16px; font-size: 13px; cursor: pointer; transition: opacity .2s;
+  }
+  .refresh-btn:hover { opacity: .85; }
+  .last-updated { font-size: 12px; color: var(--muted); }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); display: inline-block; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+  /* Layout */
+  .main { padding: 28px 32px; max-width: 1400px; margin: 0 auto; }
+
+  /* KPI row */
+  .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+  .kpi-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 20px; position: relative; overflow: hidden;
+  }
+  .kpi-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: var(--accent-color, var(--accent));
+  }
+  .kpi-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; }
+  .kpi-value { font-size: 28px; font-weight: 700; color: var(--text); }
+  .kpi-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .kpi-badge {
+    display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 99px;
+    background: rgba(74,222,128,.15); color: var(--green); margin-top: 6px;
+  }
+  .kpi-badge.warn { background: rgba(251,191,36,.15); color: var(--yellow); }
+  .kpi-badge.danger { background: rgba(248,113,113,.15); color: var(--red); }
+
+  /* Grid */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+
+  /* Cards */
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 20px;
+    overflow: hidden; min-width: 0;
+  }
+  .card-title {
+    font-size: 14px; font-weight: 600; color: var(--text);
+    margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
+  }
+  .card-title .icon { font-size: 16px; }
+
+  /* Chart container */
+  .chart-wrap { position: relative; height: 220px; }
+
+  /* Lead list */
+  .lead-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 0; border-bottom: 1px solid var(--border);
+  }
+  .lead-item:last-child { border-bottom: none; }
+  .lead-name { font-size: 14px; font-weight: 500; }
+  .lead-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .lead-score {
+    font-size: 20px; font-weight: 700;
+    min-width: 48px; text-align: center;
+  }
+  .score-high { color: var(--green); }
+  .score-mid  { color: var(--yellow); }
+  .score-low  { color: var(--red); }
+
+  /* Stage funnel */
+  .funnel-item {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 10px;
+  }
+  .funnel-label { font-size: 13px; color: var(--muted); width: 80px; flex-shrink: 0; }
+  .funnel-bar-wrap { flex: 1; background: var(--surface); border-radius: 6px; height: 10px; overflow: hidden; }
+  .funnel-bar { height: 100%; border-radius: 6px; transition: width .8s ease; }
+  .funnel-count { font-size: 13px; font-weight: 600; width: 24px; text-align: right; }
+
+  /* Content suggestions */
+  .suggestion {
+    background: var(--surface); border-radius: 10px; padding: 12px;
+    margin-bottom: 10px; border-left: 3px solid var(--accent);
+    overflow: hidden; word-break: break-word;
+  }
+  .suggestion.high { border-color: var(--green); }
+  .suggestion.medium { border-color: var(--yellow); }
+  .sug-angle { font-size: 13px; font-weight: 600; margin-bottom: 4px; line-height: 1.4; }
+  .sug-hook { font-size: 12px; color: var(--muted); font-style: italic; line-height: 1.4;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .sug-meta { font-size: 11px; color: var(--accent); margin-top: 4px; }
+  .sug-tag {
+    display: inline-block; font-size: 10px; padding: 2px 6px;
+    border-radius: 4px; background: rgba(108,140,255,.15); color: var(--accent);
+    margin-right: 4px; margin-top: 4px; white-space: nowrap;
+  }
+
+  /* Forecast table */
+  .forecast-row {
+    display: grid; grid-template-columns: 70px 1fr 1fr 1fr;
+    gap: 6px; padding: 10px 0; border-bottom: 1px solid var(--border);
+    font-size: 13px; min-width: 0;
+  }
+  .forecast-row > div { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .forecast-row:first-child { font-size: 11px; color: var(--muted); padding-top: 0; }
+  .forecast-row:last-child { border-bottom: none; }
+  .f-mid { font-weight: 700; color: var(--accent); }
+  .f-low { color: var(--muted); }
+  .f-high { color: var(--green); }
+
+  /* Market table */
+  .market-row {
+    display: grid; grid-template-columns: 1fr 80px 80px 100px;
+    gap: 8px; padding: 10px 0; border-bottom: 1px solid var(--border);
+    font-size: 13px; align-items: center;
+  }
+  .market-row:first-child { font-size: 11px; color: var(--muted); padding-top: 0; }
+  .market-row:last-child { border-bottom: none; }
+  .market-signal {
+    font-size: 11px; padding: 2px 8px; border-radius: 99px;
+    font-weight: 600; display: inline-block;
+  }
+  .aligned   { background: rgba(108,140,255,.15); color: var(--accent); }
+  .overpriced{ background: rgba(248,113,113,.15); color: var(--red); }
+  .underpriced{background: rgba(74,222,128,.15); color: var(--green); }
+
+  /* Loading */
+  .loading {
+    display: flex; align-items: center; justify-content: center;
+    height: 200px; color: var(--muted); font-size: 14px;
+  }
+  .spinner {
+    width: 20px; height: 20px; border: 2px solid var(--border);
+    border-top-color: var(--accent); border-radius: 50%;
+    animation: spin .7s linear infinite; margin-right: 10px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Insight pills */
+  .insight-item {
+    background: var(--surface); border-radius: 10px; padding: 12px;
+    margin-bottom: 8px; border-left: 3px solid var(--yellow);
+    overflow: hidden; word-break: break-word;
+  }
+  .insight-text { font-size: 13px; line-height: 1.5;
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .insight-area { font-size: 11px; color: var(--yellow); margin-top: 4px; }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .kpi-row  { grid-template-columns: repeat(2,1fr); }
+    .grid-2   { grid-template-columns: 1fr; }
+    .grid-3   { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>AP Home <span>Market Analyst</span></h1>
+    <div style="font-size:12px;color:var(--muted);margin-top:3px;">Real-time insights from Memory Hub</div>
+  </div>
+  <div class="header-right">
+    <span class="status-dot"></span>
+    <span class="last-updated" id="lastUpdated">loading…</span>
+    <button class="refresh-btn" onclick="loadAll()">⟳ Refresh</button>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- KPIs -->
+  <div class="kpi-row" id="kpiRow">
+    <div class="kpi-card" style="--accent-color:var(--accent)">
+      <div class="kpi-label">Total Leads</div>
+      <div class="kpi-value" id="kpiLeads">—</div>
+      <div class="kpi-sub" id="kpiLeadSub">loading…</div>
+    </div>
+    <div class="kpi-card" style="--accent-color:var(--green)">
+      <div class="kpi-label">Avg Lead Score</div>
+      <div class="kpi-value" id="kpiScore">—</div>
+      <div class="kpi-sub">จาก 100 คะแนน</div>
+    </div>
+    <div class="kpi-card" style="--accent-color:var(--yellow)">
+      <div class="kpi-label">Market Listings</div>
+      <div class="kpi-value" id="kpiListings">—</div>
+      <div class="kpi-sub" id="kpiListingSub">loading…</div>
+    </div>
+    <div class="kpi-card" style="--accent-color:#c084fc)">
+      <div class="kpi-label">90-Day Forecast</div>
+      <div class="kpi-value" id="kpiForecast">—</div>
+      <div class="kpi-sub">mid scenario</div>
+    </div>
+  </div>
+
+  <!-- Row 1: Price Chart + Lead Pipeline -->
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title"><span class="icon">📊</span> Price Distribution (Market)</div>
+      <div class="chart-wrap"><canvas id="priceChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="icon">🏆</span> Lead Pipeline</div>
+      <div id="pipelineFunnel" class="loading"><div class="spinner"></div>Loading…</div>
+    </div>
+  </div>
+
+  <!-- Row 2: Lead Scores + Content Suggestions + Market Insights -->
+  <div class="grid-3">
+    <div class="card">
+      <div class="card-title"><span class="icon">👥</span> Top Leads by Score</div>
+      <div id="leadList" class="loading"><div class="spinner"></div>Loading…</div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="icon">💡</span> Content Suggestions</div>
+      <div id="contentList" class="loading"><div class="spinner"></div>Loading…</div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="icon">🧠</span> Area Memory</div>
+      <div id="insightList" class="loading"><div class="spinner"></div>Loading…</div>
+    </div>
+  </div>
+
+  <!-- Row 3: Forecast + Market vs Ours -->
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title"><span class="icon">📈</span> Sales Forecast (30/60/90 วัน)</div>
+      <div id="forecastTable" class="loading"><div class="spinner"></div>Loading…</div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="icon">🏠</span> Our Properties vs Market</div>
+      <div id="marketTable" class="loading"><div class="spinner"></div>Loading…</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const SUPABASE_URL = "https://omvpagvqyfmkkhzuuzda.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tdnBhZ3ZxeWZta2toenV1emRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0MTc2NTIsImV4cCI6MjA5MTk5MzY1Mn0.E4u29jOMUzoKP_cgJBb1n0FmkdULjVEh8YapDSaYoUw";
+
+const headers = {
+  "apikey": SUPABASE_KEY,
+  "Authorization": `Bearer ${SUPABASE_KEY}`,
+  "Content-Type": "application/json"
+};
+
+async function query(table, params = "") {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${params}`, { headers });
+  if (!res.ok) throw new Error(`${table}: ${res.status}`);
+  return res.json();
+}
+
+let priceChartInst = null;
+
+async function loadAll() {
+  document.getElementById("lastUpdated").textContent = "refreshing…";
+  try {
+    const [leads, listings, properties, signals, areaMemory, contentPosts, agentReports] = await Promise.all([
+      query("leads", "select=id,name,score,stage,budget,urgency,source,lead_date&order=score.desc"),
+      query("market_listings", "select=price,land_size,area,property_type"),
+      query("properties", "select=asking_price,sold_price,area_sqm,land_sqm,location,status,property_type"),
+      query("buyer_context_signals", "select=content_angle,example_hook,channel,trigger_type,emotional_need,awareness_level&limit=10"),
+      query("area_memory", "select=area,memory,memory_type,confidence&is_active=eq.true&order=confidence.desc&limit=6"),
+      query("content_posts", "select=topic,keyword,format,source_channel,engagement,impressions,conversion_rate&order=engagement.desc&limit=5"),
+      query("agent_reports", "select=report_type,payload,summary,generated_at&order=generated_at.desc&limit=10"),
+    ]);
+
+    renderKPIs(leads, listings, agentReports);
+    renderPriceChart(listings);
+    renderPipeline(leads);
+    renderLeads(leads);
+    renderContent(signals, contentPosts, agentReports);
+    renderInsights(areaMemory);
+    renderForecast(leads, properties, agentReports);
+    renderMarketTable(properties, listings, agentReports);
+
+    document.getElementById("lastUpdated").textContent =
+      "Updated " + new Date().toLocaleTimeString("th-TH");
+  } catch (e) {
+    console.error(e);
+    document.getElementById("lastUpdated").textContent = "Error: " + e.message;
+  }
+}
+
+// ── KPIs ──────────────────────────────────────────────────────────────────────
+function renderKPIs(leads, listings, reports) {
+  document.getElementById("kpiLeads").textContent = leads.length;
+  const hot = leads.filter(l => (l.score || 0) >= 70).length;
+  document.getElementById("kpiLeadSub").textContent = `Hot: ${hot} | Warm: ${leads.length - hot}`;
+
+  const avgScore = leads.length
+    ? Math.round(leads.reduce((s, l) => s + (l.score || 60), 0) / leads.length)
+    : 0;
+  document.getElementById("kpiScore").textContent = avgScore;
+
+  document.getElementById("kpiListings").textContent = listings.length;
+  const prices = listings.map(l => l.price).filter(Boolean);
+  const avg = prices.length ? Math.round(prices.reduce((a, b) => a + b, 0) / prices.length) : 0;
+  document.getElementById("kpiListingSub").textContent =
+    avg ? `เฉลี่ย ฿${(avg/1e6).toFixed(1)}M` : "loading…";
+
+  const forecastRep = reports.find(r => r.report_type === "sales_forecast");
+  if (forecastRep?.payload?.forecast) {
+    const mid = forecastRep.payload.forecast["90_day"]?.revenue_mid || 0;
+    document.getElementById("kpiForecast").textContent =
+      mid >= 1e6 ? `฿${(mid/1e6).toFixed(1)}M` : `฿${mid.toLocaleString()}`;
+  } else {
+    // calculate inline
+    const totalLead = leads.length;
+    const avgDeal   = 3_500_000;
+    const mid = Math.round(totalLead * 0.15 * avgDeal);
+    document.getElementById("kpiForecast").textContent =
+      `฿${(mid/1e6).toFixed(1)}M`;
+  }
+}
+
+// ── Price Chart ───────────────────────────────────────────────────────────────
+function renderPriceChart(listings) {
+  const prices = listings.map(l => l.price).filter(Boolean);
+  const bands = [
+    { label: "< 2M",    count: prices.filter(p => p < 2e6).length },
+    { label: "2–5M",    count: prices.filter(p => p >= 2e6 && p < 5e6).length },
+    { label: "5–10M",   count: prices.filter(p => p >= 5e6 && p < 10e6).length },
+    { label: "> 10M",   count: prices.filter(p => p >= 10e6).length },
+  ];
+
+  if (priceChartInst) priceChartInst.destroy();
+  const ctx = document.getElementById("priceChart").getContext("2d");
+  priceChartInst = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: bands.map(b => b.label),
+      datasets: [{
+        label: "จำนวนรายการ",
+        data: bands.map(b => b.count),
+        backgroundColor: ["#6c8cff","#4ade80","#fbbf24","#f87171"],
+        borderRadius: 8,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: "#8892b0" }, grid: { color: "#2e3354" } },
+        y: { ticks: { color: "#8892b0" }, grid: { color: "#2e3354" } },
+      }
+    }
+  });
+}
+
+// ── Pipeline Funnel ────────────────────────────────────────────────────────────
+function renderPipeline(leads) {
+  const stages = { new: 0, contacted: 0, qualified: 0, closed: 0 };
+  leads.forEach(l => { if (stages[l.stage] !== undefined) stages[l.stage]++; });
+  const total = leads.length || 1;
+  const colors = { new: "#6c8cff", contacted: "#fbbf24", qualified: "#4ade80", closed: "#c084fc" };
+  const labels = { new: "New", contacted: "Contacted", qualified: "Qualified", closed: "Closed" };
+
+  let html = "";
+  for (const [stage, count] of Object.entries(stages)) {
+    const pct = Math.round(count / total * 100);
+    html += `
+      <div class="funnel-item">
+        <div class="funnel-label">${labels[stage]}</div>
+        <div class="funnel-bar-wrap">
+          <div class="funnel-bar" style="width:${pct}%;background:${colors[stage]}"></div>
+        </div>
+        <div class="funnel-count" style="color:${colors[stage]}">${count}</div>
+      </div>`;
+  }
+
+  // Budget estimate
+  const totalBudget = leads.reduce((s, l) => {
+    const b = parseBudget(l.budget || "");
+    return s + b;
+  }, 0);
+  html += `<div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border);font-size:12px;color:var(--muted)">
+    Pipeline value estimate: <span style="color:var(--accent);font-weight:600">
+    ฿${(totalBudget/1e6).toFixed(1)}M</span></div>`;
+
+  document.getElementById("pipelineFunnel").innerHTML = html;
+}
+
+// ── Lead List ─────────────────────────────────────────────────────────────────
+function renderLeads(leads) {
+  if (!leads.length) {
+    document.getElementById("leadList").innerHTML = `<div style="color:var(--muted);font-size:13px">ยังไม่มี leads</div>`;
+    return;
+  }
+  const top = leads.slice(0, 6);
+  let html = "";
+  top.forEach(l => {
+    const score = l.score || 60;
+    const cls   = score >= 70 ? "score-high" : score >= 40 ? "score-mid" : "score-low";
+    const stageColor = { new:"#6c8cff", contacted:"#fbbf24", qualified:"#4ade80", closed:"#c084fc" }[l.stage] || "#8892b0";
+    html += `
+      <div class="lead-item">
+        <div>
+          <div class="lead-name">${escHtml(l.name || "Unknown")}</div>
+          <div class="lead-meta">
+            ${l.budget ? `฿${escHtml(l.budget)}` : ""}
+            ${l.urgency ? ` · ${escHtml(l.urgency)}` : ""}
+            · <span style="color:${stageColor}">${l.stage || ""}</span>
+            ${l.source ? ` · ${escHtml(l.source)}` : ""}
+          </div>
+        </div>
+        <div class="lead-score ${cls}">${score}</div>
+      </div>`;
+  });
+  document.getElementById("leadList").innerHTML = html;
+}
+
+// ── Content Suggestions ────────────────────────────────────────────────────────
+function renderContent(signals, posts, reports) {
+  const contentRep = reports.find(r => r.report_type === "content_suggestions");
+  let items = [];
+
+  if (contentRep?.payload?.suggestions) {
+    items = contentRep.payload.suggestions.slice(0, 4);
+  } else if (signals.length) {
+    items = signals.slice(0, 4).map(s => ({
+      priority: "medium",
+      awareness_level: s.awareness_level,
+      angle: s.content_angle,
+      hook: s.example_hook,
+      channel: s.channel,
+      format: "post",
+      reason: s.trigger_type,
+    }));
+  }
+
+  if (!items.length) {
+    document.getElementById("contentList").innerHTML =
+      `<div style="color:var(--muted);font-size:13px">ยังไม่มี content suggestions<br><small>รัน agent ก่อนด้วย --task content</small></div>`;
+    return;
+  }
+
+  let html = "";
+  items.forEach(s => {
+    html += `
+      <div class="suggestion ${s.priority || 'medium'}">
+        <div class="sug-angle">${escHtml(s.angle || "—")}</div>
+        <div class="sug-hook">${escHtml(s.hook || "")}</div>
+        <div class="sug-meta">
+          <span class="sug-tag">${escHtml(s.channel || "")}</span>
+          <span class="sug-tag">${escHtml(s.format || "")}</span>
+          <span class="sug-tag">${escHtml(s.awareness_level || "")}</span>
+        </div>
+      </div>`;
+  });
+
+  document.getElementById("contentList").innerHTML = html;
+}
+
+// ── Area Memory / Insights ────────────────────────────────────────────────────
+function renderInsights(memories) {
+  if (!memories.length) {
+    document.getElementById("insightList").innerHTML =
+      `<div style="color:var(--muted);font-size:13px">ยังไม่มี area memory</div>`;
+    return;
+  }
+  let html = "";
+  memories.forEach(m => {
+    const conf = "●".repeat(m.confidence || 3) + "○".repeat(5 - (m.confidence || 3));
+    html += `
+      <div class="insight-item">
+        <div class="insight-text">${escHtml(m.memory || "")}</div>
+        <div class="insight-area">📍 ${escHtml(m.area || "")} · ${conf} · ${escHtml(m.memory_type || "")}</div>
+      </div>`;
+  });
+  document.getElementById("insightList").innerHTML = html;
+}
+
+// ── Forecast Table ─────────────────────────────────────────────────────────────
+function renderForecast(leads, properties, reports) {
+  const forecastRep = reports.find(r => r.report_type === "sales_forecast");
+
+  let forecast;
+  if (forecastRep?.payload?.forecast) {
+    forecast = forecastRep.payload.forecast;
+  } else {
+    // inline calculation
+    const avgDeal  = 3_500_000;
+    const qualified = leads.filter(l => l.stage === "qualified").length;
+    const pipeline  = leads.reduce((s, l) => s + (parseBudget(l.budget || "") || avgDeal), 0);
+    forecast = {
+      "30_day":  { revenue_low: Math.round(pipeline * .2),  revenue_mid: Math.round(pipeline * .35), revenue_high: Math.round(pipeline * .5),  expected_closes: qualified },
+      "60_day":  { revenue_low: Math.round(pipeline * .35), revenue_mid: Math.round(pipeline * .5),  revenue_high: Math.round(pipeline * .7),  expected_closes: qualified + 1 },
+      "90_day":  { revenue_low: Math.round(pipeline * .5),  revenue_mid: Math.round(pipeline * .65), revenue_high: Math.round(pipeline * .85), expected_closes: Math.max(1, leads.length) },
+    };
+  }
+
+  const fmt = v => v >= 1e6 ? `฿${(v/1e6).toFixed(1)}M` : `฿${v.toLocaleString()}`;
+
+  let html = `
+    <div class="forecast-row">
+      <div>Period</div><div>Low</div><div>Mid</div><div>High</div>
+    </div>`;
+
+  for (const [period, data] of Object.entries(forecast)) {
+    const label = period.replace("_day", " วัน");
+    html += `
+      <div class="forecast-row">
+        <div style="font-weight:600">${label}</div>
+        <div class="f-low">${fmt(data.revenue_low)}</div>
+        <div class="f-mid">${fmt(data.revenue_mid)}</div>
+        <div class="f-high">${fmt(data.revenue_high)}</div>
+      </div>`;
+  }
+
+  const pipelineVal = leads.reduce((s, l) => s + (parseBudget(l.budget || "") || 3_500_000), 0);
+  html += `<div style="margin-top:12px;font-size:12px;color:var(--muted)">
+    Pipeline: <span style="color:var(--accent);font-weight:600">฿${(pipelineVal/1e6).toFixed(1)}M</span>
+    · Conversion: <span style="color:var(--yellow)">15%</span> (estimated)
+  </div>`;
+
+  document.getElementById("forecastTable").innerHTML = html;
+}
+
+// ── Market vs Ours ─────────────────────────────────────────────────────────────
+function renderMarketTable(properties, listings, reports) {
+  const priceRep = reports.find(r => r.report_type === "price_analysis");
+
+  if (priceRep?.payload?.our_vs_market?.length) {
+    const rows = priceRep.payload.our_vs_market;
+    let html = `<div class="market-row"><div>Location</div><div>Ours</div><div>Market</div><div>Signal</div></div>`;
+    rows.forEach(r => {
+      const sigClass = r.signal === "aligned" ? "aligned" : r.signal === "overpriced" ? "overpriced" : "underpriced";
+      const sigLabel = r.signal === "aligned" ? "✓ Aligned" : r.signal === "overpriced" ? "↑ Over" : "↓ Under";
+      html += `<div class="market-row">
+        <div>${escHtml(r.location)}</div>
+        <div>${(r.our_price_per_sqm/1000).toFixed(0)}K</div>
+        <div>${(r.market_avg_per_sqm/1000).toFixed(0)}K</div>
+        <div><span class="market-signal ${sigClass}">${sigLabel} ${r.diff_pct > 0 ? '+' : ''}${r.diff_pct}%</span></div>
+      </div>`;
+    });
+    document.getElementById("marketTable").innerHTML = html;
+    return;
+  }
+
+  // Inline: calc from listings
+  const prices = listings.map(l => l.price).filter(Boolean);
+  const avgMkt  = prices.length ? Math.round(prices.reduce((a,b)=>a+b,0)/prices.length) : 0;
+  const areas   = [...new Set(listings.map(l => l.area).filter(Boolean))];
+
+  let html = `<div class="market-row"><div>Area</div><div>Count</div><div>Avg Price</div><div>Range</div></div>`;
+  areas.slice(0, 5).forEach(area => {
+    const areaListings = listings.filter(l => l.area === area);
+    const ap = areaListings.map(l => l.price).filter(Boolean);
+    const avg = ap.length ? Math.round(ap.reduce((a,b)=>a+b,0)/ap.length) : 0;
+    const min = ap.length ? Math.min(...ap) : 0;
+    const max = ap.length ? Math.max(...ap) : 0;
+    html += `<div class="market-row">
+      <div>${escHtml(area)}</div>
+      <div>${areaListings.length}</div>
+      <div>฿${(avg/1e6).toFixed(1)}M</div>
+      <div style="font-size:11px;color:var(--muted)">${(min/1e6).toFixed(1)}–${(max/1e6).toFixed(1)}M</div>
+    </div>`;
+  });
+
+  document.getElementById("marketTable").innerHTML = html;
+}
+
+// ── Utils ──────────────────────────────────────────────────────────────────────
+function parseBudget(s) {
+  s = (s || "").replace(/,/g, "").trim().toUpperCase();
+  if (!s) return 0;
+  const m = s.match(/([\d.]+)\s*(M|ล้าน|ล|K)?/i);
+  if (!m) return 0;
+  const num = parseFloat(m[1]);
+  const unit = (m[2] || "").toUpperCase();
+  if (unit === "M" || unit === "ล้าน" || unit === "ล") return num * 1e6;
+  if (unit === "K") return num * 1e3;
+  return num;
+}
+
+function escHtml(str) {
+  return String(str || "")
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;");
+}
+
+// Boot
+loadAll();
+</script>
+</body>
+</html>

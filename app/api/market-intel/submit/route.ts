@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const N8N_WEBHOOK = "https://primary-production-8158a.up.railway.app/webhook/market-intel/manual";
+const N8N_WEBHOOK = process.env.N8N_MARKET_INTEL_WEBHOOK ?? "";
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
+    if (!N8N_WEBHOOK) {
+      return NextResponse.json({ ok: false, error: "N8N_MARKET_INTEL_WEBHOOK not configured" }, { status: 500 });
+    }
     const res = await fetch(N8N_WEBHOOK, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

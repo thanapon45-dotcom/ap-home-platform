@@ -5,10 +5,13 @@ import { NextResponse } from "next/server";
  * Server-side proxy → Hub /action/blog/reset
  */
 
-const HUB = process.env.HUB_URL ?? "https://ap-home-platform-production.up.railway.app";
+const HUB = process.env.HUB_URL ?? "";
 
 export async function POST() {
   try {
+    if (!HUB) {
+      return NextResponse.json({ ok: false, error: "HUB_URL not configured" }, { status: 500 });
+    }
     const r = await fetch(`${HUB}/action/blog/reset`, {
       method: "POST",
       headers: { "x-hub-token": process.env.HUB_SECRET ?? "" },

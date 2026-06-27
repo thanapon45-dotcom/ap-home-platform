@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const SUPABASE_URL = "https://omvpagvqyfmkkhzuuzda.supabase.co";
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
+const SUPABASE_URL = process.env.SUPABASE_URL ?? "";
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY ?? "";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const table = searchParams.get("table") ?? "market_insights";
+
+  if (!SUPABASE_URL || !SUPABASE_KEY) {
+    return NextResponse.json({ ok: false, error: "Supabase not configured" }, { status: 500 });
+  }
 
   let query = `${SUPABASE_URL}/rest/v1/${table}?select=*&order=created_at.desc&limit=50`;
 

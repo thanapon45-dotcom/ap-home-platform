@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const HUB = process.env.HUB_URL ?? "https://ap-home-platform-production.up.railway.app";
+const HUB = process.env.HUB_URL ?? "";
 
 export async function POST(req: NextRequest) {
   try {
     const blob = await req.blob();
     const filename = req.headers.get("x-filename") ?? "photo.jpg";
     const mimetype = blob.type || "image/jpeg";
+    if (!HUB) {
+      return NextResponse.json({ ok: false, error: "HUB_URL not configured" }, { status: 500 });
+    }
 
     const r = await fetch(`${HUB}/action/property/upload-image`, {
       method: "POST",

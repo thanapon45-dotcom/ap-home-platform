@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import PropertyReview from "@/components/PropertyReview";
+import OperationalDashboard from "@/components/OperationalDashboard";
 
 const HUB = process.env.NEXT_PUBLIC_HUB_URL ?? "https://ap-home-platform-production.up.railway.app";
 const POLL_MS = 10_000;
@@ -371,7 +372,7 @@ export default function DashboardOS() {
   const { data, live, lastSync } = useLiveData();
   const leadCounts = useLeadCounts();
   const [clock, setClock] = useState<Date | null>(null);
-  const [activeTab, setActiveTab] = useState<"overview" | "properties" | "intel">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "properties" | "intel" | "ops">("overview");
   useEffect(() => {
     setClock(new Date());
     const t = setInterval(() => setClock(new Date()), 1000);
@@ -414,6 +415,9 @@ export default function DashboardOS() {
         <button style={TAB_STYLE(activeTab === "intel")} onClick={() => setActiveTab("intel")}>
           🧠 Market Intel
         </button>
+        <button style={TAB_STYLE(activeTab === "ops")} onClick={() => setActiveTab("ops")}>
+          📊 Ops
+        </button>
       </div>
 
       {/* PROPERTIES TAB */}
@@ -421,6 +425,9 @@ export default function DashboardOS() {
 
       {/* MARKET INTEL TAB */}
       {activeTab === "intel" && <MarketIntelTab />}
+
+      {/* OPS TAB */}
+      {activeTab === "ops" && <OperationalDashboard />}
 
       {/* OVERVIEW TAB */}
       {activeTab === "overview" && <>

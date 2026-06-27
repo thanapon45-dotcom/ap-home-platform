@@ -1,0 +1,227 @@
+{
+  "name": "Finnhouses — Market Intelligence Collector v1",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "market-intel/fb",
+        "options": {}
+      },
+      "id": "84a39801-97cd-4653-a8fa-e6164ee5da2c",
+      "name": "📊 Webhook: FB Posts",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-816, 32],
+      "webhookId": "market-intel-fb-01"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "market-intel/manual",
+        "options": {}
+      },
+      "id": "51b6c371-0033-4c20-909d-0126025a6055",
+      "name": "✍️ Webhook: Manual Input",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-816, 272],
+      "webhookId": "market-intel-manual-01"
+    },
+    {
+      "parameters": {
+        "jsCode": "// FB Posts: Normalize + Claude Parse\nconst HUB = 'https://ap-home-platform.vercel.app/api/chat';\nconst body = $input.first().json.body ?? $input.first().json;\n\nconst raw_text = body.post_text ?? body.text ?? '';\nconst area_hint = body.area ?? null;\nconst post_date = body.post_date ?? new Date().toISOString().split('T')[0];\n\nconst SYSTEM = `คุณเป็น Market Intelligence Parser สำหรับ Finnhouses อสังหาริมทรัพย์ไทย\nวิเคราะห์โพสต์ขายบ้าน → ส่งออก JSON เท่านั้น ไม่มีข้อความอื่น\n\nJSON format:\n{\n  \"area\": \"ชื่อพื้นที่ภาษาไทย\",\n  \"insight\": \"ข้อสังเกตสำคัญ 1 ประโยค\",\n  \"category\": \"risk_perception|demand_pattern|liquidity_signal|price_behavior|competitor_gap\",\n  \"confidence\": 1,\n  \"property_type\": \"ทาวน์เฮ้าส์|บ้านเดี่ยว|ที่ดิน|คอนโด\",\n  \"price\": number_or_null,\n  \"urgency\": true,\n  \"buyer_segment\": \"resale|build_handsoff|build_handson\",\n  \"timing_signal\": \"none|bonus|rate_up|rainy|new_year|marriage|land_ready\",\n  \"emotional_keywords\": [\"array\"],\n  \"positioned_hook\": \"hook ≤ 40 คำ\"\n}`;\n\nconst PROMPT = `Source: fb\\nArea hint: ${area_hint ?? 'ไม่ระบุ'}\\nText: ${raw_text.slice(0, 800)}\\n\\nส่งออก JSON เท่านั้น`;\n\nlet parsed = {};\ntry {\n  const res = await this.helpers.request({\n    method: 'POST',\n    url: HUB,\n    headers: { 'Content-Type': 'application/json' },\n    body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', maxTokens: 600, system: SYSTEM, prompt: PROMPT }),\n    json: false,\n  });\n  const data = JSON.parse(res);\n  const match = (data.text ?? '').match(/\\{[\\s\\S]*\\}/);\n  if (match) parsed = JSON.parse(match[0]);\n} catch(e) { parsed.error = e.message; }\n\nreturn [{ json: {\n  source: 'fb',\n  source_type: 'social',\n  raw_text,\n  area_hint,\n  post_date,\n  seller_id: body.seller_id ?? null,\n  ...parsed,\n  area: parsed.area ?? area_hint ?? 'unknown',\n  parse_ok: !!(parsed.area && parsed.insight && !parsed.error),\n}}];"
+      },
+      "id": "34f099c5-fe98-4c3d-8a85-fac94eb6ab0b",
+      "name": "🤖 FB: Normalize + Parse",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-544, 32]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Manual Input: Normalize + Claude Parse\nconst HUB = 'https://ap-home-platform.vercel.app/api/chat';\nconst body = $input.first().json.body ?? $input.first().json;\n\nconst raw_text = body.text ?? body.observation ?? '';\nconst area_hint = body.area ?? null;\nconst post_date = new Date().toISOString().split('T')[0];\n\nconst SYSTEM = `คุณเป็น Market Intelligence Parser สำหรับ Finnhouses อสังหาริมทรัพย์ไทย\nวิเคราะห์การสังเกตการณ์ตลาดจากมนุษย์ → ส่งออก JSON เท่านั้น ไม่มีข้อความอื่น\n\nJSON format:\n{\n  \"area\": \"ชื่อพื้นที่ภาษาไทย\",\n  \"insight\": \"ข้อสังเกตสำคัญ 1 ประโยค\",\n  \"category\": \"risk_perception|demand_pattern|liquidity_signal|price_behavior|competitor_gap\",\n  \"confidence\": 4,\n  \"property_type\": \"ทาวน์เฮ้าส์|บ้านเดี่ยว|ที่ดิน|คอนโด|null\",\n  \"price\": number_or_null,\n  \"urgency\": false,\n  \"buyer_segment\": \"resale|build_handsoff|build_handson\",\n  \"timing_signal\": \"none|bonus|rate_up|rainy|new_year|marriage|land_ready\",\n  \"emotional_keywords\": [],\n  \"positioned_hook\": \"hook ≤ 40 คำ\"\n}`;\n\nconst PROMPT = `Source: manual observation\\nArea hint: ${area_hint ?? 'ไม่ระบุ'}\\nText: ${raw_text.slice(0, 800)}\\n\\nส่งออก JSON เท่านั้น`;\n\nlet parsed = {};\ntry {\n  const res = await this.helpers.request({\n    method: 'POST',\n    url: HUB,\n    headers: { 'Content-Type': 'application/json' },\n    body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', maxTokens: 600, system: SYSTEM, prompt: PROMPT }),\n    json: false,\n  });\n  const data = JSON.parse(res);\n  const match = (data.text ?? '').match(/\\{[\\s\\S]*\\}/);\n  if (match) parsed = JSON.parse(match[0]);\n} catch(e) { parsed.error = e.message; }\n\nreturn [{ json: {\n  source: 'manual',\n  source_type: 'observation',\n  raw_text,\n  area_hint,\n  post_date,\n  seller_id: null,\n  ...parsed,\n  area: parsed.area ?? area_hint ?? 'unknown',\n  parse_ok: !!(parsed.area && parsed.insight && !parsed.error),\n}}];"
+      },
+      "id": "91ba8d99-62db-46bb-9baa-7116c61e63a8",
+      "name": "🤖 Manual: Normalize + Parse",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-544, 272]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "cond-parse-ok",
+              "leftValue": "={{ $json.parse_ok }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "7ca2bcf0-f7e4-43d9-b9c0-2294055da481",
+      "name": "✅ Parse OK?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [-256, 144]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Insert market_insights to Supabase\nconst d = $input.first().json;\nconst SUPABASE_KEY = $env.SUPABASE_SERVICE_KEY;\nconst SUPABASE_URL = 'https://omvpagvqyfmkkhzuuzda.supabase.co/rest/v1/market_insights';\n\ntry {\n  await this.helpers.request({\n    method: 'POST',\n    url: SUPABASE_URL,\n    headers: {\n      'apikey': SUPABASE_KEY,\n      'Authorization': 'Bearer ' + SUPABASE_KEY,\n      'Content-Type': 'application/json',\n      'Prefer': 'return=minimal',\n    },\n    body: JSON.stringify({\n      area: d.area,\n      insight: d.insight,\n      category: d.category ?? 'demand_pattern',\n      confidence: d.confidence ?? 3,\n      source_type: d.source_type ?? 'manual',\n      notes: (d.raw_text ?? '').slice(0, 500),\n    }),\n    json: false,\n  });\n} catch(e) {\n  console.log('market_insights insert error:', e.message);\n}\n\nreturn [{ json: { ...d, market_insight_saved: true } }];"
+      },
+      "id": "c9aa27ca-d021-488b-adb7-ca657f2ed275",
+      "name": "💾 Supabase: market_insights",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "// บันทึก buyer_context_signals ถ้ามี timing_signal\nconst d = $input.first().json;\nconst SUPABASE_KEY = $env.SUPABASE_SERVICE_KEY;\n\nif (!d.timing_signal || d.timing_signal === 'none') {\n  return [{ json: { ...d, buyer_context_saved: false } }];\n}\n\ntry {\n  await this.helpers.request({\n    method: 'POST',\n    url: 'https://omvpagvqyfmkkhzuuzda.supabase.co/rest/v1/buyer_context_signals',\n    headers: {\n      'apikey': SUPABASE_KEY,\n      'Authorization': 'Bearer ' + SUPABASE_KEY,\n      'Content-Type': 'application/json',\n      'Prefer': 'return=minimal',\n    },\n    body: JSON.stringify({\n      trigger_type: d.timing_signal,\n      awareness_level: 'problem_aware',\n      emotional_need: d.category === 'risk_perception' ? 'ความปลอดภัย' : 'ความภาคภูมิใจ',\n      content_angle: d.positioned_hook ?? d.insight ?? '',\n      channel: 'facebook',\n      example_hook: d.positioned_hook ?? '',\n    }),\n    json: false,\n  });\n} catch(e) {\n  console.log('buyer_context insert error:', e.message);\n}\n\nreturn [{ json: { ...d, buyer_context_saved: true } }];"
+      },
+      "id": "6c361f0b-cce4-470f-95f0-0d6b2ebc4ef2",
+      "name": "💾 buyer_context (conditional)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [0, 160]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://ap-home-platform.vercel.app/api/chat",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  model: 'claude-sonnet-4-6',\n  maxTokens: 700,\n  system: 'คุณเป็น copywriter ภาษาไทยของ Finnhouses\\nเขียน Facebook Post ที่ Positioned ตรงกลุ่มผู้ซื้อ — ภาษาพูดธรรมชาติ ≤ 180 คำ\\nห้าม generic — ทุกประโยคต้องตอบ fear หรือ need ของกลุ่มนี้\\nกฎภาษาเข้มงวด: ใช้คำภาษาไทยธรรมชาติเท่านั้น ห้ามคำแปลก/ผิดความหมาย/ฟังดูแปล ตรวจสอบทุกคำก่อน output\\nCTA ใช้: \"ลองดูผลงานที่ finnhouses.com\" หรือ \"ทักมาปรึกษาเลย 0627946152\"\\nส่งเฉพาะ post เท่านั้น ไม่มีคำนำ',\n  prompt: [\n    'สร้าง Facebook Post จากข้อมูลนี้:',\n    'พื้นที่: ' + $json.area,\n    'Insight: ' + ($json.insight ?? ''),\n    'กลุ่มลูกค้า: ' + ($json.buyer_segment ?? 'resale'),\n    'Hook ที่แนะนำ: ' + ($json.positioned_hook ?? $json.insight ?? ''),\n    $json.timing_signal && $json.timing_signal !== 'none' ? 'Timing Signal: ' + $json.timing_signal : null,\n    $json.emotional_keywords?.length ? 'Keywords: ' + $json.emotional_keywords.join(', ') : null,\n    $json.price ? 'ราคา: ' + Number($json.price).toLocaleString() + ' บาท' : null,\n  ].filter(Boolean).join('\\n')\n}) }}",
+        "options": { "timeout": 30000 }
+      },
+      "id": "8ed53976-12f1-452c-89b8-9de5fef3ffad",
+      "name": "✨ Claude: Generate Content",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [240, 160]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Save positioned content to content_frames table\nconst d = $input.first().json;\nconst ctx = $('💾 buyer_context (conditional)').first().json;\nconst SUPABASE_KEY = $env.SUPABASE_SERVICE_KEY;\n\ntry {\n  await this.helpers.request({\n    method: 'POST',\n    url: 'https://omvpagvqyfmkkhzuuzda.supabase.co/rest/v1/content_frames',\n    headers: {\n      'apikey': SUPABASE_KEY,\n      'Authorization': 'Bearer ' + SUPABASE_KEY,\n      'Content-Type': 'application/json',\n      'Prefer': 'return=minimal',\n    },\n    body: JSON.stringify({\n      area:           ctx.area ?? 'unknown',\n      target_segment: ctx.buyer_segment ?? 'general',\n      keyword:        ctx.positioned_hook ?? ctx.insight ?? '',\n      frame_text:     d.text ?? '',\n      timing_signal:  ctx.timing_signal ?? 'none',\n      source_type:    ctx.source_type ?? 'manual',\n    }),\n    json: false,\n  });\n} catch(e) {\n  console.log('content_frames insert error:', e.message);\n}\n\nreturn [{ json: { ...d, content_frame_saved: true } }];"
+      },
+      "id": "5ffcbe36-af30-4a34-8b08-12673e63a1af",
+      "name": "💾 Supabase: content_frames",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [368, 160]
+    },
+    {
+      "parameters": {
+        "chatId": "8589960853",
+        "text": "=🎯 *Market Intel บันทึกแล้ว*\n\n📍 *พื้นที่:* {{ $('💾 buyer_context (conditional)').first().json.area }}\n📊 *Category:* {{ $('💾 buyer_context (conditional)').first().json.category }}\n🎯 *Segment:* {{ $('💾 buyer_context (conditional)').first().json.buyer_segment }}\n💡 *Insight:* {{ $('💾 buyer_context (conditional)').first().json.insight }}{{ $('💾 buyer_context (conditional)').first().json.timing_signal !== 'none' ? '\\n⏰ Timing: ' + $('💾 buyer_context (conditional)').first().json.timing_signal : '' }}\n\n✨ *Positioned Content:*\n{{ $json.text }}\n\n_Source: {{ $('💾 buyer_context (conditional)').first().json.source }}_",
+        "additionalFields": { "parse_mode": "Markdown" }
+      },
+      "id": "03121260-e9c5-444e-9552-f49dad693e89",
+      "name": "📱 Telegram: แจ้งเตือน",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [544, 160],
+      "webhookId": "867a9b82-fd3b-4b44-83b4-94aeff5dcbd7",
+      "credentials": {
+        "telegramApi": {
+          "id": "ImDBxePys7cyMDCW",
+          "name": "Telegram Intel Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "8589960853",
+        "text": "=❌ *Market Intelligence Error*\nText: {{ ($json.raw_text ?? '').slice(0, 100) }}\nError: {{ $json.error ?? 'parse JSON ไม่ได้' }}",
+        "additionalFields": {}
+      },
+      "id": "8260fe4d-13e7-4b01-8f55-22affe28af9c",
+      "name": "❌ Telegram: Error",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [0, 320],
+      "webhookId": "7b27f555-3a3c-4a3f-8787-9dc04189b095",
+      "credentials": {
+        "telegramApi": {
+          "id": "ImDBxePys7cyMDCW",
+          "name": "Telegram Intel Bot"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "📊 Webhook: FB Posts": {
+      "main": [[{ "node": "🤖 FB: Normalize + Parse", "type": "main", "index": 0 }]]
+    },
+    "✍️ Webhook: Manual Input": {
+      "main": [[{ "node": "🤖 Manual: Normalize + Parse", "type": "main", "index": 0 }]]
+    },
+    "🤖 FB: Normalize + Parse": {
+      "main": [[{ "node": "✅ Parse OK?", "type": "main", "index": 0 }]]
+    },
+    "🤖 Manual: Normalize + Parse": {
+      "main": [[{ "node": "✅ Parse OK?", "type": "main", "index": 0 }]]
+    },
+    "✅ Parse OK?": {
+      "main": [
+        [
+          { "node": "💾 Supabase: market_insights", "type": "main", "index": 0 },
+          { "node": "💾 buyer_context (conditional)", "type": "main", "index": 0 }
+        ],
+        [{ "node": "❌ Telegram: Error", "type": "main", "index": 0 }]
+      ]
+    },
+    "💾 buyer_context (conditional)": {
+      "main": [[{ "node": "✨ Claude: Generate Content", "type": "main", "index": 0 }]]
+    },
+    "✨ Claude: Generate Content": {
+      "main": [[{ "node": "💾 Supabase: content_frames", "type": "main", "index": 0 }]]
+    },
+    "💾 Supabase: content_frames": {
+      "main": [[{ "node": "📱 Telegram: แจ้งเตือน", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "timezone": "Asia/Bangkok",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "06f17636-71a0-487a-8125-60d7bbf7d5f9",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3af318b2f84777450480ecbebf363edfb9a066fc25dbe9b986efd391fe617342"
+  },
+  "id": "AANzjecqbBwlBCrR",
+  "tags": [
+    {
+      "updatedAt": "2026-05-29T02:39:27.490Z",
+      "createdAt": "2026-05-29T02:39:27.490Z",
+      "id": "54lr2sKCwS7dQr6j",
+      "name": "intelligence"
+    },
+    {
+      "updatedAt": "2026-05-29T02:39:27.491Z",
+      "createdAt": "2026-05-29T02:39:27.491Z",
+      "id": "nAz8Tn2bzQmRaCxP",
+      "name": "market"
+    }
+  ]
+}

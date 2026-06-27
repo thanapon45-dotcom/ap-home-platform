@@ -8,12 +8,14 @@ import { NextRequest, NextResponse } from "next/server";
  */
 
 const FB_BACKEND =
-  process.env.FB_BACKEND_URL ??
-  "https://easygoing-friendship-production-e663.up.railway.app";
+  process.env.FB_BACKEND_URL ?? "";
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
+    if (!FB_BACKEND) {
+      return NextResponse.json({ ok: false, error: "FB_BACKEND_URL not configured" }, { status: 500 });
+    }
 
     const r = await fetch(`${FB_BACKEND}/api/fb/publish`, {
       method: "POST",

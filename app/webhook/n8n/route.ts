@@ -1,3 +1,4 @@
+import { createHmac, randomUUID } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 
 /**
@@ -8,14 +9,37 @@ import { NextRequest, NextResponse } from "next/server";
  * If HUB_PUBLIC_BASE_URL points to Vercel, this route catches it and forwards to Railway Hub.
  */
 
-const HUB = process.env.HUB_URL ?? "https://ap-home-platform-production.up.railway.app";
+const HUB = process.env.HUB_URL ?? "";
+const HUB_SECRET = process.env.HUB_SECRET ?? "";
+
+function signRunToken(runId: string) {
+  return createHmac("sha256", HUB_SECRET).update(`n8n:${runId}`).digest("hex");
+}
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
+    const token = req.nextUrl.searchParams.get("token") ?? "";
+    const runId = String(body?.runId || "");
+    const correlationId = req.headers.get("x-correlation-id") ?? randomUUID();
+
+    if (!HUB_SECRET) {
+      return NextResponse.json({ ok: false, error: "HUB_SECRET not configured" }, { status: 500 });
+    }
+    if (!HUB) {
+      return NextResponse.json({ ok: false, error: "HUB_URL not configured" }, { status: 500 });
+    }
+    if (!runId || token !== signRunToken(runId)) {
+      return NextResponse.json({ ok: false, error: "Invalid webhook token" }, { status: 401 });
+    }
+
     const r = await fetch(`${HUB}/webhook/n8n`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "x-hub-token": HUB_SECRET,
+        "x-correlation-id": correlationId,
+      },
       body: JSON.stringify(body),
     });
     const data = await r.json().catch(() => ({ ok: true }));

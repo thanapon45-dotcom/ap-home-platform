@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const HUB = process.env.HUB_URL ?? "https://ap-home-platform-production.up.railway.app";
+const HUB = process.env.HUB_URL ?? "";
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
+    if (!HUB) {
+      return NextResponse.json({ ok: false, error: "HUB_URL not configured" }, { status: 500 });
+    }
     const r = await fetch(`${HUB}/action/property/dismiss`, {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-hub-token": process.env.HUB_SECRET ?? "" },
