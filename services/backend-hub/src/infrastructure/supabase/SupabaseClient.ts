@@ -3,6 +3,13 @@
  * Wraps @supabase/supabase-js with service-role key (full access, bypass RLS)
  */
 
+// Polyfill WebSocket for Node.js < 22 (Supabase Realtime requires it)
+import ws from "ws";
+if (typeof globalThis.WebSocket === "undefined") {
+  // @ts-expect-error ws is a valid WebSocket polyfill
+  globalThis.WebSocket = ws.WebSocket ?? ws;
+}
+
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { logger } from "@shared/logger";
 
