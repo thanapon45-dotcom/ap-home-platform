@@ -1,9 +1,9 @@
 /**
- * AP-Home Hub v2 — Entry Point
+ * AP-Home Hub v2 - Entry Point
  * Wires all dependencies and starts Express server
  *
  * Dependency graph:
- *   Config → Infrastructure → Modules → UseCases → Routes → App
+ *   Config -> Infrastructure -> Modules -> UseCases -> Routes -> App
  */
 
 import "dotenv/config";
@@ -28,6 +28,7 @@ import { GeminiProvider } from "@modules/ai/GeminiProvider";
 import { AiGateway } from "@modules/ai/AiGateway";
 import { BlogUseCase } from "@modules/blog/BlogUseCase";
 import { QcUseCase } from "@modules/qc/QcUseCase";
+import { HealthMonitor } from "@modules/health/HealthMonitor";
 
 // Presentation
 import { requireHubSecret } from "@presentation/middleware/auth";
@@ -55,7 +56,7 @@ async function main(): Promise<void> {
   const eventBus = new InMemoryEventBus();
   const stateManager = new StateManager(stateRepo);
 
-  // AI Gateway: Claude → OpenAI → Gemini fallback chain
+  // AI Gateway: Claude -> OpenAI -> Gemini fallback chain
   const aiGateway = new AiGateway([
     new ClaudeProvider(),
     new OpenAiProvider(),
@@ -71,7 +72,7 @@ async function main(): Promise<void> {
   app.use(express.json());
   app.set("trust proxy", 1);
 
-  // Simple ping — Railway healthcheck (compat with v1 /health path)
+  // Simple ping - Railway healthcheck (compat with v1 /health path)
   app.get("/health", (_req, res) => {
     res.json({ ok: true, version: "2.0.0", mode: "v2" });
   });
@@ -79,7 +80,7 @@ async function main(): Promise<void> {
   // Public
   app.use("/api/health", createHealthRoutes(stateManager));
 
-  // LINE webhook — uses LINE signature (not Hub secret)
+  // LINE webhook - uses LINE signature (not Hub secret)
   app.use("/api/qc", createQcRoutes(qcUseCase, qcRepo));
 
   // Protected
@@ -101,6 +102,10 @@ async function main(): Promise<void> {
 
   // Touch health check timestamp on startup
   await stateManager.touchHealthCheck().catch(() => undefined);
+
+  // 7. Start HealthMonitor (background polling - runs every 5 min)
+  const healthMonitor = new HealthMonitor(stateManager, notifier);
+  healthMonitor.start();
 }
 
 main().catch((err: unknown) => {
