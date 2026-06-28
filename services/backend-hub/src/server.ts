@@ -71,6 +71,11 @@ async function main(): Promise<void> {
   app.use(express.json());
   app.set("trust proxy", 1);
 
+  // Simple ping — Railway healthcheck (compat with v1 /health path)
+  app.get("/health", (_req, res) => {
+    res.json({ ok: true, version: "2.0.0", mode: "v2" });
+  });
+
   // Public
   app.use("/api/health", createHealthRoutes(stateManager));
 
