@@ -1,11 +1,2 @@
 [phases.setup]
-nixPkgs = ["nodejs_20"]
-
-# v2: build TypeScript ก่อน run
-# railway.toml override นี้สำหรับ shadow service
-# v1 service ใน Railway dashboard → Settings → Start Command Override: "node server.cjs"
-[phases.build]
-cmds = ["npm run build"]
-
-[start]
-cmd = "node dist/server.js"
+nixPkgs = ["nodejs_22"]
