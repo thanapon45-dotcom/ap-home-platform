@@ -1,14 +1,39 @@
 {
   "name": "backend-hub",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
   "main": "server.cjs",
   "scripts": {
     "start": "node server.cjs",
-    "dev": "node server.cjs"
+    "dev": "node server.cjs",
+    "dev:v2": "tsx watch src/server.ts",
+    "build": "tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json",
+    "start:v2": "node dist/server.js",
+    "build:check": "tsc --noEmit",
+    "test": "vitest"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.27.0",
+    "@google/generative-ai": "^0.21.0",
+    "@supabase/supabase-js": "^2.45.4",
+    "axios": "^1.7.7",
+    "cors": "^2.8.5",
+    "dotenv": "^17.4.2",
     "express": "^4.18.2",
-    "cors": "^2.8.5"
+    "nanoid": "^3.3.7",
+    "node-cron": "^3.0.3",
+    "openai": "^4.67.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.7.5",
+    "@types/node-cron": "^3.0.11",
+    "tsc-alias": "^1.8.17",
+    "tsconfig-paths": "^4.2.0",
+    "tsx": "^4.19.1",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.3"
   }
 }
