@@ -10,7 +10,7 @@ buildCommand = "npm run build"
 # v1: ตั้ง HUB_MODE=v1 ใน Railway Variables → รัน server.cjs (ไม่ต้อง build)
 # v2: ไม่ต้องตั้ง HUB_MODE (default) → รัน dist/server.js
 startCommand = "sh -c 'if [ \"$HUB_MODE\" = \"v1\" ]; then node server.cjs; else node dist/server.js; fi'"
-healthcheckPath = "/api/health"
+healthcheckPath = "/health"
 healthcheckTimeout = 30
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3
