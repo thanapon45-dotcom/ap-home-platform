@@ -26,19 +26,15 @@ export interface HubStateData {
     postId: number | null;
     postUrl: string | null;
     error: string | null;
+    // Image patch fields (set by WF2 via /webhook/image-done)
+    image_status?: string | null;
+    image_media_id?: string | null;
+    image_media_url?: string | null;
+    image_patched_at?: string | null;
   };
   fb: {
     queueCount: number;
     lastPublishedAt: string | null;
     tokenExpiresAt: string | null;
   };
-  system: {
-    lastHealthCheck: string | null;
-  };
-  content_queue: ContentQueueItem[];
-}
-
-export interface IStateRepository {
-  read(): Promise<HubStateData | null>;
-  write(state: HubStateData): Promise<void>;
-}
+  system

@@ -14,6 +14,7 @@ import { loadConfig } from "@modules/config/Config";
 
 // Infrastructure
 import * as crypto from "crypto";
+import { getSupabaseClient } from "@infra/supabase/SupabaseClient";
 import { SupabaseStateRepository } from "@infra/supabase/SupabaseStateRepository";
 import { SupabaseQcRepository } from "@infra/supabase/SupabaseQcRepository";
 import { TelegramNotifier } from "@infra/telegram/TelegramNotifier";
@@ -166,28 +167,17 @@ async function main(): Promise<void> {
     }
   });
 
-  // 404
-  app.use((_req, res) => {
-    res.status(404).json({ ok: false, error: { code: "NOT_FOUND", message: "Route not found" } });
-  });
+  // POST /webhook/image-done
+  // Called by n8n WF2 after image patching. Authenticated via x-hub-secret header.
+  app.post("/webhook/image-done", requireHubSecret, async (req, res, next) => {
+    try {
+      const body = req.body as { status?: string; post_id?: string | number; media_id?: string | number; media_url?: string };
+      const status = String(body.status ?? "patched");
+      const postId = String(body.post_id ?? "");
+      const mediaId = String(body.media_id ?? "0");
+      const mediaUrl = String(body.media_url ?? "");
 
-  // Global error handler (must be last)
-  app.use(errorHandler);
+      await stateManager.setImageDone(status, mediaId, mediaUrl);
 
-  // 6. Start server
-  app.listen(config.port, () => {
-    logger.info("[server] Hub v2 listening", { port: config.port });
-  });
-
-  // Touch health check timestamp on startup
-  await stateManager.touchHealthCheck().catch(() => undefined);
-
-  // 7. Start HealthMonitor (background polling - runs every 5 min)
-  const healthMonitor = new HealthMonitor(stateManager, notifier);
-  healthMonitor.start();
-}
-
-main().catch((err: unknown) => {
-  logger.error("[server] fatal startup error", { error: String(err) });
-  process.exit(1);
-});
+      if (status === "patched") {
+        notifier.send(`🖼️ 

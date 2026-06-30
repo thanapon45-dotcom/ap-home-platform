@@ -104,6 +104,19 @@ export class StateManager {
     });
   }
 
+  async setImageDone(status: string, mediaId: string, mediaUrl: string): Promise<void> {
+    const current = await this.get();
+    await this.patch({
+      blog: {
+        ...current.blog,
+        image_status: status,
+        image_media_id: mediaId,
+        image_media_url: mediaUrl,
+        image_patched_at: nowIso(),
+      },
+    });
+  }
+
   async setBlogIdle(): Promise<void> {
     await this.patch({
       blog: {
@@ -165,16 +178,4 @@ export class StateManager {
 
   /** Mark the queue item associated with runId as failed */
   async markQueueItemFailed(runId: string): Promise<void> {
-    const current = await this.get();
-    const next = current.content_queue.map(i =>
-      i.runId === runId ? { ...i, status: "failed" as const } : i,
-    );
-    await this.patch({ content_queue: next });
-  }
-
-  // --- System helpers ---
-
-  async touchHealthCheck(): Promise<void> {
-    await this.patch({ system: { lastHealthCheck: nowIso() } });
-  }
-}
+    const c
