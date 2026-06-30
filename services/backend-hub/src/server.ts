@@ -180,4 +180,48 @@ async function main(): Promise<void> {
       await stateManager.setImageDone(status, mediaId, mediaUrl);
 
       if (status === "patched") {
-        notifier.send(`🖼️ 
+        notifier.send(`[Image] patched\nPost ID: ${postId}\nMedia ID: ${mediaId}\nURL: ${mediaUrl}`).catch(() => {});
+        if (postId) {
+          const supabase = getSupabaseClient();
+          const { error } = await supabase
+            .from("content_posts")
+            .update({ image_generated: true })
+            .eq("wp_post_id", Number(postId));
+          if (error) {
+            logger.warn("[server] /webhook/image-done supabase update failed", { error: String(error) });
+          }
+        }
+      }
+
+      logger.info("[server] /webhook/image-done received", { status, postId, mediaId });
+      res.json({ ok: true, status, postId, mediaId });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // 404
+  app.use((_req, res) => {
+    res.status(404).json({ ok: false, error: { code: "NOT_FOUND", message: "Route not found" } });
+  });
+
+  // Global error handler (must be last)
+  app.use(errorHandler);
+
+  // 6. Start server
+  app.listen(config.port, () => {
+    logger.info("[server] Hub v2 listening", { port: config.port });
+  });
+
+  // Touch health check timestamp on startup
+  await stateManager.touchHealthCheck().catch(() => undefined);
+
+  // 7. Start HealthMonitor (background polling - runs every 5 min)
+  const healthMonitor = new HealthMonitor(stateManager, notifier);
+  healthMonitor.start();
+}
+
+main().catch((err: unknown) => {
+  logger.error("[server] fatal startup error", { error: String(err) });
+  process.exit(1);
+});

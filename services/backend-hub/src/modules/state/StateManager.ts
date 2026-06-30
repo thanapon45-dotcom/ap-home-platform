@@ -178,4 +178,16 @@ export class StateManager {
 
   /** Mark the queue item associated with runId as failed */
   async markQueueItemFailed(runId: string): Promise<void> {
-    const c
+    const current = await this.get();
+    const next = current.content_queue.map(i =>
+      i.runId === runId ? { ...i, status: "failed" as const } : i,
+    );
+    await this.patch({ content_queue: next });
+  }
+
+  // --- System helpers ---
+
+  async touchHealthCheck(): Promise<void> {
+    await this.patch({ system: { lastHealthCheck: nowIso() } });
+  }
+}

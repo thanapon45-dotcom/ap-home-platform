@@ -37,4 +37,13 @@ export interface HubStateData {
     lastPublishedAt: string | null;
     tokenExpiresAt: string | null;
   };
-  system
+  system: {
+    lastHealthCheck: string | null;
+  };
+  content_queue: ContentQueueItem[];
+}
+
+export interface IStateRepository {
+  read(): Promise<HubStateData | null>;
+  write(state: HubStateData): Promise<void>;
+}
