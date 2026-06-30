@@ -3,12 +3,12 @@ import { NextRequest, NextResponse } from "next/server";
 
 const HUB = process.env.HUB_URL ?? "";
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     if (!HUB) {
       return NextResponse.json({ ok: false, error: "HUB_URL not configured" }, { status: 500 });
     }
-    const { id } = params;
+    const { id } = await params;
     const correlationId = req.headers.get("x-correlation-id") ?? randomUUID();
     const r = await fetch(`${HUB}/api/ops/dlq/${encodeURIComponent(id)}/retry`, {
       method: "POST",
