@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const HUB = process.env.HUB_URL ?? "";
+// Normalize: strip trailing /api or /api/ so env var works whether or not it has the suffix
+const HUB = (process.env.HUB_URL ?? "").replace(/\/api\/?$/, "").replace(/\/+$/, "");
 
 export async function POST(_req: NextRequest) {
   try {
@@ -11,7 +12,6 @@ export async function POST(_req: NextRequest) {
     let body = {};
     try { body = await _req.json(); } catch { /* empty body is fine */ }
 
-    console.log("[run-next] targeting hub:", HUB.slice(0, 60));
     const r = await fetch(`${HUB}/api/blog/queue/run-next`, {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-hub-secret": process.env.HUB_SECRET ?? "" },
