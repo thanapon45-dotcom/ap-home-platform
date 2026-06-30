@@ -5,7 +5,7 @@
  * Single source of truth for hub_state
  */
 
-import { IStateRepository, HubStateData } from "@core/application/ports/IStateRepository";
+import { IStateRepository, HubStateData, ContentQueueItem } from "@core/application/ports/IStateRepository";
 import { logger } from "@shared/logger";
 import { nowIso } from "@shared/time";
 
@@ -28,6 +28,7 @@ const DEFAULT_STATE: HubStateData = {
   system: {
     lastHealthCheck: null,
   },
+  content_queue: [],
 };
 
 export class StateManager {
@@ -40,7 +41,8 @@ export class StateManager {
       logger.info("[StateManager] no state found, using defaults");
       return structuredClone(DEFAULT_STATE);
     }
-    return state;
+    // Ensure content_queue exists on older state records that predate this field
+    return { ...DEFAULT_STATE, ...state, content_queue: state.content_queue ?? [] };
   }
 
   /** Partial update — merges deeply at top level only */
@@ -50,6 +52,9 @@ export class StateManager {
       blog: { ...current.blog, ...(partial.blog ?? {}) },
       fb: { ...current.fb, ...(partial.fb ?? {}) },
       system: { ...current.system, ...(partial.system ?? {}) },
+      content_queue: partial.content_queue !== undefined
+        ? partial.content_queue
+        : (current.content_queue ?? []),
     };
     await this.repo.write(next);
     logger.debug("[StateManager] state patched");
@@ -112,6 +117,59 @@ export class StateManager {
         error: null,
       },
     });
+  }
+
+  // --- Content Queue helpers ---
+
+  /** Replace the entire content queue (used by /queue/build) */
+  async setContentQueue(items: ContentQueueItem[]): Promise<void> {
+    await this.patch({ content_queue: items });
+  }
+
+  /** Clear the content queue */
+  async clearContentQueue(): Promise<void> {
+    await this.patch({ content_queue: [] });
+  }
+
+  /**
+   * Pop the next pending queue item — marks it "running" with the given runId.
+   * Returns null if the queue is empty or all items are non-pending.
+   */
+  async popNextQueueItem(runId: string): Promise<ContentQueueItem | null> {
+    const current = await this.get();
+    const idx = current.content_queue.findIndex(i => i.status === "pending");
+    if (idx === -1) return null;
+
+    const item: ContentQueueItem = {
+      ...current.content_queue[idx],
+      status: "running",
+      runId,
+    };
+    const next = [...current.content_queue];
+    next[idx] = item;
+    await this.patch({ content_queue: next });
+    logger.info("[StateManager] queue item popped", { id: item.id, keyword: item.keyword });
+    return item;
+  }
+
+  /** Mark the queue item associated with runId as completed */
+  async markQueueItemCompleted(runId: string, postUrl: string): Promise<void> {
+    const current = await this.get();
+    const next = current.content_queue.map(i =>
+      i.runId === runId
+        ? { ...i, status: "completed" as const, postUrl }
+        : i,
+    );
+    await this.patch({ content_queue: next });
+  }
+
+  /** Mark the queue item associated with runId as failed */
+  async markQueueItemFailed(runId: string): Promise<void> {
+    const current = await this.get();
+    const next = current.content_queue.map(i =>
+      i.runId === runId ? { ...i, status: "failed" as const } : i,
+    );
+    await this.patch({ content_queue: next });
   }
 
   // --- System helpers ---

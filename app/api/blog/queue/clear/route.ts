@@ -7,9 +7,9 @@ export async function POST(_req: NextRequest) {
     if (!HUB) {
       return NextResponse.json({ ok: false, error: "HUB_URL not configured" }, { status: 500 });
     }
-    const r = await fetch(`${HUB}/action/blog/queue/clear`, {
+    const r = await fetch(`${HUB}/api/blog/queue/clear`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", "x-hub-token": process.env.HUB_SECRET ?? "" },
+      headers: { "Content-Type": "application/json", "x-hub-secret": process.env.HUB_SECRET ?? "" },
       body: JSON.stringify({}),
       signal: AbortSignal.timeout(8000),
     });

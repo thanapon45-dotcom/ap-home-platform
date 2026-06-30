@@ -13,12 +13,14 @@ import express from "express";
 import { loadConfig } from "@modules/config/Config";
 
 // Infrastructure
+import * as crypto from "crypto";
 import { SupabaseStateRepository } from "@infra/supabase/SupabaseStateRepository";
 import { SupabaseQcRepository } from "@infra/supabase/SupabaseQcRepository";
 import { TelegramNotifier } from "@infra/telegram/TelegramNotifier";
 import { LineAdapter } from "@infra/line/LineAdapter";
 import { WordPressPublisher } from "@infra/wordpress/WordPressPublisher";
 import { FbBackendAdapter } from "@infra/facebook/FbBackendAdapter";
+import { N8nWorkflowAdapter } from "@infra/n8n/N8nWorkflowAdapter";
 
 // Modules
 import { InMemoryEventBus } from "@modules/eventbus/InMemoryEventBus";
@@ -60,6 +62,11 @@ async function main(): Promise<void> {
     ? new FbBackendAdapter(config.fbPageId, config.fbPageAccessToken)
     : null;
 
+  // n8n adapter is optional - only instantiate if N8N_WEBHOOK_BASE_URL is set
+  const n8nAdapter = config.n8nWebhookBaseUrl
+    ? new N8nWorkflowAdapter(config.n8nWebhookBaseUrl, config.hubSecret)
+    : null;
+
   // 3. Core modules
   const eventBus = new InMemoryEventBus();
   const stateManager = new StateManager(stateRepo);
@@ -93,7 +100,7 @@ async function main(): Promise<void> {
   app.use("/api/qc", createQcRoutes(qcUseCase, qcRepo));
 
   // Protected
-  app.use("/api/blog", requireHubSecret, createBlogRoutes(blogUseCase, stateManager));
+  app.use("/api/blog", requireHubSecret, createBlogRoutes(blogUseCase, stateManager, n8nAdapter ?? undefined));
   app.use("/api/state", requireHubSecret, createStateRoutes(stateManager));
 
   // FB routes (only if FB credentials are configured)
@@ -104,6 +111,60 @@ async function main(): Promise<void> {
   } else {
     logger.warn("[server] FB routes disabled - FB_PAGE_ID or FB_PAGE_ACCESS_TOKEN not set");
   }
+
+  // POST /webhook/n8n?token=<hmac>
+  // Called by n8n WF1 "Notify Hub Published" to mark blog run as completed
+  // Public endpoint — authenticated via HMAC token (no requireHubSecret middleware)
+  app.post("/webhook/n8n", async (req, res, next) => {
+    try {
+      const token = (req.query.token as string) ?? "";
+      if (!token) {
+        res.status(401).json({ ok: false, error: "Missing token" });
+        return;
+      }
+
+      const state = await stateManager.get();
+      if (!state.blog.runId || state.blog.status !== "running") {
+        res.status(409).json({ ok: false, error: "No active blog run to acknowledge" });
+        return;
+      }
+
+      // Validate HMAC: token = HMAC-SHA256(HUB_SECRET, runId)
+      const expected = crypto
+        .createHmac("sha256", config.hubSecret)
+        .update(state.blog.runId)
+        .digest("hex");
+
+      if (!crypto.timingSafeEqual(Buffer.from(token), Buffer.from(expected))) {
+        res.status(401).json({ ok: false, error: "Invalid webhook token" });
+        return;
+      }
+
+      const body = req.body as { postId?: number; postUrl?: string; status?: string };
+      const postId = typeof body.postId === "number" ? body.postId : 0;
+      const postUrl = typeof body.postUrl === "string" ? body.postUrl : "";
+      const runId = state.blog.runId;
+
+      await stateManager.setBlogCompleted(postId, postUrl);
+
+      // Also mark the corresponding content_queue item as completed (if any)
+      if (runId) {
+        await stateManager.markQueueItemCompleted(runId, postUrl).catch(err =>
+          logger.warn("[server] /webhook/n8n markQueueItemCompleted failed", { error: String(err) }),
+        );
+      }
+
+      logger.info("[server] /webhook/n8n callback received — blog marked completed", {
+        runId,
+        postId,
+        postUrl,
+      });
+
+      res.json({ ok: true, data: { runId } });
+    } catch (err) {
+      next(err);
+    }
+  });
 
   // 404
   app.use((_req, res) => {
