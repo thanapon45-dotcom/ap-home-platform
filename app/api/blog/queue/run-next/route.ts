@@ -7,10 +7,15 @@ export async function POST(_req: NextRequest) {
     if (!HUB) {
       return NextResponse.json({ ok: false, error: "HUB_URL not configured" }, { status: 500 });
     }
-    const r = await fetch(`${HUB}/action/blog/queue/run-next`, {
+    // Forward body from Dashboard to Hub (keyword, category, queue_item_id)
+    let body = {};
+    try { body = await _req.json(); } catch { /* empty body is fine */ }
+
+    console.log("[run-next] targeting hub:", HUB.slice(0, 60));
+    const r = await fetch(`${HUB}/api/blog/queue/run-next`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", "x-hub-token": process.env.HUB_SECRET ?? "" },
-      body: JSON.stringify({}),
+      headers: { "Content-Type": "application/json", "x-hub-secret": process.env.HUB_SECRET ?? "" },
+      body: JSON.stringify(body),
     });
     const data = await r.json().catch(() => ({ ok: false }));
     return NextResponse.json(data, { status: r.status });
