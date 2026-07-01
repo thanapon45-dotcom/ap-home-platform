@@ -13,7 +13,7 @@ node_modules/
 # Next.js
 .next/
 out/
-build/
+/build/
 
 # Production
 dist/
