@@ -12,9 +12,9 @@ export async function POST(_req: NextRequest) {
     let body = {};
     try { body = await _req.json(); } catch { /* empty body is fine */ }
 
-    const r = await fetch(`${HUB}/api/blog/queue/run-next`, {
+    const r = await fetch(`${HUB}/action/blog/queue/run-next`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", "x-hub-secret": process.env.HUB_SECRET ?? "" },
+      headers: { "Content-Type": "application/json", "x-hub-token": process.env.HUB_SECRET ?? "" },
       body: JSON.stringify(body),
     });
     const data = await r.json().catch(() => ({ ok: false }));
