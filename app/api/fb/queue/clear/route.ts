@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const HUB = process.env.HUB_URL ?? "";
+// Normalize: strip trailing /api or /api/ so env var works whether or not it has the suffix
+const HUB = (process.env.HUB_URL ?? "").replace(/\/api\/?$/, "").replace(/\/+$/, "");
 
 export async function POST(_req: NextRequest) {
   try {
     if (!HUB) {
       return NextResponse.json({ ok: false, error: "HUB_URL not configured" }, { status: 500 });
     }
-    const r = await fetch(`${HUB}/action/fb/queue/clear`, {
+    const r = await fetch(`${HUB}/api/fb/queue/clear`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", "x-hub-token": process.env.HUB_SECRET ?? "" },
+      headers: { "Content-Type": "application/json", "x-hub-secret": process.env.HUB_SECRET ?? "" },
       body: JSON.stringify({}),
       signal: AbortSignal.timeout(8000),
     });
