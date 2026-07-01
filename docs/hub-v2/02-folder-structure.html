@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hub v2 — Folder Structure</title>
+<style>
+  :root {
+    --bg: #0f1117; --bg2: #1e293b; --bg3: #0f172a;
+    --gold: #f8c948; --gold2: #d4a017;
+    --text: #e2e8f0; --muted: #64748b; --subtle: #94a3b8;
+    --green: #22c55e; --blue: #3b82f6; --purple: #a78bfa;
+    --orange: #fb923c; --red: #ef4444; --teal: #2dd4bf;
+    --border: #334155;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; font-size: 13px; line-height: 1.6; }
+  .container { max-width: 1100px; margin: 0 auto; padding: 40px 24px; }
+
+  .doc-header { border-bottom: 2px solid var(--gold); padding-bottom: 24px; margin-bottom: 40px; }
+  .doc-meta { display: flex; gap: 24px; flex-wrap: wrap; margin-top: 12px; }
+  .meta-item { font-size: 11px; color: var(--muted); }
+  .meta-item span { color: var(--subtle); font-weight: 600; }
+
+  h1 { font-size: 28px; color: var(--gold); }
+  h2 { font-size: 17px; color: var(--gold); margin: 40px 0 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  h3 { font-size: 13px; font-weight: 700; color: var(--text); margin: 20px 0 10px; }
+  p { color: var(--subtle); margin-bottom: 10px; font-size: 13px; }
+
+  /* Tree Component */
+  .tree-wrap { background: #0a0e1a; border: 1px solid var(--border); border-radius: 10px; padding: 20px 24px; font-family: 'Consolas', 'Courier New', monospace; font-size: 12px; line-height: 1.8; overflow-x: auto; }
+  .tree-line { display: flex; align-items: baseline; gap: 6px; white-space: nowrap; }
+  .tree-prefix { color: #334155; user-select: none; }
+  .tree-icon { width: 18px; flex-shrink: 0; }
+
+  /* File types */
+  .f-dir    { color: #60a5fa; font-weight: 600; }
+  .f-ts     { color: #34d399; }
+  .f-config { color: #fbbf24; }
+  .f-test   { color: #a78bfa; }
+  .f-doc    { color: #94a3b8; }
+  .f-new    { color: #f8c948; }
+  .f-keep   { color: #64748b; }
+
+  .tree-comment { color: #334155; font-style: italic; margin-left: 8px; font-size: 11px; }
+  .tree-badge { display: inline-block; font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 3px; margin-left: 6px; vertical-align: middle; }
+  .badge-new    { background: #16a34a; color: #fff; }
+  .badge-keep   { background: #1d4ed8; color: #fff; }
+  .badge-evolve { background: #d97706; color: #000; }
+  .badge-test   { background: #7c3aed; color: #fff; }
+
+  /* File Detail Table */
+  .file-table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 12px; }
+  .file-table th { background: var(--bg2); color: var(--subtle); text-align: left; padding: 9px 12px; border-bottom: 2px solid var(--border); font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .file-table td { padding: 8px 12px; border-bottom: 1px solid #0f172a; color: var(--subtle); vertical-align: top; }
+  .file-table tr:hover td { background: var(--bg2); }
+  code { background: var(--bg2); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; font-family: 'Consolas', monospace; font-size: 11px; color: var(--gold); }
+
+  /* Convention boxes */
+  .conv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 16px 0; }
+  .conv-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 14px; }
+  .conv-title { font-size: 11px; font-weight: 700; color: var(--gold); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+  .conv-row { display: flex; align-items: flex-start; gap: 10px; padding: 4px 0; border-top: 1px solid #0f172a; font-size: 11px; }
+  .conv-type { color: var(--subtle); width: 120px; flex-shrink: 0; }
+  .conv-example { color: var(--green); font-family: 'Consolas', monospace; }
+  .conv-bad { color: var(--red); font-family: 'Consolas', monospace; text-decoration: line-through; }
+
+  /* Callout */
+  .callout { border-radius: 8px; padding: 12px 16px; margin: 14px 0; font-size: 12px; }
+  .callout-info { background: #0c1a30; border-left: 3px solid var(--blue); color: var(--subtle); }
+  .callout-warn { background: #2d2000; border-left: 3px solid var(--gold); color: var(--subtle); }
+  .callout-success { background: #052e16; border-left: 3px solid var(--green); color: var(--subtle); }
+
+  /* Legend */
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 14px; }
+  .leg { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); }
+  .leg-dot { width: 8px; height: 8px; border-radius: 2px; }
+
+  /* Section separator */
+  .section-num { display: inline-block; background: var(--gold); color: #000; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px; margin-right: 8px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- HEADER -->
+  <div class="doc-header">
+    <div style="font-size:11px;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;">Document 2 of 5 · Folder Structure</div>
+    <h1>Hub v2 — Folder Structure</h1>
+    <div style="font-size:14px;color:var(--subtle);margin-top:4px;">โครงสร้างโปรเจกต์สมบูรณ์ พร้อม naming convention และหน้าที่ของแต่ละไฟล์</div>
+    <div class="doc-meta">
+      <div class="meta-item">Target <span>services/backend-hub/</span></div>
+      <div class="meta-item">Language <span>TypeScript (strict)</span></div>
+      <div class="meta-item">Pattern <span>Clean Architecture + Hexagonal</span></div>
+    </div>
+  </div>
+
+  <!-- LEGEND -->
+  <div class="legend">
+    <div class="leg"><div class="leg-dot" style="background:#16a34a;"></div> <span class="badge-new" style="font-size:9px;padding:1px 5px;border-radius:3px;">NEW</span> ไฟล์ใหม่ใน v2</div>
+    <div class="leg"><div class="leg-dot" style="background:#1d4ed8;"></div> <span class="badge-keep" style="font-size:9px;padding:1px 5px;border-radius:3px;">KEEP</span> ย้ายจาก server.cjs (logic เดิม)</div>
+    <div class="leg"><div class="leg-dot" style="background:#d97706;"></div> <span class="badge-evolve" style="font-size:9px;padding:1px 5px;border-radius:3px;">EVOLVE</span> พัฒนาต่อจากของเดิม</div>
+    <div class="leg"><div class="leg-dot" style="background:#7c3aed;"></div> <span class="badge-test" style="font-size:9px;padding:1px 5px;border-radius:3px;">TEST</span> test files</div>
+    <div class="leg"><span style="color:#60a5fa;font-family:monospace;font-size:12px;">📁</span> directory</div>
+    <div class="leg"><span style="color:#34d399;font-family:monospace;font-size:12px;">.ts</span> TypeScript file</div>
+  </div>
+
+  <!-- SECTION 1: FULL TREE -->
+  <h2><span class="section-num">1</span> Complete Folder Tree</h2>
+
+  <div class="tree-wrap">
+
+    <div class="tree-line"><span class="tree-prefix"></span><span class="f-dir">services/backend-hub/</span><span class="tree-comment">← root ของ Hub service</span></div>
+
+    <div class="tree-line"><span class="tree-prefix">├──</span> <span class="f-dir">src/</span><span class="tree-comment">← source code ทั้งหมด (compiled → dist/)</span></div>
+
+    <div class="tree-line"><span class="tree-prefix">│   ├──</span> <span class="f-dir">core/</span><span class="tree-comment">← ZERO external dependencies</span></div>
+
+    <div class="tree-line"><span class="tree-prefix">│   │   ├──</span> <span class="f-dir">domain/</span><span class="tree-comment">← business entities และ events</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   │   ├──</span> <span class="f-dir">entities/</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   │   │   ├──</span> <span class="f-ts">BlogRun.ts</span><span class="tree-badge badge-new">NEW</span><span class="tree-comment">← entity: runId, status, keyword, startedAt</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   │   │   ├──</span> <span class="f-ts">QcInspection.ts</span><span class="tree-badge badge-new">NEW</span><span class="tree-comment">← entity: pass, severity, defects, score</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   │   │   ├──</span> <span class="f-ts">Lead.ts</span><span class="tree-badge badge-new">NEW</span><span class="tree-comment">← entity: budget, stage, source</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   │   │   └──</span> <span class="f-ts">HubState.ts</span><span class="tree-badge badge-new">NEW</span><span class="tree-comment">← entity: blog/fb/system state shape</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   │   ├──</span> <span class="f-dir">events/</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   │   │   ├──</span> <span class="f-ts">BlogRunStarted.ts</span><span class="tree-badge badge-new">NEW</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   │   │   ├──</span> <span class="f-ts">BlogRunCompleted.ts</span><span class="tree-badge badge-new">NEW</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   │   │   ├──</span> <span class="f-ts">BlogRunFailed.ts</span><span class="tree-badge badge-new">NEW</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   │   │   ├──</span> <span class="f-ts">QcInspectionCompleted.ts</span><span class="tree-badge badge-new">NEW</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   │   │   ├──</span> <span class="f-ts">QcDefectFound.ts</span><span class="tree-badge badge-new">NEW</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   │   │   ├──</span> <span class="f-ts">FbPublished.ts</span><span class="tree-badge badge-new">NEW</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   │   │   ├──</span> <span class="f-ts">LeadReceived.ts</span><span class="tree-badge badge-new">NEW</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   │   │   └──</span> <span class="f-ts">HealthAlertTriggered.ts</span><span class="tree-badge badge-new">NEW</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   │   └──</span> <span class="f-dir">value-objects/</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   │       ├──</span> <span class="f-ts">RunId.ts</span><span class="tree-badge badge-new">NEW</span><span class="tree-comment">← type-safe ID wrapper</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   │       ├──</span> <span class="f-ts">QcCategory.ts</span><span class="tree-badge badge-new">NEW</span><span class="tree-comment">← plaster | concrete | paint | level</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   │       └──</span> <span class="f-ts">Severity.ts</span><span class="tree-badge badge-new">NEW</span><span class="tree-comment">← none | low | medium | high | critical</span></div>
+
+    <div class="tree-line"><span class="tree-prefix">│   │   └──</span> <span class="f-dir">application/</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │       ├──</span> <span class="f-dir">ports/</span><span class="tree-comment">← interfaces only — no implementation</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │       │   ├──</span> <span class="f-ts">IAiProvider.ts</span><span class="tree-badge badge-new">NEW</span><span class="tree-comment">← complete(prompt, opts): Promise&lt;AiResult&gt;</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │       │   ├──</span> <span class="f-ts">IStateRepository.ts</span><span class="tree-badge badge-new">NEW</span><span class="tree-comment">← read() / write(state)</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │       │   ├──</span> <span class="f-ts">IQcRepository.ts</span><span class="tree-badge badge-new">NEW</span><span class="tree-comment">← save(inspection) / findByMessageId()</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │       │   ├──</span> <span class="f-ts">IWorkflowEngine.ts</span><span class="tree-badge badge-new">NEW</span><span class="tree-comment">← trigger(workflow, payload)</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │       │   ├──</span> <span class="f-ts">INotifier.ts</span><span class="tree-badge badge-new">NEW</span><span class="tree-comment">← send(message)</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │       │   └──</span> <span class="f-ts">IEventBus.ts</span><span class="tree-badge badge-new">NEW</span><span class="tree-comment">← emit(event) / subscribe(type, handler)</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │       └──</span> <span class="f-dir">use-cases/</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │           ├──</span> <span class="f-dir">blog/</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │           │   ├──</span> <span class="f-ts">RunBlogUseCase.ts</span><span class="tree-badge badge-keep">KEEP</span><span class="tree-comment">← logic จาก /action/blog/run</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │           │   ├──</span> <span class="f-ts">ResetBlogUseCase.ts</span><span class="tree-badge badge-keep">KEEP</span><span class="tree-comment">← logic จาก /action/blog/reset</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │           │   └──</span> <span class="f-ts">BlogCallbackUseCase.ts</span><span class="tree-badge badge-keep">KEEP</span><span class="tree-comment">← logic จาก /blog/callback</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │           ├──</span> <span class="f-dir">qc/</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │           │   └──</span> <span class="f-ts">IngestQcUseCase.ts</span><span class="tree-badge badge-keep">KEEP</span><span class="tree-comment">← logic จาก /api/qc/ingest</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │           ├──</span> <span class="f-dir">fb/</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │           │   ├──</span> <span class="f-ts">BuildFbQueueUseCase.ts</span><span class="tree-badge badge-keep">KEEP</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │           │   └──</span> <span class="f-ts">RunFbQueueUseCase.ts</span><span class="tree-badge badge-keep">KEEP</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │           ├──</span> <span class="f-dir">property/</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │           │   ├──</span> <span class="f-ts">UploadPropertyImageUseCase.ts</span><span class="tree-badge badge-keep">KEEP</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │           │   └──</span> <span class="f-ts">PublishPropertyUseCase.ts</span><span class="tree-badge badge-keep">KEEP</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │           └──</span> <span class="f-dir">health/</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │               └──</span> <span class="f-ts">RunHealthCheckUseCase.ts</span><span class="tree-badge badge-evolve">EVOLVE</span><span class="tree-comment">← refactor จาก runHealthMonitor()</span></div>
+
+    <br>
+    <div class="tree-line"><span class="tree-prefix">│   ├──</span> <span class="f-dir">modules/</span><span class="tree-comment">← feature modules — self-contained</span></div>
+
+    <div class="tree-line"><span class="tree-prefix">│   │   ├──</span> <span class="f-dir">api-gateway/</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   │   ├──</span> <span class="f-dir">middleware/</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   │   │   ├──</span> <span class="f-ts">auth.middleware.ts</span><span class="tree-badge badge-evolve">EVOLVE</span><span class="tree-comment">← timingSafeEq จาก server.cjs</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   │   │   ├──</span> <span class="f-ts">cors.middleware.ts</span><span class="tree-badge badge-evolve">EVOLVE</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   │   │   ├──</span> <span class="f-ts">rate-limit.middleware.ts</span><span class="tree-badge badge-new">NEW</span><span class="tree-comment">← 60 req/min per IP</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   │   │   └──</span> <span class="f-ts">validate.middleware.ts</span><span class="tree-badge badge-new">NEW</span><span class="tree-comment">← Zod schema validation</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   │   └──</span> <span class="f-ts">router.ts</span><span class="tree-badge badge-new">NEW</span><span class="tree-comment">← mount all route groups</span></div>
+
+    <div class="tree-line"><span class="tree-prefix">│   │   ├──</span> <span class="f-dir">ai-gateway/</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   │   ├──</span> <span class="f-dir">providers/</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   │   │   ├──</span> <span class="f-ts">OpenAiProvider.ts</span><span class="tree-badge badge-evolve">EVOLVE</span><span class="tree-comment">← gpt-4o, gpt-image-1, dall-e-3</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   │   │   ├──</span> <span class="f-ts">ClaudeProvider.ts</span><span class="tree-badge badge-new">NEW</span><span class="tree-comment">← claude-sonnet-4-6, claude-haiku-4-5</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   │   │   └──</span> <span class="f-ts">GeminiProvider.ts</span><span class="tree-badge badge-evolve">EVOLVE</span><span class="tree-comment">← gemini-2.0-flash (image fallback)</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   │   ├──</span> <span class="f-ts">AiGateway.ts</span><span class="tree-badge badge-new">NEW</span><span class="tree-comment">← provider selector + fallback chain</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   │   ├──</span> <span class="f-ts">CostTracker.ts</span><span class="tree-badge badge-evolve">EVOLVE</span><span class="tree-comment">← daily budget guard จาก server.cjs</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   │   └──</span> <span class="f-ts">ProviderConfig.ts</span><span class="tree-badge badge-new">NEW</span><span class="tree-comment">← task → provider mapping table</span></div>
+
+    <div class="tree-line"><span class="tree-prefix">│   │   ├──</span> <span class="f-dir">event-bus/</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   │   ├──</span> <span class="f-ts">EventBus.ts</span><span class="tree-badge badge-new">NEW</span><span class="tree-comment">← in-process pub/sub (EventEmitter wrapper)</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   │   └──</span> <span class="f-ts">DomainEvent.ts</span><span class="tree-badge badge-new">NEW</span><span class="tree-comment">← base event type</span></div>
+
+    <div class="tree-line"><span class="tree-prefix">│   │   ├──</span> <span class="f-dir">workflow-manager/</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   │   ├──</span> <span class="f-ts">BlogWorkflow.ts</span><span class="tree-badge badge-evolve">EVOLVE</span><span class="tree-comment">← blog run + queue logic</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   │   ├──</span> <span class="f-ts">FbWorkflow.ts</span><span class="tree-badge badge-evolve">EVOLVE</span><span class="tree-comment">← fb queue build/run logic</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   │   ├──</span> <span class="f-ts">QcWorkflow.ts</span><span class="tree-badge badge-evolve">EVOLVE</span><span class="tree-comment">← QC ingest + vision pipeline</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   │   └──</span> <span class="f-ts">PropertyWorkflow.ts</span><span class="tree-badge badge-evolve">EVOLVE</span><span class="tree-comment">← property intake + publish</span></div>
+
+    <div class="tree-line"><span class="tree-prefix">│   │   ├──</span> <span class="f-dir">memory-manager/</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   │   ├──</span> <span class="f-ts">StateManager.ts</span><span class="tree-badge badge-evolve">EVOLVE</span><span class="tree-comment">← readState/writeState จาก server.cjs</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   │   ├──</span> <span class="f-ts">CacheManager.ts</span><span class="tree-badge badge-new">NEW</span><span class="tree-comment">← in-memory TTL cache (content_frames etc.)</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   │   └──</span> <span class="f-ts">HistoryManager.ts</span><span class="tree-badge badge-evolve">EVOLVE</span><span class="tree-comment">← pushHistory จาก server.cjs</span></div>
+
+    <div class="tree-line"><span class="tree-prefix">│   │   ├──</span> <span class="f-dir">health-center/</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   │   ├──</span> <span class="f-ts">HealthMonitor.ts</span><span class="tree-badge badge-evolve">EVOLVE</span><span class="tree-comment">← runHealthMonitor() จาก server.cjs</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   │   └──</span> <span class="f-dir">checks/</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   │       ├──</span> <span class="f-ts">SupabaseCheck.ts</span><span class="tree-badge badge-new">NEW</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   │       ├──</span> <span class="f-ts">FbBackendCheck.ts</span><span class="tree-badge badge-new">NEW</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   │       ├──</span> <span class="f-ts">BlogStuckCheck.ts</span><span class="tree-badge badge-new">NEW</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   │       └──</span> <span class="f-ts">DlqCheck.ts</span><span class="tree-badge badge-new">NEW</span></div>
+
+    <div class="tree-line"><span class="tree-prefix">│   │   ├──</span> <span class="f-dir">auth/</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   │   └──</span> <span class="f-ts">HubAuthService.ts</span><span class="tree-badge badge-evolve">EVOLVE</span><span class="tree-comment">← timingSafeEq + LINE sig verify</span></div>
+
+    <div class="tree-line"><span class="tree-prefix">│   │   └──</span> <span class="f-dir">config/</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │       └──</span> <span class="f-ts">Config.ts</span><span class="tree-badge badge-new">NEW</span><span class="tree-comment">← typed env config — validate at startup</span></div>
+
+    <br>
+    <div class="tree-line"><span class="tree-prefix">│   ├──</span> <span class="f-dir">infrastructure/</span><span class="tree-comment">← implements ports (adapters)</span></div>
+
+    <div class="tree-line"><span class="tree-prefix">│   │   ├──</span> <span class="f-dir">supabase/</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   │   ├──</span> <span class="f-ts">SupabaseClient.ts</span><span class="tree-badge badge-evolve">EVOLVE</span><span class="tree-comment">← supabaseInsert/upsert/select helpers</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   │   ├──</span> <span class="f-ts">SupabaseStateRepository.ts</span><span class="tree-badge badge-new">NEW</span><span class="tree-comment">← implements IStateRepository</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   │   ├──</span> <span class="f-ts">SupabaseQcRepository.ts</span><span class="tree-badge badge-new">NEW</span><span class="tree-comment">← implements IQcRepository</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   │   └──</span> <span class="f-ts">SupabaseContentFramesRepo.ts</span><span class="tree-badge badge-new">NEW</span><span class="tree-comment">← fetch content_frames</span></div>
+
+    <div class="tree-line"><span class="tree-prefix">│   │   ├──</span> <span class="f-dir">n8n/</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   │   └──</span> <span class="f-ts">N8nWorkflowAdapter.ts</span><span class="tree-badge badge-evolve">EVOLVE</span><span class="tree-comment">← implements IWorkflowEngine</span></div>
+
+    <div class="tree-line"><span class="tree-prefix">│   │   ├──</span> <span class="f-dir">telegram/</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   │   └──</span> <span class="f-ts">TelegramNotifier.ts</span><span class="tree-badge badge-evolve">EVOLVE</span><span class="tree-comment">← implements INotifier</span></div>
+
+    <div class="tree-line"><span class="tree-prefix">│   │   ├──</span> <span class="f-dir">wordpress/</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   │   └──</span> <span class="f-ts">WordPressPublisher.ts</span><span class="tree-badge badge-evolve">EVOLVE</span><span class="tree-comment">← WP REST API calls</span></div>
+
+    <div class="tree-line"><span class="tree-prefix">│   │   ├──</span> <span class="f-dir">line/</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   │   └──</span> <span class="f-ts">LineAdapter.ts</span><span class="tree-badge badge-evolve">EVOLVE</span><span class="tree-comment">← LINE Reply API</span></div>
+
+    <div class="tree-line"><span class="tree-prefix">│   │   └──</span> <span class="f-dir">facebook/</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │       └──</span> <span class="f-ts">FbBackendAdapter.ts</span><span class="tree-badge badge-evolve">EVOLVE</span><span class="tree-comment">← proxy to FB Backend service</span></div>
+
+    <br>
+    <div class="tree-line"><span class="tree-prefix">│   ├──</span> <span class="f-dir">presentation/</span><span class="tree-comment">← Express routes + controllers</span></div>
+
+    <div class="tree-line"><span class="tree-prefix">│   │   ├──</span> <span class="f-dir">routes/</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   │   ├──</span> <span class="f-ts">blog.routes.ts</span><span class="tree-badge badge-evolve">EVOLVE</span><span class="tree-comment">← /action/blog/*, /blog/callback</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   │   ├──</span> <span class="f-ts">qc.routes.ts</span><span class="tree-badge badge-evolve">EVOLVE</span><span class="tree-comment">← /api/qc/*</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   │   ├──</span> <span class="f-ts">fb.routes.ts</span><span class="tree-badge badge-evolve">EVOLVE</span><span class="tree-comment">← /action/fb/*, /api/fb/*</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   │   ├──</span> <span class="f-ts">property.routes.ts</span><span class="tree-badge badge-evolve">EVOLVE</span><span class="tree-comment">← /action/property/*</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   │   ├──</span> <span class="f-ts">state.routes.ts</span><span class="tree-badge badge-evolve">EVOLVE</span><span class="tree-comment">← /api/state, /api/history</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   │   └──</span> <span class="f-ts">health.routes.ts</span><span class="tree-badge badge-evolve">EVOLVE</span><span class="tree-comment">← /api/health (no auth)</span></div>
+
+    <div class="tree-line"><span class="tree-prefix">│   │   └──</span> <span class="f-dir">controllers/</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │       ├──</span> <span class="f-ts">BlogController.ts</span><span class="tree-badge badge-new">NEW</span><span class="tree-comment">← parse req → call use case → format res</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │       ├──</span> <span class="f-ts">QcController.ts</span><span class="tree-badge badge-new">NEW</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │       ├──</span> <span class="f-ts">FbController.ts</span><span class="tree-badge badge-new">NEW</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │       ├──</span> <span class="f-ts">PropertyController.ts</span><span class="tree-badge badge-new">NEW</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │       └──</span> <span class="f-ts">HealthController.ts</span><span class="tree-badge badge-new">NEW</span></div>
+
+    <br>
+    <div class="tree-line"><span class="tree-prefix">│   ├──</span> <span class="f-dir">shared/</span><span class="tree-comment">← utilities ใช้ร่วมกันทุก module</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   ├──</span> <span class="f-ts">logger.ts</span><span class="tree-badge badge-evolve">EVOLVE</span><span class="tree-comment">← structured JSON logging</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   ├──</span> <span class="f-ts">errors.ts</span><span class="tree-badge badge-new">NEW</span><span class="tree-comment">← AppError, ValidationError, NotFoundError</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   ├──</span> <span class="f-ts">retry.ts</span><span class="tree-badge badge-evolve">EVOLVE</span><span class="tree-comment">← withRetry() จาก server.cjs</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   ├──</span> <span class="f-ts">time.ts</span><span class="tree-badge badge-evolve">EVOLVE</span><span class="tree-comment">← nowIso(), nowTh() จาก server.cjs</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   └──</span> <span class="f-ts">id.ts</span><span class="tree-badge badge-new">NEW</span><span class="tree-comment">← generateRunId() — nanoid based</span></div>
+
+    <div class="tree-line"><span class="tree-prefix">│   └──</span> <span class="f-ts">server.ts</span><span class="tree-badge badge-new">NEW</span><span class="tree-comment">← entry point — bootstrap DI + start Express</span></div>
+
+    <br>
+    <div class="tree-line"><span class="tree-prefix">├──</span> <span class="f-dir">tests/</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   ├──</span> <span class="f-dir">unit/</span><span class="tree-comment">← pure domain + use case tests (no I/O)</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   ├──</span> <span class="f-dir">domain/</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   │   └──</span> <span class="f-test">QcInspection.test.ts</span><span class="tree-badge badge-test">TEST</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   └──</span> <span class="f-dir">use-cases/</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │       ├──</span> <span class="f-test">RunBlogUseCase.test.ts</span><span class="tree-badge badge-test">TEST</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │       └──</span> <span class="f-test">IngestQcUseCase.test.ts</span><span class="tree-badge badge-test">TEST</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   ├──</span> <span class="f-dir">integration/</span><span class="tree-comment">← tests with Supabase/n8n mocked</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   │   └──</span> <span class="f-test">blog.workflow.test.ts</span><span class="tree-badge badge-test">TEST</span></div>
+    <div class="tree-line"><span class="tree-prefix">│   └──</span> <span class="f-dir">e2e/</span><span class="tree-comment">← full request → response tests</span></div>
+    <div class="tree-line"><span class="tree-prefix">│       └──</span> <span class="f-test">blog-run.e2e.ts</span><span class="tree-badge badge-test">TEST</span></div>
+
+    <br>
+    <div class="tree-line"><span class="tree-prefix">├──</span> <span class="f-config">package.json</span></div>
+    <div class="tree-line"><span class="tree-prefix">├──</span> <span class="f-config">tsconfig.json</span><span class="tree-comment">← strict: true, paths alias @core @infra @modules</span></div>
+    <div class="tree-line"><span class="tree-prefix">├──</span> <span class="f-config">tsconfig.build.json</span><span class="tree-comment">← excludes tests</span></div>
+    <div class="tree-line"><span class="tree-prefix">├──</span> <span class="f-config">.env.example</span><span class="tree-comment">← all required env vars documented</span></div>
+    <div class="tree-line"><span class="tree-prefix">├──</span> <span class="f-doc">Dockerfile</span></div>
+    <div class="tree-line"><span class="tree-prefix">└──</span> <span class="f-doc">server.cjs</span><span class="tree-badge badge-keep">KEEP</span><span class="tree-comment">← v1 ยังอยู่ตลอด migration (ลบหลัง cutover)</span></div>
+
+  </div>
+
+  <!-- SECTION 2: FILE COUNT -->
+  <h2><span class="section-num">2</span> File Count Summary</h2>
+  <table class="file-table">
+    <thead><tr><th>Layer</th><th>Files</th><th>Status</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td>core/domain</td><td>4 entities + 8 events + 3 value-objects = <strong>15</strong></td><td><span class="badge-new" style="font-size:9px;padding:1px 5px;border-radius:3px;">NEW</span></td><td>Zero deps — fastest to write</td></tr>
+      <tr><td>core/application (ports)</td><td>6 interfaces</td><td><span class="badge-new" style="font-size:9px;padding:1px 5px;border-radius:3px;">NEW</span></td><td>Contract only — no logic</td></tr>
+      <tr><td>core/application (use-cases)</td><td>9 use cases</td><td><span class="badge-keep" style="font-size:9px;padding:1px 5px;border-radius:3px;">KEEP</span></td><td>Logic extracted from server.cjs</td></tr>
+      <tr><td>modules (8 modules)</td><td>~22 files</td><td>Mixed</td><td>Module wrappers + config</td></tr>
+      <tr><td>infrastructure (6 adapters)</td><td>10 files</td><td><span class="badge-evolve" style="font-size:9px;padding:1px 5px;border-radius:3px;">EVOLVE</span></td><td>Thin wrappers over HTTP/REST</td></tr>
+      <tr><td>presentation</td><td>11 files (6 routes + 5 controllers)</td><td><span class="badge-evolve" style="font-size:9px;padding:1px 5px;border-radius:3px;">EVOLVE</span></td><td>Thin HTTP layer only</td></tr>
+      <tr><td>shared</td><td>5 utilities</td><td>Mixed</td><td>Extracted from server.cjs</td></tr>
+      <tr><td>tests</td><td>~10 files (start)</td><td><span class="badge-test" style="font-size:9px;padding:1px 5px;border-radius:3px;">TEST</span></td><td>Grow with features</td></tr>
+      <tr><td><strong>Total</strong></td><td><strong>~88 files</strong></td><td></td><td>vs 1 file (server.cjs) ปัจจุบัน</td></tr>
+    </tbody>
+  </table>
+
+  <!-- SECTION 3: NAMING CONVENTIONS -->
+  <h2><span class="section-num">3</span> Naming Conventions</h2>
+
+  <div class="conv-grid">
+    <div class="conv-card">
+      <div class="conv-title">Files &amp; Folders</div>
+      <div class="conv-row"><span class="conv-type">Entity</span><span class="conv-example">BlogRun.ts</span></div>
+      <div class="conv-row"><span class="conv-type">Interface (Port)</span><span class="conv-example">IAiProvider.ts</span></div>
+      <div class="conv-row"><span class="conv-type">Use Case</span><span class="conv-example">RunBlogUseCase.ts</span></div>
+      <div class="conv-row"><span class="conv-type">Controller</span><span class="conv-example">BlogController.ts</span></div>
+      <div class="conv-row"><span class="conv-type">Repository</span><span class="conv-example">SupabaseStateRepository.ts</span></div>
+      <div class="conv-row"><span class="conv-type">Middleware</span><span class="conv-example">auth.middleware.ts</span></div>
+      <div class="conv-row"><span class="conv-type">Routes</span><span class="conv-example">blog.routes.ts</span></div>
+      <div class="conv-row"><span class="conv-type">Adapter</span><span class="conv-example">N8nWorkflowAdapter.ts</span></div>
+      <div class="conv-row"><span class="conv-type">Event</span><span class="conv-example">BlogRunStarted.ts</span></div>
+      <div class="conv-row"><span class="conv-type">Test</span><span class="conv-example">BlogRun.test.ts</span></div>
+    </div>
+    <div class="conv-card">
+      <div class="conv-title">Code Style</div>
+      <div class="conv-row"><span class="conv-type">Class</span><span class="conv-example">PascalCase</span></div>
+      <div class="conv-row"><span class="conv-type">Interface</span><span class="conv-example">PascalCase (prefix I)</span></div>
+      <div class="conv-row"><span class="conv-type">Function</span><span class="conv-example">camelCase</span></div>
+      <div class="conv-row"><span class="conv-type">Constant</span><span class="conv-example">SCREAMING_SNAKE</span></div>
+      <div class="conv-row"><span class="conv-type">Private field</span><span class="conv-example">_camelCase (prefix _)</span></div>
+      <div class="conv-row"><span class="conv-type">Type alias</span><span class="conv-example">PascalCase</span></div>
+      <div class="conv-row"><span class="conv-type">Enum</span><span class="conv-example">PascalCase</span></div>
+      <div class="conv-row"><span class="conv-type">Folder</span><span class="conv-example">kebab-case</span></div>
+      <div class="conv-row"><span class="conv-type">Barrel</span><span class="conv-example">index.ts ใน module root</span></div>
+    </div>
+  </div>
+
+  <!-- SECTION 4: PATH ALIASES -->
+  <h2><span class="section-num">4</span> TypeScript Path Aliases</h2>
+  <p>tsconfig.json กำหนด aliases เพื่อหลีกเลี่ยง <code>../../../../../../</code></p>
+
+  <table class="file-table">
+    <thead><tr><th>Alias</th><th>Maps to</th><th>ใช้ใน</th></tr></thead>
+    <tbody>
+      <tr><td><code>@core/*</code></td><td><code>src/core/*</code></td><td>ทุก layer ที่ import domain/application</td></tr>
+      <tr><td><code>@modules/*</code></td><td><code>src/modules/*</code></td><td>presentation → modules</td></tr>
+      <tr><td><code>@infra/*</code></td><td><code>src/infrastructure/*</code></td><td>server.ts bootstrap เท่านั้น</td></tr>
+      <tr><td><code>@presentation/*</code></td><td><code>src/presentation/*</code></td><td>server.ts router mounting</td></tr>
+      <tr><td><code>@shared/*</code></td><td><code>src/shared/*</code></td><td>ทุก layer</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-warn">
+    <strong>⚠️ Rule:</strong> <code>@core</code> ห้าม import <code>@infra</code> หรือ <code>@modules</code> เด็ดขาด — ถ้า import ข้ามทิศ → CI จะ fail (เพิ่ม eslint-plugin-import rule)
+  </div>
+
+  <!-- SECTION 5: WHAT GOES WHERE -->
+  <h2><span class="section-num">5</span> What Goes Where — Decision Guide</h2>
+
+  <table class="file-table">
+    <thead><tr><th>ต้องการเพิ่ม...</th><th>ใส่ไว้ที่</th><th>เหตุผล</th></tr></thead>
+    <tbody>
+      <tr><td>Business rule ใหม่ (เช่น QC scoring logic)</td><td><code>core/domain/entities/</code></td><td>Pure logic — testable without I/O</td></tr>
+      <tr><td>Use case ใหม่ (เช่น RenewFbTokenUseCase)</td><td><code>core/application/use-cases/</code></td><td>Orchestrates domain + calls ports</td></tr>
+      <tr><td>AI provider ใหม่</td><td><code>modules/ai-gateway/providers/</code></td><td>Implements IAiProvider</td></tr>
+      <tr><td>External service ใหม่ (เช่น Notion)</td><td><code>infrastructure/notion/</code></td><td>Adapter — implements port interface</td></tr>
+      <tr><td>HTTP route ใหม่</td><td><code>presentation/routes/</code> + <code>controllers/</code></td><td>Thin layer — parse/respond only</td></tr>
+      <tr><td>Utility function ใช้หลายที่</td><td><code>shared/</code></td><td>No domain knowledge</td></tr>
+      <tr><td>Business event ใหม่</td><td><code>core/domain/events/</code></td><td>Immutable data record</td></tr>
+      <tr><td>Health check ใหม่</td><td><code>modules/health-center/checks/</code></td><td>IHealthCheck interface</td></tr>
+    </tbody>
+  </table>
+
+  <!-- SECTION 6: WHAT MOVES FROM server.cjs -->
+  <h2><span class="section-num">6</span> Migration Map — server.cjs → v2</h2>
+  <p>ทุก function ใน server.cjs v1 มีบ้านใหม่ใน v2</p>
+
+  <table class="file-table">
+    <thead><tr><th>server.cjs (v1)</th><th>→ v2 Location</th></tr></thead>
+    <tbody>
+      <tr><td><code>supabaseInsert/Upsert/Select/Fetch</code></td><td><code>infrastructure/supabase/SupabaseClient.ts</code></td></tr>
+      <tr><td><code>readState / writeState</code></td><td><code>modules/memory-manager/StateManager.ts</code></td></tr>
+      <tr><td><code>pushHistory / getHistory</code></td><td><code>modules/memory-manager/HistoryManager.ts</code></td></tr>
+      <tr><td><code>sendTelegram</code></td><td><code>infrastructure/telegram/TelegramNotifier.ts</code></td></tr>
+      <tr><td><code>withRetry</code></td><td><code>shared/retry.ts</code></td></tr>
+      <tr><td><code>nowIso / logEvent</code></td><td><code>shared/time.ts</code> + <code>shared/logger.ts</code></td></tr>
+      <tr><td><code>runHealthMonitor + setInterval</code></td><td><code>modules/health-center/HealthMonitor.ts</code></td></tr>
+      <tr><td><code>checkSupabaseHealth / checkUrlHealth</code></td><td><code>modules/health-center/checks/</code></td></tr>
+      <tr><td><code>timingSafeEq</code></td><td><code>modules/auth/HubAuthService.ts</code></td></tr>
+      <tr><td><code>qcVisionAnalysis</code></td><td><code>modules/ai-gateway/ + core/application/use-cases/qc/</code></td></tr>
+      <tr><td><code>qcGuessCategory / qcGetReferencePhotos</code></td><td><code>core/domain/entities/QcInspection.ts</code></td></tr>
+      <tr><td><code>getSupabaseDlq</code></td><td><code>modules/health-center/checks/DlqCheck.ts</code></td></tr>
+      <tr><td><code>app.post("/action/blog/run")</code></td><td><code>presentation/routes/blog.routes.ts</code> + <code>controllers/BlogController.ts</code></td></tr>
+      <tr><td><code>app.post("/api/qc/ingest")</code></td><td><code>presentation/routes/qc.routes.ts</code> + <code>controllers/QcController.ts</code></td></tr>
+      <tr><td><code>const PORT, HUB_HOST, ...</code></td><td><code>modules/config/Config.ts</code></td></tr>
+    </tbody>
+  </table>
+
+  <!-- FOOTER -->
+  <div style="margin-top:48px;padding-top:20px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+    <div style="font-size:11px;color:var(--muted);">AP-Home Hub v2 · Folder Structure · Document 2/5</div>
+    <div style="font-size:11px;color:var(--muted);">เอกสารถัดไป: <strong style="color:var(--gold);">API Contract →</strong></div>
+  </div>
+
+</div>
+</body>
+</html>

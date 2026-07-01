@@ -1,0 +1,292 @@
+================================================================================
+  AP-HOME HUB v2  |  Document 2/5  |  Folder Structure
+  โครงสร้างโปรเจกต์สมบูรณ์ พร้อม naming convention และหน้าที่ของแต่ละไฟล์
+  Target: services/backend-hub/  |  Language: TypeScript (strict)
+  Pattern: Clean Architecture + Hexagonal
+================================================================================
+
+LEGEND
+  [NEW]    ไฟล์ใหม่ใน v2
+  [KEEP]   ย้าย logic มาจาก server.cjs (เดิม)
+  [EVOLVE] พัฒนาต่อจากของเดิม
+  [TEST]   test files
+
+================================================================================
+  1. COMPLETE FOLDER TREE
+================================================================================
+
+services/backend-hub/
+│
+├── src/
+│   │
+│   ├── core/                          ← ZERO external dependencies
+│   │   │
+│   │   ├── domain/
+│   │   │   ├── entities/
+│   │   │   │   ├── BlogRun.ts         [NEW]  entity: runId, status, keyword, startedAt
+│   │   │   │   ├── QcInspection.ts   [NEW]  entity: pass, severity, defects, score
+│   │   │   │   ├── Lead.ts            [NEW]  entity: budget, stage, source
+│   │   │   │   └── HubState.ts        [NEW]  entity: blog/fb/system state shape
+│   │   │   │
+│   │   │   ├── events/
+│   │   │   │   ├── BlogRunStarted.ts       [NEW]
+│   │   │   │   ├── BlogRunCompleted.ts     [NEW]
+│   │   │   │   ├── BlogRunFailed.ts        [NEW]
+│   │   │   │   ├── QcInspectionCompleted.ts [NEW]
+│   │   │   │   ├── QcDefectFound.ts        [NEW]
+│   │   │   │   ├── FbPublished.ts          [NEW]
+│   │   │   │   ├── LeadReceived.ts         [NEW]
+│   │   │   │   └── HealthAlertTriggered.ts [NEW]
+│   │   │   │
+│   │   │   └── value-objects/
+│   │   │       ├── RunId.ts           [NEW]  type-safe ID wrapper
+│   │   │       ├── QcCategory.ts      [NEW]  plaster | concrete | paint | level
+│   │   │       └── Severity.ts        [NEW]  none | low | medium | high | critical
+│   │   │
+│   │   └── application/
+│   │       ├── ports/                 ← interfaces only — no implementation
+│   │       │   ├── IAiProvider.ts     [NEW]  complete(prompt, opts): Promise<AiResult>
+│   │       │   ├── IStateRepository.ts [NEW] read() / write(state)
+│   │       │   ├── IQcRepository.ts   [NEW]  save(inspection) / findByMessageId()
+│   │       │   ├── IWorkflowEngine.ts [NEW]  trigger(workflow, payload)
+│   │       │   ├── INotifier.ts       [NEW]  send(message)
+│   │       │   └── IEventBus.ts       [NEW]  emit(event) / subscribe(type, handler)
+│   │       │
+│   │       └── use-cases/
+│   │           ├── blog/
+│   │           │   ├── RunBlogUseCase.ts       [KEEP] logic จาก /action/blog/run
+│   │           │   ├── ResetBlogUseCase.ts     [KEEP] logic จาก /action/blog/reset
+│   │           │   └── BlogCallbackUseCase.ts  [KEEP] logic จาก /blog/callback
+│   │           ├── qc/
+│   │           │   └── IngestQcUseCase.ts      [KEEP] logic จาก /api/qc/ingest
+│   │           ├── fb/
+│   │           │   ├── BuildFbQueueUseCase.ts  [KEEP]
+│   │           │   └── RunFbQueueUseCase.ts    [KEEP]
+│   │           ├── property/
+│   │           │   ├── UploadPropertyImageUseCase.ts [KEEP]
+│   │           │   └── PublishPropertyUseCase.ts     [KEEP]
+│   │           └── health/
+│   │               └── RunHealthCheckUseCase.ts [EVOLVE] refactor จาก runHealthMonitor()
+│   │
+│   ├── modules/                       ← feature modules — self-contained
+│   │   │
+│   │   ├── api-gateway/
+│   │   │   ├── middleware/
+│   │   │   │   ├── auth.middleware.ts        [EVOLVE] timingSafeEq จาก server.cjs
+│   │   │   │   ├── cors.middleware.ts        [EVOLVE]
+│   │   │   │   ├── rate-limit.middleware.ts  [NEW]    60 req/min per IP
+│   │   │   │   └── validate.middleware.ts    [NEW]    Zod schema validation
+│   │   │   └── router.ts                     [NEW]    mount all route groups
+│   │   │
+│   │   ├── ai-gateway/
+│   │   │   ├── providers/
+│   │   │   │   ├── OpenAiProvider.ts   [EVOLVE] gpt-4o, gpt-image-1, dall-e-3
+│   │   │   │   ├── ClaudeProvider.ts   [NEW]    claude-sonnet-4-6, claude-haiku-4-5
+│   │   │   │   └── GeminiProvider.ts   [EVOLVE] gemini-2.0-flash (image fallback)
+│   │   │   ├── AiGateway.ts            [NEW]    provider selector + fallback chain
+│   │   │   ├── CostTracker.ts          [EVOLVE] daily budget guard จาก server.cjs
+│   │   │   └── ProviderConfig.ts       [NEW]    task → provider mapping table
+│   │   │
+│   │   ├── event-bus/
+│   │   │   ├── EventBus.ts             [NEW]    in-process pub/sub (EventEmitter wrapper)
+│   │   │   └── DomainEvent.ts          [NEW]    base event type
+│   │   │
+│   │   ├── workflow-manager/
+│   │   │   ├── BlogWorkflow.ts         [EVOLVE] blog run + queue logic
+│   │   │   ├── FbWorkflow.ts           [EVOLVE] fb queue build/run logic
+│   │   │   ├── QcWorkflow.ts           [EVOLVE] QC ingest + vision pipeline
+│   │   │   └── PropertyWorkflow.ts     [EVOLVE] property intake + publish
+│   │   │
+│   │   ├── memory-manager/
+│   │   │   ├── StateManager.ts         [EVOLVE] readState/writeState จาก server.cjs
+│   │   │   ├── CacheManager.ts         [NEW]    in-memory TTL cache (content_frames etc.)
+│   │   │   └── HistoryManager.ts       [EVOLVE] pushHistory จาก server.cjs
+│   │   │
+│   │   ├── health-center/
+│   │   │   ├── HealthMonitor.ts        [EVOLVE] runHealthMonitor() จาก server.cjs
+│   │   │   └── checks/
+│   │   │       ├── SupabaseCheck.ts    [NEW]
+│   │   │       ├── FbBackendCheck.ts   [NEW]
+│   │   │       ├── BlogStuckCheck.ts   [NEW]
+│   │   │       └── DlqCheck.ts         [NEW]
+│   │   │
+│   │   ├── auth/
+│   │   │   └── HubAuthService.ts       [EVOLVE] timingSafeEq + LINE sig verify
+│   │   │
+│   │   └── config/
+│   │       └── Config.ts               [NEW]    typed env config — validate at startup
+│   │
+│   ├── infrastructure/                ← implements ports (adapters)
+│   │   │
+│   │   ├── supabase/
+│   │   │   ├── SupabaseClient.ts              [EVOLVE] supabaseInsert/upsert/select helpers
+│   │   │   ├── SupabaseStateRepository.ts     [NEW]    implements IStateRepository
+│   │   │   ├── SupabaseQcRepository.ts        [NEW]    implements IQcRepository
+│   │   │   └── SupabaseContentFramesRepo.ts   [NEW]    fetch content_frames
+│   │   │
+│   │   ├── n8n/
+│   │   │   └── N8nWorkflowAdapter.ts          [EVOLVE] implements IWorkflowEngine
+│   │   │
+│   │   ├── telegram/
+│   │   │   └── TelegramNotifier.ts            [EVOLVE] implements INotifier
+│   │   │
+│   │   ├── wordpress/
+│   │   │   └── WordPressPublisher.ts          [EVOLVE] WP REST API calls
+│   │   │
+│   │   ├── line/
+│   │   │   └── LineAdapter.ts                 [EVOLVE] LINE Reply API
+│   │   │
+│   │   └── facebook/
+│   │       └── FbBackendAdapter.ts            [EVOLVE] proxy to FB Backend service
+│   │
+│   ├── presentation/                  ← Express routes + controllers
+│   │   ├── routes/
+│   │   │   ├── blog.routes.ts         [EVOLVE] /action/blog/*, /blog/callback
+│   │   │   ├── qc.routes.ts           [EVOLVE] /api/qc/*
+│   │   │   ├── fb.routes.ts           [EVOLVE] /action/fb/*, /api/fb/*
+│   │   │   ├── property.routes.ts     [EVOLVE] /action/property/*
+│   │   │   ├── state.routes.ts        [EVOLVE] /api/state, /api/history
+│   │   │   └── health.routes.ts       [EVOLVE] /api/health (no auth)
+│   │   │
+│   │   └── controllers/
+│   │       ├── BlogController.ts      [NEW]  parse req → call use case → format res
+│   │       ├── QcController.ts        [NEW]
+│   │       ├── FbController.ts        [NEW]
+│   │       ├── PropertyController.ts  [NEW]
+│   │       └── HealthController.ts    [NEW]
+│   │
+│   ├── shared/                        ← utilities ใช้ร่วมกันทุก module
+│   │   ├── logger.ts                  [EVOLVE] structured JSON logging
+│   │   ├── errors.ts                  [NEW]    AppError, ValidationError, NotFoundError
+│   │   ├── retry.ts                   [EVOLVE] withRetry() จาก server.cjs
+│   │   ├── time.ts                    [EVOLVE] nowIso(), nowTh() จาก server.cjs
+│   │   └── id.ts                      [NEW]    generateRunId() — nanoid based
+│   │
+│   └── server.ts                      [NEW]    entry point — bootstrap DI + start Express
+│
+├── tests/
+│   ├── unit/                          ← pure domain + use case tests (no I/O)
+│   │   ├── domain/
+│   │   │   └── QcInspection.test.ts  [TEST]
+│   │   └── use-cases/
+│   │       ├── RunBlogUseCase.test.ts [TEST]
+│   │       └── IngestQcUseCase.test.ts [TEST]
+│   ├── integration/                   ← tests with Supabase/n8n mocked
+│   │   └── blog.workflow.test.ts      [TEST]
+│   └── e2e/                           ← full request → response tests
+│       └── blog-run.e2e.ts            [TEST]
+│
+├── package.json
+├── tsconfig.json          ← strict: true, paths alias @core @infra @modules
+├── tsconfig.build.json    ← excludes tests
+├── .env.example           ← all required env vars documented
+├── Dockerfile
+└── server.cjs             [KEEP] v1 ยังอยู่ตลอด migration (ลบหลัง cutover)
+
+
+================================================================================
+  2. FILE COUNT SUMMARY
+================================================================================
+
+  Layer                           Files     Status   Notes
+  ─────────────────────────────────────────────────────────────────────────────
+  core/domain                     ~15       NEW      Zero deps — testable
+  core/application (ports)          6       NEW      Contract only — no logic
+  core/application (use-cases)      9       KEEP     Extracted from server.cjs
+  modules (8 modules)             ~22       Mixed    Module wrappers + config
+  infrastructure (6 adapters)      10       EVOLVE   Thin wrappers over HTTP
+  presentation (routes+ctrl)       11       EVOLVE   Thin HTTP layer only
+  shared                            5       Mixed    Extracted from server.cjs
+  tests                           ~10       TEST     Grow with features
+  ─────────────────────────────────────────────────────────────────────────────
+  TOTAL                           ~88       —        vs 1 file (server.cjs) เดิม
+
+
+================================================================================
+  3. NAMING CONVENTIONS
+================================================================================
+
+  FILE / FOLDER NAMES
+  ───────────────────
+  Entity          →  BlogRun.ts
+  Interface(Port) →  IAiProvider.ts          (prefix I)
+  Use Case        →  RunBlogUseCase.ts
+  Controller      →  BlogController.ts
+  Repository      →  SupabaseStateRepository.ts
+  Middleware      →  auth.middleware.ts       (kebab-case)
+  Routes          →  blog.routes.ts           (kebab-case)
+  Adapter         →  N8nWorkflowAdapter.ts
+  Event           →  BlogRunStarted.ts
+  Test            →  BlogRun.test.ts
+
+  CODE STYLE
+  ──────────
+  Class           →  PascalCase
+  Interface       →  PascalCase (prefix I)
+  Function        →  camelCase
+  Constant        →  SCREAMING_SNAKE_CASE
+  Private field   →  _camelCase (prefix _)
+  Type alias      →  PascalCase
+  Enum            →  PascalCase
+  Folder          →  kebab-case
+  Barrel export   →  index.ts in module root
+
+
+================================================================================
+  4. TYPESCRIPT PATH ALIASES  (tsconfig.json)
+================================================================================
+
+  Alias               Maps to                     ใช้ใน
+  ─────────────────────────────────────────────────────────────────────────────
+  @core/*             src/core/*                  ทุก layer ที่ import domain
+  @modules/*          src/modules/*               presentation → modules
+  @infra/*            src/infrastructure/*        server.ts bootstrap เท่านั้น
+  @presentation/*     src/presentation/*          server.ts router mounting
+  @shared/*           src/shared/*                ทุก layer
+
+  ⚠️  RULE: @core ห้าม import @infra หรือ @modules เด็ดขาด
+            ถ้า import ข้ามทิศ → CI fail (eslint-plugin-import rule)
+
+
+================================================================================
+  5. WHAT GOES WHERE — DECISION GUIDE
+================================================================================
+
+  เมื่อต้องการเพิ่ม...                        ใส่ที่                                เหตุผล
+  ─────────────────────────────────────────────────────────────────────────────
+  Business rule ใหม่ (QC scoring logic)  core/domain/entities/           Pure logic — testable
+  Use case ใหม่ (RenewFbTokenUseCase)    core/application/use-cases/     Orchestrates domain+ports
+  AI provider ใหม่                       modules/ai-gateway/providers/   implements IAiProvider
+  External service ใหม่ (Notion)         infrastructure/notion/          Adapter — implements port
+  HTTP route ใหม่                        presentation/routes/ + ctrl/    Thin parse/respond only
+  Utility ใช้หลายที่                     shared/                         No domain knowledge
+  Business event ใหม่                    core/domain/events/             Immutable data record
+  Health check ใหม่                      modules/health-center/checks/   IHealthCheck interface
+
+
+================================================================================
+  6. MIGRATION MAP — server.cjs → v2
+================================================================================
+
+  server.cjs (v1)                        v2 Location
+  ─────────────────────────────────────────────────────────────────────────────
+  supabaseInsert/Upsert/Select/Fetch  →  infrastructure/supabase/SupabaseClient.ts
+  readState / writeState              →  modules/memory-manager/StateManager.ts
+  pushHistory / getHistory            →  modules/memory-manager/HistoryManager.ts
+  sendTelegram                        →  infrastructure/telegram/TelegramNotifier.ts
+  withRetry                           →  shared/retry.ts
+  nowIso / logEvent                   →  shared/time.ts + shared/logger.ts
+  runHealthMonitor + setInterval      →  modules/health-center/HealthMonitor.ts
+  checkSupabaseHealth / checkUrlHealth→  modules/health-center/checks/
+  timingSafeEq                        →  modules/auth/HubAuthService.ts
+  qcVisionAnalysis                    →  modules/ai-gateway/ + core/use-cases/qc/
+  qcGuessCategory                     →  core/domain/entities/QcInspection.ts
+  getSupabaseDlq                      →  modules/health-center/checks/DlqCheck.ts
+  app.post("/action/blog/run")        →  presentation/routes/blog.routes.ts
+  app.post("/api/qc/ingest")          →  presentation/routes/qc.routes.ts
+  const PORT, HUB_HOST, ...           →  modules/config/Config.ts
+
+
+================================================================================
+  Document 2/5 — Folder Structure  |  Next: 03-api-contract.txt
+================================================================================

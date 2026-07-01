@@ -1,0 +1,560 @@
+================================================================================
+  AP-HOME HUB v2  |  Document 3/5  |  API Contract
+  มาตรฐาน API ครบทุก endpoint — request, response, auth, error codes
+  Base URL (Railway): https://hub.ap-home.co.th
+  Proxy URL (Vercel): https://ap-home.vercel.app/api/hub/*
+================================================================================
+
+LEGEND
+  [AUTH]     ต้องใส่ x-hub-token header
+  [NO AUTH]  ไม่ต้องการ token (public / webhook)
+  [V1]       endpoint เดิม — ต้องทำงานได้ตลอด migration
+  [V2]       endpoint ใหม่ใน v2
+  [WEBHOOK]  รับ callback จาก external service
+
+================================================================================
+  1. GLOBAL STANDARDS
+================================================================================
+
+  1.1 REQUEST HEADERS
+  ─────────────────────────────────────────────────────────────────────────────
+  Header                Value             Required
+  ─────────────────────────────────────────────────────────────────────────────
+  Content-Type          application/json  ทุก POST/PATCH ที่มี body
+  x-hub-token           <secret>          ทุก endpoint ที่ [AUTH]
+  x-line-signature      <hmac-sha256>     LINE webhook เท่านั้น
+
+  1.2 RESPONSE ENVELOPE
+  ─────────────────────────────────────────────────────────────────────────────
+  SUCCESS (2xx)
+  {
+    "ok": true,
+    "data": { ... }          // payload ที่ client ต้องการ
+  }
+
+  ERROR (4xx / 5xx)
+  {
+    "ok": false,
+    "error": {
+      "code": "BLOG_ALREADY_RUNNING",   // machine-readable constant
+      "message": "Blog runner is...",   // human-readable Thai/EN
+      "detail": { ... }                 // optional — debug info (dev only)
+    }
+  }
+
+  1.3 STANDARD ERROR CODES
+  ─────────────────────────────────────────────────────────────────────────────
+  HTTP   Code                       เกิดจาก
+  ─────────────────────────────────────────────────────────────────────────────
+  400    VALIDATION_ERROR           body ไม่ผ่าน Zod schema
+  401    UNAUTHORIZED               x-hub-token ไม่ถูกต้อง
+  409    BLOG_ALREADY_RUNNING       blog/run เรียกซ้ำขณะ running
+  409    FB_QUEUE_EMPTY             fb/run ขณะ queue ว่าง
+  429    RATE_LIMIT_EXCEEDED        > 60 req/min per IP
+  500    INTERNAL_ERROR             unhandled exception
+  502    UPSTREAM_UNAVAILABLE       n8n / Supabase ไม่ตอบ
+  503    AI_BUDGET_EXCEEDED         ใช้ token เกิน daily budget
+
+
+================================================================================
+  2. BLOG MODULE  (/action/blog/*)
+================================================================================
+
+  ──────────────────────────────────────────────────────────────────────────────
+  POST /action/blog/run                                     [AUTH] [V1]
+  ──────────────────────────────────────────────────────────────────────────────
+  คำอธิบาย: เริ่ม blog writing workflow — trigger n8n, set status=running
+
+  Request Body:
+  {
+    "keyword": "string",        // required — หัวข้อบทความ
+    "language": "th" | "en",   // optional, default "th"
+    "wordCount": number         // optional, default 800
+  }
+
+  Response 200:
+  {
+    "ok": true,
+    "data": {
+      "runId": "run_abc123",
+      "status": "running",
+      "keyword": "รับสร้างบ้านกรุงเทพ",
+      "startedAt": "2026-06-27T08:00:00.000Z"
+    }
+  }
+
+  Response 409 (BLOG_ALREADY_RUNNING):
+  {
+    "ok": false,
+    "error": {
+      "code": "BLOG_ALREADY_RUNNING",
+      "message": "Blog runner กำลังทำงานอยู่ รอให้เสร็จก่อน",
+      "detail": { "startedAt": "2026-06-27T07:00:00.000Z" }
+    }
+  }
+
+  ──────────────────────────────────────────────────────────────────────────────
+  POST /action/blog/reset                                   [AUTH] [V1]
+  ──────────────────────────────────────────────────────────────────────────────
+  คำอธิบาย: รีเซ็ต blog runner state (ใช้เมื่อ stuck)
+
+  Request Body: {} (empty)
+
+  Response 200:
+  {
+    "ok": true,
+    "data": {
+      "previousStatus": "running",
+      "resetAt": "2026-06-27T09:00:00.000Z"
+    }
+  }
+
+  ──────────────────────────────────────────────────────────────────────────────
+  POST /blog/callback                                       [NO AUTH] [V1] [WEBHOOK]
+  ──────────────────────────────────────────────────────────────────────────────
+  คำอธิบาย: n8n เรียกกลับเมื่อเขียนบทความเสร็จ
+
+  Request Body:
+  {
+    "runId": "string",
+    "status": "completed" | "failed",
+    "postId": number,             // WordPress post ID (ถ้า completed)
+    "postUrl": "string",          // URL บทความ (ถ้า completed)
+    "error": "string"             // error message (ถ้า failed)
+  }
+
+  Response 200:
+  {
+    "ok": true,
+    "data": { "received": true }
+  }
+
+  ──────────────────────────────────────────────────────────────────────────────
+  GET /action/blog/status                                   [AUTH] [V2]
+  ──────────────────────────────────────────────────────────────────────────────
+  คำอธิบาย: ดู blog runner status ปัจจุบัน
+
+  Response 200:
+  {
+    "ok": true,
+    "data": {
+      "status": "idle" | "running" | "completed" | "failed",
+      "runId": "run_abc123" | null,
+      "keyword": "string" | null,
+      "startedAt": "ISO8601" | null,
+      "completedAt": "ISO8601" | null,
+      "minutesRunning": number | null
+    }
+  }
+
+
+================================================================================
+  3. FACEBOOK MODULE  (/action/fb/* + /api/fb/*)
+================================================================================
+
+  ──────────────────────────────────────────────────────────────────────────────
+  POST /action/fb/build-queue                               [AUTH] [V1]
+  ──────────────────────────────────────────────────────────────────────────────
+  คำอธิบาย: สร้าง FB post queue จาก WordPress posts + AI content frames
+
+  Request Body:
+  {
+    "count": number,           // optional, default 5 — จำนวน posts
+    "category": "string"       // optional — filter by WP category
+  }
+
+  Response 200:
+  {
+    "ok": true,
+    "data": {
+      "queueId": "q_xyz789",
+      "itemCount": 5,
+      "items": [
+        {
+          "postId": 123,
+          "title": "string",
+          "angle": "string",
+          "scheduledAt": "ISO8601"
+        }
+      ]
+    }
+  }
+
+  ──────────────────────────────────────────────────────────────────────────────
+  POST /action/fb/run-queue                                 [AUTH] [V1]
+  ──────────────────────────────────────────────────────────────────────────────
+  คำอธิบาย: ส่ง FB posts ที่อยู่ใน queue ไปลง FB Page
+
+  Request Body: {} (empty) หรือ { "queueId": "string" }
+
+  Response 200:
+  {
+    "ok": true,
+    "data": {
+      "published": number,
+      "failed": number,
+      "results": [
+        {
+          "postId": 123,
+          "fbPostId": "1234567890",
+          "status": "published" | "failed",
+          "error": "string" | null
+        }
+      ]
+    }
+  }
+
+  Response 409 (FB_QUEUE_EMPTY):
+  {
+    "ok": false,
+    "error": {
+      "code": "FB_QUEUE_EMPTY",
+      "message": "ไม่มี post ใน queue กรุณา build-queue ก่อน"
+    }
+  }
+
+  ──────────────────────────────────────────────────────────────────────────────
+  GET /api/fb/token-status                                  [AUTH] [V2]
+  ──────────────────────────────────────────────────────────────────────────────
+  คำอธิบาย: เช็ค FB Page Access Token expiry
+
+  Response 200:
+  {
+    "ok": true,
+    "data": {
+      "valid": true,
+      "expiresAt": "2026-08-02T00:00:00.000Z",
+      "daysRemaining": 36,
+      "warning": "token expires in 36 days" | null
+    }
+  }
+
+
+================================================================================
+  4. QC MODULE  (/api/qc/*)
+================================================================================
+
+  ──────────────────────────────────────────────────────────────────────────────
+  POST /api/qc/ingest                                       [NO AUTH] [V1] [WEBHOOK]
+  ──────────────────────────────────────────────────────────────────────────────
+  คำอธิบาย: รับรูปจาก LINE OA → วิเคราะห์ด้วย Vision AI → บันทึก Supabase
+
+  Request Body (from LINE webhook parser):
+  {
+    "messageId": "string",     // LINE message ID
+    "userId": "string",        // LINE user ID
+    "imageUrl": "string",      // URL รูปภาพ (pre-signed)
+    "category": "string",      // optional — hint: plaster|concrete|paint|level
+    "projectCode": "string"    // optional — project identifier
+  }
+
+  Response 200:
+  {
+    "ok": true,
+    "data": {
+      "inspectionId": "insp_123",
+      "category": "plaster",
+      "severity": "medium",
+      "pass": false,
+      "defects": ["รอยแตก", "ผิวไม่เรียบ"],
+      "score": 62,
+      "aiProvider": "openai",
+      "processingMs": 2340
+    }
+  }
+
+  ──────────────────────────────────────────────────────────────────────────────
+  GET /api/qc/inspections                                   [AUTH] [V2]
+  ──────────────────────────────────────────────────────────────────────────────
+  คำอธิบาย: ดู QC inspection history
+
+  Query Params:
+    ?limit=20           default 20, max 100
+    ?offset=0           pagination
+    ?category=plaster   filter by category
+    ?pass=false         filter by pass/fail
+    ?projectCode=PJ01   filter by project
+
+  Response 200:
+  {
+    "ok": true,
+    "data": {
+      "total": 142,
+      "items": [
+        {
+          "inspectionId": "insp_123",
+          "category": "plaster",
+          "severity": "medium",
+          "pass": false,
+          "score": 62,
+          "defects": ["รอยแตก"],
+          "createdAt": "2026-06-27T08:00:00.000Z"
+        }
+      ]
+    }
+  }
+
+
+================================================================================
+  5. PROPERTY MODULE  (/action/property/*)
+================================================================================
+
+  ──────────────────────────────────────────────────────────────────────────────
+  POST /action/property/upload-image                        [AUTH] [V1]
+  ──────────────────────────────────────────────────────────────────────────────
+  คำอธิบาย: อัพโหลด property image → Supabase Storage → return URL
+
+  Request Body (multipart/form-data):
+    image: <file>
+    propertyId: string
+    category: "exterior" | "interior" | "floor-plan" | "reference"
+
+  Response 200:
+  {
+    "ok": true,
+    "data": {
+      "imageUrl": "https://supabase.co/storage/v1/...",
+      "thumbnailUrl": "https://...",
+      "propertyId": "prop_456",
+      "category": "exterior"
+    }
+  }
+
+  ──────────────────────────────────────────────────────────────────────────────
+  POST /action/property/publish                             [AUTH] [V1]
+  ──────────────────────────────────────────────────────────────────────────────
+  คำอธิบาย: publish property listing → WordPress
+
+  Request Body:
+  {
+    "propertyId": "string",    // required
+    "title": "string",         // optional — AI จะ generate ถ้าไม่ใส่
+    "price": number,           // required (THB)
+    "area": number,            // required (sq.m.)
+    "location": "string",      // required
+    "features": ["string"],    // optional
+    "images": ["string"]       // required — URLs จาก upload-image
+  }
+
+  Response 200:
+  {
+    "ok": true,
+    "data": {
+      "wpPostId": 456,
+      "wpUrl": "https://finnhouses.com/property/...",
+      "publishedAt": "2026-06-27T08:00:00.000Z"
+    }
+  }
+
+
+================================================================================
+  6. STATE MODULE  (/api/state + /api/history)
+================================================================================
+
+  ──────────────────────────────────────────────────────────────────────────────
+  GET /api/state                                            [AUTH] [V1]
+  ──────────────────────────────────────────────────────────────────────────────
+  คำอธิบาย: ดู hub state ทั้งหมด (blog, fb, system)
+
+  Response 200:
+  {
+    "ok": true,
+    "data": {
+      "blog": {
+        "status": "idle",
+        "lastRunAt": "ISO8601",
+        "lastKeyword": "string"
+      },
+      "fb": {
+        "queueCount": 3,
+        "lastPublishedAt": "ISO8601",
+        "tokenExpiresAt": "ISO8601"
+      },
+      "system": {
+        "uptime": 86400,
+        "version": "2.0.0",
+        "healthStatus": "healthy"
+      }
+    }
+  }
+
+  ──────────────────────────────────────────────────────────────────────────────
+  GET /api/history                                          [AUTH] [V1]
+  ──────────────────────────────────────────────────────────────────────────────
+  Query Params: ?limit=50 (default 50, max 200)
+
+  Response 200:
+  {
+    "ok": true,
+    "data": {
+      "events": [
+        {
+          "type": "BlogRunCompleted",
+          "timestamp": "ISO8601",
+          "payload": { "runId": "...", "keyword": "..." }
+        }
+      ]
+    }
+  }
+
+
+================================================================================
+  7. HEALTH MODULE  (/api/health)
+================================================================================
+
+  ──────────────────────────────────────────────────────────────────────────────
+  GET /api/health                                           [NO AUTH] [V1]
+  ──────────────────────────────────────────────────────────────────────────────
+  คำอธิบาย: liveness probe — Railway health check ใช้ endpoint นี้
+
+  Response 200:
+  {
+    "ok": true,
+    "data": {
+      "status": "healthy",
+      "version": "2.0.0",
+      "uptime": 86400
+    }
+  }
+
+  ──────────────────────────────────────────────────────────────────────────────
+  GET /api/health/detailed                                  [AUTH] [V2]
+  ──────────────────────────────────────────────────────────────────────────────
+  คำอธิบาย: full health check ทุก dependency
+
+  Response 200:
+  {
+    "ok": true,
+    "data": {
+      "overall": "healthy" | "degraded" | "unhealthy",
+      "checks": {
+        "supabase":   { "status": "healthy", "latencyMs": 45 },
+        "fbBackend":  { "status": "healthy", "latencyMs": 120 },
+        "blogRunner": { "status": "idle", "minutesRunning": null },
+        "dlq":        { "status": "healthy", "pendingCount": 0 }
+      },
+      "checkedAt": "ISO8601"
+    }
+  }
+
+
+================================================================================
+  8. LINE WEBHOOK  (/webhook/line)
+================================================================================
+
+  ──────────────────────────────────────────────────────────────────────────────
+  POST /webhook/line                                        [NO AUTH] [V1] [WEBHOOK]
+  ──────────────────────────────────────────────────────────────────────────────
+  คำอธิบาย: รับ events จาก LINE Platform
+  Auth: x-line-signature header (HMAC-SHA256 ของ request body)
+
+  LINE Platform ส่ง:
+  {
+    "destination": "string",
+    "events": [
+      {
+        "type": "message",
+        "source": { "type": "user", "userId": "U..." },
+        "message": {
+          "type": "image" | "text",
+          "id": "string",
+          "text": "string"      // ถ้า type=text
+        }
+      }
+    ]
+  }
+
+  Response 200: { "ok": true }    (LINE ต้องการ 200 ภายใน 3 วินาที)
+
+  Internal flow (async หลัง return 200):
+    image message → POST /api/qc/ingest
+    text message  → route to appropriate handler
+
+
+================================================================================
+  9. AI GATEWAY INTERNAL API  (internal — ไม่ expose ออก public)
+================================================================================
+
+  ใช้งานภายใน Hub เท่านั้น ผ่าน AiGateway.ts
+
+  complete(options):
+  {
+    task: "blog-write" | "qc-vision" | "fb-content" | "property-title",
+    prompt: string,
+    imageUrl?: string,    // สำหรับ vision tasks
+    maxTokens?: number,
+    preferProvider?: "openai" | "claude" | "gemini"
+  }
+
+  Returns:
+  {
+    text: string,
+    provider: "openai" | "claude" | "gemini",
+    model: string,
+    tokensUsed: number,
+    costUsd: number
+  }
+
+  TASK → DEFAULT PROVIDER MAP
+  ─────────────────────────────────────────────────────────────────────────────
+  Task              Primary     Fallback 1   Fallback 2
+  ─────────────────────────────────────────────────────────────────────────────
+  blog-write        claude      openai       —
+  qc-vision         openai      gemini       —      (ต้องการ vision capability)
+  fb-content        claude      openai       —
+  property-title    claude      openai       —
+  image-gen         openai      gemini       —      (dall-e-3 → imagen)
+
+
+================================================================================
+  10. VERSIONING & DEPRECATION POLICY
+================================================================================
+
+  VERSIONING
+  ─────────────────────────────────────────────────────────────────────────────
+  v1 endpoints  ไม่มี /v1/ prefix — keep backward compatible ตลอด
+  v2 endpoints  ใช้ path ใหม่ — ไม่ break v1
+  Breaking change → ต้องผ่าน Migration Plan approval ก่อน
+
+  DEPRECATION FLOW
+  ─────────────────────────────────────────────────────────────────────────────
+  1. ประกาศ deprecated ใน response header: Deprecation: true
+  2. รอ 30 วัน
+  3. ส่ง Telegram alert เมื่อ deprecated endpoint ถูกเรียก
+  4. Remove หลังจาก cutover plan approve
+
+  RATE LIMITS
+  ─────────────────────────────────────────────────────────────────────────────
+  Endpoint Group          Limit
+  ─────────────────────────────────────────────────────────────────────────────
+  /action/blog/*          5 req/min (expensive — AI + n8n)
+  /action/fb/*            10 req/min
+  /api/qc/ingest          30 req/min (LINE burst)
+  /api/health             unlimited
+  /webhook/line           unlimited
+  All others              60 req/min per IP
+
+
+================================================================================
+  11. VERCEL PROXY ROUTES  (ap-home.vercel.app)
+================================================================================
+
+  Vercel route (Next.js)              → Proxied to Hub
+  ─────────────────────────────────────────────────────────────────────────────
+  /api/hub/blog/run                   → POST /action/blog/run
+  /api/hub/blog/reset                 → POST /action/blog/reset
+  /api/hub/blog/status                → GET /action/blog/status
+  /api/hub/fb/build-queue             → POST /action/fb/build-queue
+  /api/hub/fb/run-queue               → POST /action/fb/run-queue
+  /api/hub/fb/token-status            → GET /api/fb/token-status
+  /api/hub/state                      → GET /api/state
+  /api/hub/history                    → GET /api/history
+  /api/hub/health                     → GET /api/health
+
+  Note: Vercel proxy adds x-hub-token จาก process.env.HUB_SECRET ให้อัตโนมัติ
+        Client ไม่ต้องส่ง token เอง
+
+
+================================================================================
+  Document 3/5 — API Contract  |  Next: 04-migration-plan.txt
+================================================================================

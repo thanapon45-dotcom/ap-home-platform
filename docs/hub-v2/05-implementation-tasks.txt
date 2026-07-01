@@ -1,0 +1,544 @@
+================================================================================
+  AP-HOME HUB v2  |  Document 5/5  |  Implementation Tasks
+  แบ่งงานเป็น Task เล็กๆ พร้อมขนาด, ลำดับความสำคัญ, และ acceptance criteria
+  รูปแบบ: [TASK-XXX] ชื่อ  |  Phase  |  Size  |  Priority
+================================================================================
+
+SIZE (เวลาโดยประมาณ)
+  XS = < 30 นาที
+  S  = 30-90 นาที
+  M  = 2-4 ชั่วโมง
+  L  = 4-8 ชั่วโมง (1 วัน)
+  XL = > 1 วัน
+
+PRIORITY
+  P0 = Blocker — ต้องทำก่อนอื่น
+  P1 = Core — สำคัญมาก
+  P2 = Standard — ทำตาม sequence
+  P3 = Nice-to-have — ทำได้ทีหลัง
+
+STATUS
+  [ ] Not started
+  [→] In progress
+  [✓] Done
+
+================================================================================
+  PHASE 0 — SCAFFOLD
+================================================================================
+
+[TASK-001] ตั้งค่า tsconfig.json                              | P0 | XS
+  File: services/backend-hub/tsconfig.json
+  ─────────────────────────────────────────────────────────────────
+  {
+    "compilerOptions": {
+      "target": "ES2022",
+      "module": "NodeNext",
+      "moduleResolution": "NodeNext",
+      "strict": true,
+      "outDir": "./dist",
+      "rootDir": "./src",
+      "paths": {
+        "@core/*":  ["./src/core/*"],
+        "@modules/*": ["./src/modules/*"],
+        "@infra/*": ["./src/infrastructure/*"],
+        "@presentation/*": ["./src/presentation/*"],
+        "@shared/*": ["./src/shared/*"]
+      }
+    },
+    "include": ["src"]
+  }
+  Done when: tsc --noEmit ไม่ error
+
+─────────────────────────────────────────────────────────────────────────────
+
+[TASK-002] ติดตั้ง dependencies                               | P0 | XS
+  npm install express zod nanoid node-cron \
+    @anthropic-ai/sdk openai @google/generative-ai \
+    @supabase/supabase-js axios
+  npm install -D typescript tsx vitest \
+    @types/express @types/node \
+    eslint eslint-plugin-import
+  Done when: package.json มี dependencies ครบ, npm install ไม่ error
+
+─────────────────────────────────────────────────────────────────────────────
+
+[TASK-003] สร้าง Express entry point                          | P0 | XS
+  File: src/server.ts
+  Content:
+    - สร้าง express app
+    - mount GET /api/health → { ok: true, data: { status: "healthy" } }
+    - listen PORT จาก env (default 3001)
+    - log "Hub v2 listening on :3001"
+  Done when: curl localhost:3001/api/health → 200
+
+─────────────────────────────────────────────────────────────────────────────
+
+[TASK-004] สร้าง .env.example ครบทุก key                     | P0 | XS
+  ครอบคลุม: HUB_SECRET, SUPABASE_*, ANTHROPIC_API_KEY, OPENAI_API_KEY,
+  GEMINI_API_KEY, TELEGRAM_*, LINE_*, WP_*, FB_*, AI_DAILY_BUDGET_USD
+  Done when: ไฟล์ครบ, มี comment อธิบายแต่ละ key
+
+
+================================================================================
+  PHASE 1 — CORE + SHARED
+================================================================================
+
+[TASK-101] สร้าง Value Objects                                | P1 | XS
+  Files: RunId.ts, QcCategory.ts, Severity.ts
+  ─────────────────────────────────────────────────────────────────
+  // RunId.ts
+  type RunId = string & { readonly _brand: "RunId" };
+  function createRunId(): RunId { return `run_${nanoid(8)}` as RunId; }
+
+  // QcCategory.ts
+  type QcCategory = "plaster" | "concrete" | "paint" | "level" | "unknown";
+
+  // Severity.ts
+  type Severity = "none" | "low" | "medium" | "high" | "critical";
+  function severityFromScore(score: number): Severity { ... }
+  Done when: TypeScript compile ผ่าน, no any types
+
+─────────────────────────────────────────────────────────────────────────────
+
+[TASK-102] สร้าง BlogRun Entity                               | P1 | S
+  File: src/core/domain/entities/BlogRun.ts
+  Methods:
+    create(keyword): BlogRun
+    complete(postId, postUrl): BlogRun
+    fail(error): BlogRun
+    isStuck(thresholdMinutes = 60): boolean
+    toState(): object  ← serialize to Supabase hub_state
+  Done when: unit test ผ่าน:
+    - isStuck() → true ถ้า startedAt > 60 นาทีที่แล้ว และ status=running
+    - complete() → status=completed
+
+─────────────────────────────────────────────────────────────────────────────
+
+[TASK-103] สร้าง QcInspection Entity                         | P1 | S
+  File: src/core/domain/entities/QcInspection.ts
+  Methods:
+    create(imageUrl, userId, category?): QcInspection
+    setResult(defects[], severity, score): QcInspection
+    isPassing(): boolean  ← score >= 70
+    getSummaryTh(): string  ← Thai language summary
+  Done when: unit test ผ่าน:
+    - isPassing() → false ถ้า score < 70
+    - getSummaryTh() → มีข้อความภาษาไทย
+
+─────────────────────────────────────────────────────────────────────────────
+
+[TASK-104] สร้าง Domain Events ทั้ง 8                        | P1 | XS
+  Files: BlogRunStarted.ts, BlogRunCompleted.ts, BlogRunFailed.ts,
+         QcInspectionCompleted.ts, QcDefectFound.ts,
+         FbPublished.ts, LeadReceived.ts, HealthAlertTriggered.ts
+  Base type:
+    type DomainEvent<T = unknown> = {
+      type: string;
+      payload: T;
+      occurredAt: string; // ISO8601
+    }
+  Done when: TypeScript compile ผ่าน
+
+─────────────────────────────────────────────────────────────────────────────
+
+[TASK-105] สร้าง Application Ports (Interfaces)              | P1 | XS
+  Files: IAiProvider, IStateRepository, IQcRepository,
+         IWorkflowEngine, INotifier, IEventBus
+  Done when: TypeScript compile ผ่าน, ไม่มี implementation
+
+─────────────────────────────────────────────────────────────────────────────
+
+[TASK-106] สร้าง Config module                               | P0 | S
+  File: src/modules/config/Config.ts
+  export function loadConfig(): Config {
+    const required = ["HUB_SECRET", "SUPABASE_URL", "SUPABASE_SERVICE_KEY",
+                      "ANTHROPIC_API_KEY", "OPENAI_API_KEY",
+                      "TELEGRAM_TOKEN", "TELEGRAM_CHAT_ID"];
+    for (const key of required) {
+      if (!process.env[key]) throw new Error(`Missing env: ${key}`);
+    }
+    return { /* typed config object */ };
+  }
+  Done when: throw ชัดเจนเมื่อ env ขาด, ไม่ throw เมื่อครบ
+
+─────────────────────────────────────────────────────────────────────────────
+
+[TASK-107] สร้าง Shared Utilities                            | P1 | S
+  Files: logger.ts, errors.ts, retry.ts, time.ts, id.ts
+  ─────────────────────────────────────────────────────────────────
+  logger: { info, warn, error }(msg, meta?) → JSON to stdout
+  errors: class AppError extends Error { constructor(code, message) }
+  retry:  withRetry<T>(fn, { maxAttempts=3, delayMs=1000 }): Promise<T>
+  time:   nowIso() → string, nowTh() → string (Asia/Bangkok), minutesSince(date)
+  id:     generateRunId() → `run_${nanoid(8)}`
+  Done when: unit test ผ่าน retry (3 attempts, exponential backoff)
+
+
+================================================================================
+  PHASE 2 — INFRASTRUCTURE
+================================================================================
+
+[TASK-201] สร้าง SupabaseClient                              | P0 | S
+  File: src/infrastructure/supabase/SupabaseClient.ts
+  Wraps: @supabase/supabase-js
+  Methods: from(table).select(), .insert(), .upsert(), .eq()
+  Error handling: log + rethrow as AppError("SUPABASE_ERROR", ...)
+  Done when: สามารถ SELECT จาก hub_state ได้จริง
+
+─────────────────────────────────────────────────────────────────────────────
+
+[TASK-202] สร้าง SupabaseStateRepository                     | P0 | S
+  File: src/infrastructure/supabase/SupabaseStateRepository.ts
+  implements IStateRepository
+  read()  → SELECT * FROM hub_state WHERE id = 'main' LIMIT 1
+  write(state) → UPSERT hub_state SET ... WHERE id = 'main'
+  Done when: read() ดึงข้อมูลจาก Supabase ได้จริง
+
+─────────────────────────────────────────────────────────────────────────────
+
+[TASK-203] สร้าง SupabaseQcRepository                        | P1 | S
+  File: src/infrastructure/supabase/SupabaseQcRepository.ts
+  implements IQcRepository
+  save(inspection): Promise<void>
+  findByMessageId(messageId): Promise<QcInspection | null>
+  list(filters): Promise<{ total, items }>
+  Done when: save() insert ได้จริงใน Supabase qc_inspections table
+
+─────────────────────────────────────────────────────────────────────────────
+
+[TASK-204] สร้าง TelegramNotifier                            | P0 | S
+  File: src/infrastructure/telegram/TelegramNotifier.ts
+  implements INotifier
+  send(message): POST https://api.telegram.org/bot{TOKEN}/sendMessage
+  dedup: Map<string, number> เก็บ hash → timestamp ไม่ส่งซ้ำใน 30 นาที
+  Done when: send() ส่ง test message ถึง Telegram ได้จริง
+
+─────────────────────────────────────────────────────────────────────────────
+
+[TASK-205] สร้าง N8nWorkflowAdapter                          | P1 | S
+  File: src/infrastructure/n8n/N8nWorkflowAdapter.ts
+  implements IWorkflowEngine
+  trigger(webhookId, payload): POST {N8N_WEBHOOK_BASE_URL}/{webhookId}
+  Done when: trigger blog webhook → n8n รับได้
+
+─────────────────────────────────────────────────────────────────────────────
+
+[TASK-206] สร้าง LineAdapter                                 | P1 | S
+  File: src/infrastructure/line/LineAdapter.ts
+  verifySignature(rawBody, signature): boolean  ← HMAC-SHA256
+  replyMessage(replyToken, messages[]): Promise<void>
+  Done when: verifySignature() pass กับ real LINE webhook payload
+
+─────────────────────────────────────────────────────────────────────────────
+
+[TASK-207] สร้าง FbBackendAdapter                            | P1 | S
+  File: src/infrastructure/facebook/FbBackendAdapter.ts
+  publishPost(post): proxy to FB Backend service
+  checkTokenStatus(): GET token expiry info
+  Done when: checkTokenStatus() return expiresAt ถูกต้อง
+
+─────────────────────────────────────────────────────────────────────────────
+
+[TASK-208] สร้าง WordPressPublisher                          | P2 | S
+  File: src/infrastructure/wordpress/WordPressPublisher.ts
+  createPost(data): POST /wp-json/wp/v2/posts → { id, link }
+  uploadMedia(imageUrl): POST /wp-json/wp/v2/media
+  Done when: createPost() สร้าง draft post ใน WP ได้จริง
+
+
+================================================================================
+  PHASE 3 — MODULES + USE CASES
+================================================================================
+
+[TASK-301] สร้าง EventBus                                    | P1 | S
+  File: src/modules/event-bus/EventBus.ts
+  emit<T>(event: T): void
+  subscribe<T>(type: string, handler: (e: T) => Promise<void>): void
+  DLQ: ถ้า handler throw → log error + Telegram alert (ไม่ crash process)
+  Done when: emit → subscriber รับได้, error ใน handler ไม่ kill process
+
+─────────────────────────────────────────────────────────────────────────────
+
+[TASK-302] สร้าง StateManager                                | P0 | S
+  File: src/modules/memory-manager/StateManager.ts
+  inject IStateRepository
+  getState(), updateBlogStatus(status, runId?), updateFbQueue(count)
+  Done when: updateBlogStatus("running") → Supabase อัพเดทจริง
+
+─────────────────────────────────────────────────────────────────────────────
+
+[TASK-303] สร้าง CacheManager                                | P2 | XS
+  File: src/modules/memory-manager/CacheManager.ts
+  set(key, value, ttlMs): void
+  get<T>(key): T | null
+  ใช้: Map<string, { value, expiresAt }>
+  Done when: get() return null หลัง TTL หมด
+
+─────────────────────────────────────────────────────────────────────────────
+
+[TASK-304] สร้าง HistoryManager                              | P2 | XS
+  File: src/modules/memory-manager/HistoryManager.ts
+  pushEvent(event): เก็บใน Supabase hub_history (หรือ in-memory ring buffer 200)
+  getHistory(limit): event[]
+  Done when: pushEvent() + getHistory() ทำงานร่วมกัน
+
+─────────────────────────────────────────────────────────────────────────────
+
+[TASK-305] สร้าง HubAuthService                              | P0 | XS
+  File: src/modules/auth/HubAuthService.ts
+  verifyHubToken(token): boolean  ← timingSafeEq (crypto module)
+  Done when: timingSafeEq ป้องกัน timing attack
+
+─────────────────────────────────────────────────────────────────────────────
+
+[TASK-306] สร้าง AI Providers (OpenAI + Claude + Gemini)    | P1 | M
+  Files: OpenAiProvider.ts, ClaudeProvider.ts, GeminiProvider.ts
+  ทั้ง 3 implements IAiProvider:
+    complete(prompt, opts): Promise<{ text, tokensUsed, model }>
+  OpenAI เพิ่ม:
+    generateImage(prompt): Promise<{ imageUrl }>
+    vision(imageUrl, prompt): Promise<{ text }>
+  Done when: ทั้ง 3 provider ส่ง prompt จริงได้ ไม่ throw
+
+─────────────────────────────────────────────────────────────────────────────
+
+[TASK-307] สร้าง AiGateway + CostTracker                    | P1 | M
+  Files: AiGateway.ts, CostTracker.ts, ProviderConfig.ts
+  AiGateway.complete(task, opts):
+    1. เลือก provider จาก ProviderConfig
+    2. ลอง primary → ถ้า fail → fallback
+    3. track cost
+    4. ถ้า budget exceeded → throw AppError("AI_BUDGET_EXCEEDED")
+  Done when:
+    - blog-write → ใช้ Claude
+    - qc-vision → ใช้ OpenAI vision
+    - ถ้า OpenAI fail → Gemini fallback ทำงาน
+
+─────────────────────────────────────────────────────────────────────────────
+
+[TASK-308] สร้าง RunBlogUseCase                              | P0 | M
+  File: src/core/application/use-cases/blog/RunBlogUseCase.ts
+  inject: IStateRepository, IWorkflowEngine, IEventBus
+  execute(keyword):
+    1. อ่าน state → ถ้า status=running → throw 409
+    2. สร้าง BlogRun entity
+    3. writeState(running)
+    4. trigger n8n workflow
+    5. emit BlogRunStarted event
+    6. return { runId, status, keyword }
+  Done when: unit test ผ่าน (mock deps), integration test trigger n8n จริง
+
+─────────────────────────────────────────────────────────────────────────────
+
+[TASK-309] สร้าง ResetBlogUseCase                            | P0 | S
+  File: src/core/application/use-cases/blog/ResetBlogUseCase.ts
+  execute():
+    1. อ่าน state → บันทึก previousStatus
+    2. writeState(idle)
+    3. return { previousStatus, resetAt }
+  Done when: reset เปลี่ยน Supabase status → idle จริง
+
+─────────────────────────────────────────────────────────────────────────────
+
+[TASK-310] สร้าง BlogCallbackUseCase                         | P0 | S
+  File: src/core/application/use-cases/blog/BlogCallbackUseCase.ts
+  execute(result):
+    completed → updateState(completed), pushHistory, emit BlogRunCompleted
+    failed    → updateState(failed), pushHistory, emit BlogRunFailed, notify Telegram
+  Done when: Telegram alert ส่งเมื่อ blog fail
+
+─────────────────────────────────────────────────────────────────────────────
+
+[TASK-311] สร้าง IngestQcUseCase                             | P1 | M
+  File: src/core/application/use-cases/qc/IngestQcUseCase.ts
+  execute(imageUrl, userId, category?):
+    1. สร้าง QcInspection entity
+    2. AiGateway.complete("qc-vision", { imageUrl })
+    3. parse AI response → defects[], severity, score
+    4. IQcRepository.save(inspection)
+    5. INotifier.send(summaryTh) ← LINE reply
+    6. emit QcInspectionCompleted
+    7. ถ้า severity=critical → emit QcDefectFound + Telegram alert
+  Done when: end-to-end: LINE image → vision → Supabase insert → LINE reply
+
+─────────────────────────────────────────────────────────────────────────────
+
+[TASK-312] สร้าง FB Use Cases                                | P1 | M
+  Files: BuildFbQueueUseCase.ts, RunFbQueueUseCase.ts
+  Build: ดึง WP posts → generate content frame → บันทึก queue ใน Supabase
+  Run:   อ่าน queue → FbBackendAdapter.publishPost() → update status
+  Done when: Run queue publish post ถึง FB Page จริง
+
+─────────────────────────────────────────────────────────────────────────────
+
+[TASK-313] สร้าง Property Use Cases                          | P2 | M
+  Files: UploadPropertyImageUseCase.ts, PublishPropertyUseCase.ts
+  Upload: รับ image → Supabase Storage → return URL
+  Publish: build WP post → WordPressPublisher.createPost()
+  Done when: Publish สร้าง WP post ได้จริง
+
+─────────────────────────────────────────────────────────────────────────────
+
+[TASK-314] สร้าง HealthMonitor                               | P0 | M
+  File: src/modules/health-center/HealthMonitor.ts
+  runChecks():
+    parallel: SupabaseCheck, FbBackendCheck, BlogStuckCheck, DlqCheck
+    return: { overall, checks, checkedAt }
+  scheduleMonitor(intervalMs = 30 * 60 * 1000):
+    setInterval(runChecks, intervalMs)
+    ถ้า overall != healthy → Telegram alert (dedup 30 นาที)
+  Done when: HealthMonitor detect blog stuck > 60 นาที → Telegram alert
+
+
+================================================================================
+  PHASE 4 — PRESENTATION
+================================================================================
+
+[TASK-401] สร้าง Middleware stack                            | P0 | S
+  Files: auth, cors, rate-limit, validate middlewares
+  auth: extractToken from x-hub-token → verify → next() หรือ 401
+  rate-limit: Map<ip, { count, resetAt }>, 60 req/min
+  validate: factory(schema: ZodSchema) → parse req.body หรือ 400
+  Done when: invalid token → 401, invalid body → 400
+
+─────────────────────────────────────────────────────────────────────────────
+
+[TASK-402] สร้าง Blog Routes + Controller                    | P0 | S
+  Files: blog.routes.ts, BlogController.ts
+  POST /action/blog/run    → validate(blogRunSchema) → RunBlogUseCase
+  POST /action/blog/reset  → ResetBlogUseCase
+  POST /blog/callback      → BlogCallbackUseCase  (no auth)
+  GET  /action/blog/status → StateManager.getBlogStatus()
+  Done when: Postman ทุก route ตอบถูกต้อง
+
+─────────────────────────────────────────────────────────────────────────────
+
+[TASK-403] สร้าง QC Routes + Controller                      | P1 | S
+  Files: qc.routes.ts, QcController.ts
+  POST /api/qc/ingest     → IngestQcUseCase  (no auth — from LINE)
+  GET  /api/qc/inspections → SupabaseQcRepository.list()  (auth)
+  Done when: POST /api/qc/ingest กับ real image URL → Supabase insert
+
+─────────────────────────────────────────────────────────────────────────────
+
+[TASK-404] สร้าง FB, Property, State, Health Routes          | P1 | M
+  Files: fb.routes.ts, property.routes.ts, state.routes.ts, health.routes.ts
+  ครอบคลุม endpoints ทั้งหมดใน API Contract (Document 3)
+  Done when: ทุก endpoint ใน Document 3 มี route handler
+
+─────────────────────────────────────────────────────────────────────────────
+
+[TASK-405] สร้าง LINE Webhook Handler                        | P1 | S
+  File: ผนวกใน qc.routes.ts หรือ webhook.routes.ts
+  POST /webhook/line:
+    1. return 200 ทันที (LINE ต้องการ < 3 วินาที)
+    2. async: verify signature → route by event type
+    image message → IngestQcUseCase
+    text message  → log (future: chatbot)
+  Done when: LINE OA ส่งรูป → 200 response < 1 วินาที → QC process async
+
+─────────────────────────────────────────────────────────────────────────────
+
+[TASK-406] Wire up Dependency Injection ใน server.ts         | P0 | M
+  File: src/server.ts (final version)
+  Order:
+    1. loadConfig()
+    2. สร้าง infrastructure (SupabaseClient, TelegramNotifier, ...)
+    3. สร้าง repositories (SupabaseStateRepository, ...)
+    4. สร้าง modules (AiGateway, EventBus, StateManager, ...)
+    5. สร้าง use cases (RunBlogUseCase, ...)
+    6. mount middleware + routers
+    7. scheduleMonitor()
+    8. listen(PORT)
+  Done when: server start ไม่ error, GET /api/health/detailed → healthy
+
+
+================================================================================
+  PHASE 5 — PARALLEL RUN
+================================================================================
+
+[TASK-501] Deploy v2 เป็น shadow service                     | P0 | S
+  Railway: สร้าง service ใหม่ "hub-v2-shadow"
+  PORT=3001, copy env vars จาก v1
+  Done when: https://hub-v2-shadow.railway.app/api/health → 200
+
+─────────────────────────────────────────────────────────────────────────────
+
+[TASK-502] Smoke test ทุก endpoint บน v2                     | P0 | M
+  ใช้ Postman collection หรือ curl script
+  ทดสอบตาม checklist ใน Migration Plan (Document 4) Section 7
+  Done when: ทุก test pass
+
+─────────────────────────────────────────────────────────────────────────────
+
+[TASK-503] Monitor v2 shadow 3 วัน                           | P0 | L
+  ดู Railway logs ทุกวัน
+  ตรวจ: ไม่มี unhandled rejection, memory stable, cost ไม่เกิน budget
+  Done when: 3 วันผ่านโดยไม่มี P0 bug
+
+
+================================================================================
+  PHASE 6 — CUTOVER
+================================================================================
+
+[TASK-601] Pre-cutover checklist                              | P0 | S
+  ตาม Migration Plan Document 4 Section 8
+  Done when: checklist ผ่านทุกข้อ
+
+─────────────────────────────────────────────────────────────────────────────
+
+[TASK-602] Execute cutover                                    | P0 | S
+  สลับ PORT, redeploy, monitor 30 นาที
+  Done when: v2 รับ production traffic ไม่มี error
+
+─────────────────────────────────────────────────────────────────────────────
+
+[TASK-603] Cleanup หลัง cutover                              | P2 | S
+  Remove server.cjs จาก repo
+  Rename Railway service
+  Update HANDOFF.md, CLAUDE.md, decisions.md
+  Done when: repo ไม่มี server.cjs, docs อัพเดทครบ
+
+
+================================================================================
+  SUMMARY — TASK COUNT
+================================================================================
+
+  Phase          Tasks   S/M/L  Days
+  ─────────────────────────────────────────────────────────────────────────────
+  Phase 0        4       XS     1
+  Phase 1        7       XS-S   2
+  Phase 2        8       S      2
+  Phase 3        7       S-M    3
+  Phase 4        6       S-M    2
+  Phase 5        3       S-M    3
+  Phase 6        3       S      1
+  ─────────────────────────────────────────────────────────────────────────────
+  TOTAL         38 tasks         ~14 วัน (working days)
+
+
+================================================================================
+  FIRST 5 TASKS TO START (เรียงลำดับ)
+================================================================================
+
+  1. [TASK-001] ตั้งค่า tsconfig.json
+  2. [TASK-002] ติดตั้ง dependencies
+  3. [TASK-003] สร้าง Express entry point (server.ts เปล่า)
+  4. [TASK-106] สร้าง Config module (fail fast)
+  5. [TASK-101] สร้าง Value Objects (RunId, QcCategory, Severity)
+
+  หลังจากนั้น → Phase 1 ต่อเนื่อง (TASK-102 → 107) → Phase 2 → ...
+
+
+================================================================================
+  HUB V2 BLUEPRINT — COMPLETE  (All 5 Documents)
+================================================================================
+
+  01-architecture-blueprint.html   ภาพรวมสถาปัตยกรรม, modules, design principles
+  02-folder-structure.txt          โครงสร้างโฟลเดอร์, naming conventions, migration map
+  03-api-contract.txt              มาตรฐาน API ครบทุก endpoint
+  04-migration-plan.txt            แผนย้ายระบบ 6 Phases, risks, rollback
+  05-implementation-tasks.txt      Task เล็กๆ 38 tasks พร้อม acceptance criteria
+
+  Status: Blueprint COMPLETE → พร้อมเริ่มพัฒนาตาม TASK-001
+================================================================================

@@ -1,0 +1,366 @@
+================================================================================
+  AP-HOME HUB v2  |  Document 4/5  |  Migration Plan
+  แผนย้ายระบบจาก server.cjs (v1) → Hub v2 (TypeScript Clean Architecture)
+  Strategy: Incremental — ไม่ Big Bang, v1 ต้องทำงานได้ตลอดการ migrate
+================================================================================
+
+CORE CONSTRAINT (ห้ามละเมิด)
+  ✗  ห้าม remove server.cjs ก่อน cutover
+  ✗  ห้าม break endpoint เดิมแม้แต่ endpoint เดียว
+  ✗  ห้าม deploy code ที่ยังไม่ผ่าน smoke test
+  ✓  v1 และ v2 อยู่ร่วมกันได้ตลอด Phase 1-4
+
+================================================================================
+  1. OVERVIEW — MIGRATION PHASES
+================================================================================
+
+  Phase    ชื่อ                    ระยะเวลา   เป้าหมาย
+  ─────────────────────────────────────────────────────────────────────────────
+  Phase 0  Scaffold                1 วัน      สร้างโครงสร้าง TypeScript ว่าง
+  Phase 1  Core + Shared           2 วัน      Domain, Ports, Shared utils
+  Phase 2  Infrastructure          2 วัน      Adapters (Supabase, Telegram, n8n)
+  Phase 3  Modules + Use Cases     3 วัน      Business logic ทั้งหมด
+  Phase 4  Presentation            2 วัน      Routes + Controllers
+  Phase 5  Parallel Run            3 วัน      v1 + v2 ทำงานพร้อมกัน → verify
+  Phase 6  Cutover                 1 วัน      switch traffic → v2, remove v1
+  ─────────────────────────────────────────────────────────────────────────────
+  TOTAL                           ~14 วัน    (working days — ไม่รวม buffer)
+
+
+================================================================================
+  2. PHASE 0 — SCAFFOLD  (1 วัน)
+================================================================================
+
+  เป้าหมาย: สร้างโครงสร้างโฟลเดอร์และ config ทั้งหมด แต่ยังไม่มี logic
+
+  Tasks:
+  [ ] สร้าง folder tree ตาม Document 2 (Folder Structure) ทั้งหมด
+  [ ] ตั้งค่า tsconfig.json — strict: true, path aliases (@core, @modules, @infra, @shared)
+  [ ] ตั้งค่า tsconfig.build.json — excludes tests
+  [ ] ติดตั้ง dependencies:
+        express, zod, nanoid, node-cron
+        @anthropic-ai/sdk, openai, @google/generative-ai
+        @supabase/supabase-js
+  [ ] ติดตั้ง devDependencies:
+        typescript, tsx, vitest, @types/express, @types/node
+        eslint, eslint-plugin-import
+  [ ] สร้าง src/server.ts — express app เปล่า port 3001 (v1 = 3000)
+  [ ] ตั้งค่า .env.example ครบทุก key
+  [ ] ตั้งค่า package.json scripts:
+        "dev:v2": "tsx watch src/server.ts"
+        "build": "tsc -p tsconfig.build.json"
+        "test": "vitest"
+
+  ✅ Done when: `npm run dev:v2` รันได้, GET /api/health ตอบ 200
+
+
+================================================================================
+  3. PHASE 1 — CORE + SHARED  (2 วัน)
+================================================================================
+
+  เป้าหมาย: สร้าง domain layer และ shared utilities — zero external deps
+
+  Day 1: Domain
+  [ ] src/core/domain/value-objects/
+        RunId.ts       — branded string type
+        QcCategory.ts  — union type enum
+        Severity.ts    — none|low|medium|high|critical
+  [ ] src/core/domain/entities/
+        BlogRun.ts      — create(), complete(), fail(), isStuck()
+        QcInspection.ts — create(), getScore(), getDefects()
+        Lead.ts         — create(), qualify()
+        HubState.ts     — shape type only
+  [ ] src/core/domain/events/
+        สร้างทั้ง 8 events (BlogRunStarted, ..., HealthAlertTriggered)
+        Base DomainEvent: { type, payload, occurredAt }
+
+  Day 2: Application Ports + Shared
+  [ ] src/core/application/ports/
+        IAiProvider.ts, IStateRepository.ts, IQcRepository.ts
+        IWorkflowEngine.ts, INotifier.ts, IEventBus.ts
+  [ ] src/shared/
+        logger.ts    — JSON structured: { level, ts, msg, ...meta }
+        errors.ts    — AppError(code, message), ValidationError, NotFoundError
+        retry.ts     — withRetry(fn, { maxAttempts, delayMs })
+        time.ts      — nowIso(), nowTh(), minutesSince(date)
+        id.ts        — generateRunId() → "run_<nanoid>"
+  [ ] src/modules/config/Config.ts
+        validate env vars at startup — throw if missing:
+          HUB_SECRET, SUPABASE_URL, SUPABASE_SERVICE_KEY
+          ANTHROPIC_API_KEY, OPENAI_API_KEY, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID
+
+  ✅ Done when: Unit tests ผ่านสำหรับ BlogRun + QcInspection entities
+  ✅ Done when: Config.ts throw ชัดเจนเมื่อ env var ขาด
+
+
+================================================================================
+  4. PHASE 2 — INFRASTRUCTURE  (2 วัน)
+================================================================================
+
+  เป้าหมาย: สร้าง adapters ทั้งหมดที่ implement ports
+
+  Day 3: Supabase + Telegram
+  [ ] src/infrastructure/supabase/SupabaseClient.ts
+        wrapper รอบ @supabase/supabase-js
+        methods: insert(), upsert(), select(), rpc()
+  [ ] src/infrastructure/supabase/SupabaseStateRepository.ts
+        implements IStateRepository
+        read()  → SELECT * FROM hub_state LIMIT 1
+        write() → UPSERT hub_state
+  [ ] src/infrastructure/supabase/SupabaseQcRepository.ts
+        implements IQcRepository
+        save(inspection) → INSERT qc_inspections
+        findByMessageId(id)
+  [ ] src/infrastructure/supabase/SupabaseContentFramesRepo.ts
+        fetch top-5 content_frames ORDER BY created_at DESC
+  [ ] src/infrastructure/telegram/TelegramNotifier.ts
+        implements INotifier
+        send(message) → POST https://api.telegram.org/bot.../sendMessage
+        dedup: ไม่ส่ง alert ซ้ำใน 30 นาที (in-memory set)
+
+  Day 4: n8n + LINE + Facebook + WordPress
+  [ ] src/infrastructure/n8n/N8nWorkflowAdapter.ts
+        implements IWorkflowEngine
+        trigger(workflowId, payload) → POST n8n webhook URL
+  [ ] src/infrastructure/line/LineAdapter.ts
+        replyMessage(replyToken, messages)
+        verifySignature(body, signature) → boolean
+  [ ] src/infrastructure/facebook/FbBackendAdapter.ts
+        publish(post) → POST to FB Backend service
+        checkTokenStatus() → GET token expiry
+  [ ] src/infrastructure/wordpress/WordPressPublisher.ts
+        createPost(data) → WP REST API POST /wp-json/wp/v2/posts
+        uploadMedia(imageUrl) → WP REST API POST /wp-json/wp/v2/media
+
+  ✅ Done when: SupabaseStateRepository.read() ดึงข้อมูลจริงจาก Supabase ได้
+  ✅ Done when: TelegramNotifier.send() ส่ง test message ถึง Telegram ได้
+
+
+================================================================================
+  5. PHASE 3 — MODULES + USE CASES  (3 วัน)
+================================================================================
+
+  เป้าหมาย: ย้าย business logic ทั้งหมดจาก server.cjs → use cases + modules
+
+  Day 5: Event Bus + Memory + Auth + Config
+  [ ] src/modules/event-bus/EventBus.ts
+        wraps Node.js EventEmitter
+        emit<T extends DomainEvent>(event: T)
+        subscribe<T>(type: string, handler: (event: T) => void)
+        Dead Letter Queue: catch handler errors → log + telegram alert
+  [ ] src/modules/memory-manager/StateManager.ts
+        inject IStateRepository
+        getState(), updateBlogStatus(), updateFbQueue()
+  [ ] src/modules/memory-manager/HistoryManager.ts
+        pushEvent(event), getHistory(limit)
+  [ ] src/modules/memory-manager/CacheManager.ts
+        set(key, value, ttlMs), get(key) → value | null
+        ใช้สำหรับ content_frames cache (TTL 5 นาที)
+  [ ] src/modules/auth/HubAuthService.ts
+        verifyHubToken(token) → boolean (timingSafeEq)
+        verifyLineSignature(body, sig) → boolean
+
+  Day 6: AI Gateway + Workflow Manager
+  [ ] src/modules/ai-gateway/providers/OpenAiProvider.ts
+        implements IAiProvider
+        complete(prompt, opts) — text + vision
+        generateImage(prompt) — dall-e-3
+  [ ] src/modules/ai-gateway/providers/ClaudeProvider.ts
+        implements IAiProvider
+        complete(prompt, opts) — claude-sonnet-4-6, claude-haiku-4-5
+  [ ] src/modules/ai-gateway/providers/GeminiProvider.ts
+        implements IAiProvider
+        complete(prompt, opts) — gemini-2.0-flash + vision
+  [ ] src/modules/ai-gateway/AiGateway.ts
+        select provider by task (ตาม ProviderConfig.ts)
+        fallback chain: primary → fallback → error
+        track cost per request
+  [ ] src/modules/ai-gateway/CostTracker.ts
+        trackUsage(model, tokensIn, tokensOut)
+        getDailyCost() → number (USD)
+        isBudgetExceeded(limit) → boolean
+
+  Day 7: Use Cases
+  [ ] src/core/application/use-cases/blog/RunBlogUseCase.ts
+        inject: IStateRepository, IWorkflowEngine, IEventBus
+        execute(keyword) → checks not running → triggers n8n → emits BlogRunStarted
+  [ ] src/core/application/use-cases/blog/ResetBlogUseCase.ts
+        inject: IStateRepository, IEventBus
+        execute() → sets status=idle → emits BlogRunReset
+  [ ] src/core/application/use-cases/blog/BlogCallbackUseCase.ts
+        inject: IStateRepository, IEventBus, INotifier
+        execute(result) → updates state → emits BlogRunCompleted|Failed
+  [ ] src/core/application/use-cases/qc/IngestQcUseCase.ts
+        inject: IAiProvider, IQcRepository, INotifier, IEventBus
+        execute(imageUrl, category) → vision analysis → save → notify LINE
+  [ ] src/core/application/use-cases/fb/ (BuildFbQueueUseCase + RunFbQueueUseCase)
+  [ ] src/core/application/use-cases/property/ (Upload + Publish)
+  [ ] src/modules/health-center/HealthMonitor.ts
+        runChecks() → parallel check all dependencies
+        scheduleMonitor(intervalMs) → setInterval
+        deduplicate alerts (ไม่ส่ง Telegram ซ้ำใน 30 นาที)
+
+  ✅ Done when: RunBlogUseCase unit test ผ่าน (mock IStateRepository + IWorkflowEngine)
+  ✅ Done when: IngestQcUseCase integration test ผ่าน (real vision AI)
+
+
+================================================================================
+  6. PHASE 4 — PRESENTATION  (2 วัน)
+================================================================================
+
+  เป้าหมาย: สร้าง Express routes + controllers + middleware ครบทุก endpoint
+
+  Day 8: Middleware + Blog + QC
+  [ ] src/modules/api-gateway/middleware/auth.middleware.ts
+        extractToken(req) → verifyHubToken() → next() หรือ 401
+  [ ] src/modules/api-gateway/middleware/cors.middleware.ts
+        allowlist: vercel domain + localhost
+  [ ] src/modules/api-gateway/middleware/rate-limit.middleware.ts
+        60 req/min per IP (in-memory Map, reset ทุก 60 วินาที)
+  [ ] src/modules/api-gateway/middleware/validate.middleware.ts
+        validate(schema: ZodSchema) → middleware factory
+  [ ] src/presentation/routes/blog.routes.ts + BlogController.ts
+        POST /action/blog/run    → RunBlogUseCase
+        POST /action/blog/reset  → ResetBlogUseCase
+        POST /blog/callback      → BlogCallbackUseCase
+        GET  /action/blog/status → StateManager.getBlogStatus()
+  [ ] src/presentation/routes/qc.routes.ts + QcController.ts
+        POST /api/qc/ingest     → IngestQcUseCase
+        GET  /api/qc/inspections → SupabaseQcRepository.list()
+
+  Day 9: FB + Property + State + Health + LINE Webhook
+  [ ] src/presentation/routes/fb.routes.ts + FbController.ts
+  [ ] src/presentation/routes/property.routes.ts + PropertyController.ts
+  [ ] src/presentation/routes/state.routes.ts
+        GET /api/state, GET /api/history
+  [ ] src/presentation/routes/health.routes.ts
+        GET /api/health, GET /api/health/detailed
+  [ ] POST /webhook/line → verify signature → route to handler
+  [ ] src/server.ts — wire up DI container:
+        create all repositories, adapters, use cases, modules
+        mount all routers
+        start HealthMonitor
+        listen on PORT (default 3001 during transition)
+
+  ✅ Done when: ทุก endpoint ผ่าน Postman smoke test
+  ✅ Done when: POST /action/blog/run ทำ end-to-end ได้จริง (n8n trigger)
+
+
+================================================================================
+  7. PHASE 5 — PARALLEL RUN  (3 วัน)
+================================================================================
+
+  เป้าหมาย: v1 + v2 ทำงานพร้อมกัน เทียบผลลัพธ์ก่อน cutover
+
+  Setup:
+  [ ] v1 (server.cjs) → PORT=3000 (production traffic)
+  [ ] v2 (server.ts)  → PORT=3001 (shadow traffic)
+  [ ] Railway: deploy v2 เป็น separate service ชื่อ "hub-v2-shadow"
+
+  Verification Checklist:
+  [ ] Blog run → v2 ทำงาน end-to-end ได้เหมือน v1
+  [ ] Blog reset → ทั้งสองตอบ 200
+  [ ] QC ingest → vision result ใกล้เคียง v1 (± 10% score)
+  [ ] FB build-queue + run-queue → v2 publish ได้จริง
+  [ ] Health Monitor → Telegram alerts ส่งถูกต้อง ไม่ duplicate
+  [ ] State → /api/state ข้อมูลตรงกันทั้ง v1 และ v2
+  [ ] Error handling → 409, 401 ตอบ format เดียวกัน
+  [ ] Rate limit → ทดสอบ > 60 req/min → 429
+
+  Monitor 3 วัน:
+  [ ] ไม่มี unhandled exception ใน v2 logs
+  [ ] Cost per AI request ไม่เกิน budget
+  [ ] Memory ไม่ leak (heapUsed stable หลัง 24h)
+
+  ✅ Done when: ทุก checklist item ผ่าน ไม่มี regression
+
+
+================================================================================
+  8. PHASE 6 — CUTOVER  (1 วัน)
+================================================================================
+
+  เป้าหมาย: switch traffic ทั้งหมดไปที่ v2 อย่างปลอดภัย
+
+  Pre-cutover (ตรวจก่อน):
+  [ ] v2 health check: GET /api/health/detailed → overall: "healthy"
+  [ ] Supabase มี backup ล่าสุด (< 1 ชั่วโมง)
+  [ ] แจ้งทีมว่าจะมี maintenance window 15 นาที
+
+  Cutover Steps:
+  1. [ ] Set v2 PORT=3000 ใน Railway env vars
+  2. [ ] Set v1 PORT=3099 (ยังอยู่ แต่ไม่รับ traffic หลัก)
+  3. [ ] Redeploy v2 service
+  4. [ ] ทดสอบ production: POST /action/blog/run → 200
+  5. [ ] Monitor Telegram alerts 30 นาที — ต้องไม่มี unexpected alert
+  6. [ ] ถ้าปกติ → ประกาศ cutover สำเร็จ
+
+  Rollback Plan (ถ้ามีปัญหาภายใน 30 นาที):
+  1. [ ] Set v1 PORT=3000 → Redeploy v1
+  2. [ ] Set v2 PORT=3001
+  3. [ ] แจ้ง Telegram: "Hub v2 cutover rolled back"
+  4. [ ] เปิด issue → fix → repeat Phase 5
+
+  Post-cutover (หลัง 48 ชั่วโมง ถ้าไม่มีปัญหา):
+  [ ] Remove server.cjs จาก repo
+  [ ] Update Railway service เป็น hub-v2 (rename)
+  [ ] Archive hub-v2-shadow service
+  [ ] อัพเดท documentation
+
+  ✅ Done when: v2 รัน production 48h ไม่มี rollback
+
+
+================================================================================
+  9. RISK REGISTER
+================================================================================
+
+  Risk                              Likelihood  Impact  Mitigation
+  ─────────────────────────────────────────────────────────────────────────────
+  v2 QC vision score ต่างจาก v1    Medium      Medium  ทดสอบ 20 รูปก่อน cutover
+  Railway PORT conflict             Low         High    ใช้ separate service ใน Phase 5
+  Supabase schema เปลี่ยน           Low         High    ไม่แก้ DB schema ใน migration นี้
+  AI cost เกิน budget               Medium      Medium  CostTracker + daily limit
+  Health Monitor duplicate alerts   Low         Low     dedup set (30 นาที)
+  LINE webhook timeout              Low         Medium  return 200 ก่อน → async process
+  TypeScript compile error          Medium      Low     vitest + CI ก่อน deploy
+  Git conflict (server.cjs แก้ขณะ migrate) Medium Low  feature branch per phase
+
+
+================================================================================
+  10. ROLLBACK TRIGGER CONDITIONS
+================================================================================
+
+  ให้ rollback ทันทีถ้าเกิดอย่างใดอย่างหนึ่ง:
+  - Error rate > 5% ใน 10 นาทีแรกหลัง cutover
+  - Blog run ไม่ trigger n8n ใน 3 ครั้งติดต่อกัน
+  - QcIngest ส่ง Telegram alert ผิดพลาด > 2 ครั้ง
+  - /api/health/detailed → overall: "unhealthy"
+  - Memory leak: heapUsed เพิ่ม > 200MB ใน 1 ชั่วโมง
+  - ทีมรายงาน bug ที่ไม่มีใน v1
+
+
+================================================================================
+  11. ENVIRONMENT VARIABLES — DELTA
+================================================================================
+
+  ตัวแปรที่ต้องเพิ่ม (ไม่มีใน server.cjs v1):
+  ─────────────────────────────────────────────────────────────────────────────
+  ANTHROPIC_API_KEY          claude provider
+  GEMINI_API_KEY             gemini fallback provider
+  AI_DAILY_BUDGET_USD        daily token spend limit (suggest: 5.00)
+  HUB_VERSION                "2.0.0" — reported in /api/health
+  N8N_WEBHOOK_BASE_URL       n8n webhook base (ถ้า URL เปลี่ยน)
+  ─────────────────────────────────────────────────────────────────────────────
+
+  ตัวแปรที่ยังใช้เหมือนเดิม (copy จาก v1):
+  ─────────────────────────────────────────────────────────────────────────────
+  HUB_SECRET, SUPABASE_URL, SUPABASE_SERVICE_KEY
+  OPENAI_API_KEY, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID
+  LINE_CHANNEL_SECRET, LINE_CHANNEL_ACCESS_TOKEN
+  WP_URL, WP_USER, WP_APP_PASSWORD
+  FB_PAGE_ID, FB_PAGE_ACCESS_TOKEN
+  FB_BACKEND_URL, FB_BACKEND_SECRET
+
+
+================================================================================
+  Document 4/5 — Migration Plan  |  Next: 05-implementation-tasks.txt
+================================================================================
