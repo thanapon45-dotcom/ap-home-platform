@@ -2063,6 +2063,30 @@ app.post("/api/qc/ingest", async (req, res) => {
   });
 });
 
+// ── POST /api/qc/feedback ──────────────────────────────────────────────────
+// Records whether a human confirmed the AI's QC verdict was correct.
+// Called by n8n's wf_qc_line workflow when the inspector taps the
+// "✅ ตรง" / "❌ ไม่ตรง" Quick Reply button in LINE.
+app.post("/api/qc/feedback", async (req, res) => {
+  if (!HUB_SECRET || !timingSafeEq(req.headers["x-hub-token"] || "", HUB_SECRET))
+    return res.status(401).json({ error: "unauthorized" });
+
+  const { line_message_id, feedback } = req.body || {};
+  if (!line_message_id || !["correct", "incorrect"].includes(feedback))
+    return res.status(400).json({ error: "line_message_id and feedback (correct|incorrect) required" });
+
+  const existing = await qcFindExisting(line_message_id);
+  if (!existing) return res.status(404).json({ error: "inspection_not_found" });
+
+  const upd = await supabaseUpdate("qc_inspections", { id: `eq.${existing.id}` }, {
+    human_feedback: feedback,
+    human_feedback_at: new Date().toISOString()
+  });
+  if (!upd.ok) return res.status(500).json({ error: "db_error", detail: upd.error });
+
+  res.json({ ok: true, inspection_id: existing.id, feedback });
+});
+
 // ── GET /api/qc/list ───────────────────────────────────────────────────────
 app.get("/api/qc/list", async (req, res) => {
   if (!HUB_SECRET || !timingSafeEq(req.headers["x-hub-token"] || "", HUB_SECRET))
