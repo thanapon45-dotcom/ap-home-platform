@@ -18,7 +18,19 @@ export async function GET() {
       signal: AbortSignal.timeout(8000), // ป้องกัน Vercel 10s platform timeout
     });
     if (!r.ok) {
-      return NextResponse.json({ blog: { status: "idle" }, error: `Hub returned ${r.status}` });
+      // TEMP DEBUG (session 19, Jul 2) — remove after HUB_URL/HUB_SECRET mismatch is diagnosed.
+      // Does NOT expose the full secret: only length + first/last 4 chars.
+      const secret = process.env.HUB_SECRET ?? "";
+      return NextResponse.json({
+        blog: { status: "idle" },
+        error: `Hub returned ${r.status}`,
+        debug: {
+          hubUrlFull: HUB,
+          secretLength: secret.length,
+          secretPrefix: secret.slice(0, 4),
+          secretSuffix: secret.slice(-4),
+        },
+      });
     }
     const text = await r.text();
     try {
