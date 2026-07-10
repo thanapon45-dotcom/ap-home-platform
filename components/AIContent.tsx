@@ -1023,6 +1023,7 @@ function ListingTab({ onSave }: { onSave: (item: ContentItem) => void }) {
   const [listError, setListError] = useState("");
   const [selected, setSelected] = useState<WpProperty | null>(null);
   const [type, setType] = useState("fb_post");
+  const [awareness, setAwareness] = useState("problem_aware");
   const [result, setResult] = useState("");
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -1044,6 +1045,8 @@ function ListingTab({ onSave }: { onSave: (item: ContentItem) => void }) {
     if (!selected) return;
     setLoading(true); setResult(""); setPostResult(null);
     const typeLabel = POST_TYPES.find(t => t.value === type)?.label ?? type;
+    const resaleSeg  = BUYER_SEGMENTS.find(s => s.value === "resale")!;
+    const selectedAw = AWARENESS_LEVELS.find(a => a.value === awareness) ?? AWARENESS_LEVELS[1];
     const details = [
       `ประเภท: ${selected.property_type || "บ้าน"}`,
       `ทำเล: ${selected.location || "—"}${selected.zone ? ` (${selected.zone})` : ""}`,
@@ -1056,16 +1059,35 @@ function ListingTab({ onSave }: { onSave: (item: ContentItem) => void }) {
     ].filter(Boolean).join("\n");
 
     const system = `คุณเป็น Social Media Editor ของแบรนด์ ${BRAND} (โบรกเกอร์อสังหาริมทรัพย์และบริษัทรับสร้างบ้าน)
-เขียน ${typeLabel} โปรโมททรัพย์ชิ้นนี้ให้น่าสนใจและขายออกได้จริง
+เขียน ${typeLabel} โปรโมททรัพย์มือสองชิ้นนี้ให้น่าสนใจและขายออกได้จริง
+
+${BRAND_FACTS}
+
+── กลุ่มลูกค้าเป้าหมาย: บ้านมือสอง / Listing (สำคัญมาก — ห้ามเขียนแบบทั่วไป) ──
+${resaleSeg.emoji} ${resaleSeg.label}
+  • สิ่งที่เขากลัว: "${resaleSeg.fear}"
+  • สิ่งที่เขาต้องการ: ${resaleSeg.need}
+  • Key Message: "${resaleSeg.key_message}"
+  • Framed Message ตัวอย่าง (แนวทาง ห้ามคัดลอกคำต่อคำ): "${resaleSeg.framed[0]}"
+
+Awareness Level: ${selectedAw.label} — ${selectedAw.desc}
+  • Hook approach: ${selectedAw.hook}
+
+สำคัญ: ต้องเขียนระดับ "ความรู้สึก/ชีวิตประจำวัน" (Level 2-3) ไม่ใช่แค่ list feature (Level 1) — ทำให้คนอ่านรู้สึกว่า "บ้านหลังนี้ตอบชีวิตของฉันได้จริง" ก่อนจะโชว์ราคา/สเปค
+
+โครงสร้างบังคับ (เรียงตามนี้เป๊ะ ห้ามสลับ):
+1. **บรรทัดเปิด (1 ประโยคเดียวเท่านั้น)** — บรรยายฉาก/ความรู้สึกในชีวิตประจำวันที่มาจาก fear/need ข้างต้นโดยตรง เช่นรูปแบบ "${resaleSeg.framed[0]}" (ห้ามคัดลอกคำต่อคำ ให้ปรับเข้ากับทำเลจริงของทรัพย์นี้)
+   ❌ บรรทัดนี้ห้ามมีตัวเลขราคา, ห้ามมีคำว่า "งบ", "ราคาเพียง", "บาท", ห้ามมี emoji แบบ bullet-list, ห้ามใช้คำ hype เช่น "หายากมาก" "รีบเลย" "อย่าให้คนอื่นได้ก่อน"
+2. บรรทัดที่ 2 — เชื่อมจากฉากในบรรทัด 1 เข้าสู่ทรัพย์นี้จริงๆ (พูดถึงทำเล/ตัวบ้านสั้นๆ)
+3. หลังจากนั้นค่อยเป็น bullet จุดเด่น 3-4 ข้อ (emoji) รวมราคา/ห้องนอน/พื้นที่ ตามข้อมูลจริง
+4. CTA: ใช้ลิงก์ทรัพย์นี้โดยตรง — "ดูรายละเอียดเพิ่มเติมที่ [PROPERTY_URL]" หรือ "ทักมาปรึกษาเลย 0627946152"
+5. Hashtag 5-7 อัน รวม #Finnhouses #ขายบ้าน #บ้านมือสอง
 
 กฎเหล็ก:
-❌ ห้าม hallucinate ข้อมูลที่ไม่มีในรายละเอียดทรัพย์
+❌ ห้าม hallucinate ข้อมูลที่ไม่มีในรายละเอียดทรัพย์ (ราคา/ห้องนอน/ทำเล/พื้นที่ ต้องตรงกับข้อมูลจริงที่ให้มาเท่านั้น)
 ❌ ห้ามเขียนยาวเกิน 200 คำ
 ❌ ห้ามใช้ "ปรึกษาฟรี" หรือ "ลิงก์ใน Bio"
-✅ เขียน FB style กระชับ ดึงใจ ภาษาพูดธรรมชาติ
-✅ ไฮไลท์ราคาและจุดเด่น
-✅ CTA: ใช้ลิงก์ทรัพย์นี้โดยตรง — "ดูรายละเอียดเพิ่มเติมที่ [PROPERTY_URL]" หรือ "ทักมาปรึกษาเลย 0627946152"
-✅ Hashtag 5-7 อัน รวม #Finnhouses #ขายบ้าน #โบรกเกอร์`;
+✅ เขียน FB style กระชับ ดึงใจ ภาษาพูดธรรมชาติ`;
 
     const decodedLink = (() => { try { return decodeURIComponent(selected.link ?? ""); } catch { return selected.link ?? ""; } })();
 
@@ -1074,14 +1096,11 @@ function ListingTab({ onSave }: { onSave: (item: ContentItem) => void }) {
 ${details}
 ลิงก์ทรัพย์: ${decodedLink}
 
-เขียน ${typeLabel} สำหรับ Facebook page ของ ${BRAND}:
-• Hook 1-2 บรรทัดแรก — ดึงใจคนที่กำลังมองหาบ้าน
-• Highlight จุดเด่น 3-4 ข้อ (emoji bullet)
-• ราคา (ต้องแสดง ถ้ามีข้อมูล)
-• CTA: ใช้ลิงก์ทรัพย์นี้โดยตรง (${decodedLink}) ให้คนคลิกดูรายละเอียดเพิ่มเติม
-• Hashtag
+เขียน ${typeLabel} สำหรับ Facebook page ของ ${BRAND} ตามโครงสร้างบังคับ 5 ข้อที่กำหนดไว้ใน system prompt เป๊ะๆ
+ทำเลจริงของทรัพย์นี้: ${selected.location || "—"}${selected.zone ? ` (${selected.zone})` : ""} — ใช้ทำเลนี้ในการปรับฉาก/ความรู้สึกของบรรทัดเปิด ไม่ใช่ทำเลสมมติ
+ลิงก์ CTA: ${decodedLink}
 
-เขียนตรงๆ ห้ามใส่ label "Hook:" หรือ "CTA:" นำหน้า`;
+เขียนตรงๆ ห้ามใส่ label "1." "2." "Hook:" หรือ "CTA:" นำหน้าแต่ละส่วน — ให้อ่านลื่นเหมือนโพสต์จริง`;
 
     const text = await callClaude(system, prompt, "claude-sonnet-4-6").catch(e => `❌ Error: ${e.message}`);
     setResult(text);
@@ -1166,7 +1185,7 @@ ${details}
                 {selected.price && <span style={{ fontSize: 11, color: "#fb7185", fontWeight: 700, flexShrink: 0 }}>{formatPriceTh(selected.price)}</span>}
                 {selected.location && <span style={{ fontSize: 11, color: "#64748b", flexShrink: 0 }}>📍 {selected.location}</span>}
               </div>
-              <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
                 <div style={{ fontSize: 11, color: "#64748b", flexShrink: 0 }}>แปลงเป็น</div>
                 {POST_TYPES.map(t => (
                   <button key={t.value} onClick={() => setType(t.value)} style={{
@@ -1175,6 +1194,16 @@ ${details}
                     color: type === t.value ? "#fb7185" : "#64748b",
                     border: type === t.value ? "1px solid rgba(251,113,133,.3)" : "1px solid rgba(255,255,255,.06)",
                   }}>{t.emoji} {t.label}</button>
+                ))}
+                <div style={{ width: 1, height: 16, background: "rgba(255,255,255,.08)", margin: "0 2px" }} />
+                <div style={{ fontSize: 11, color: "#64748b", flexShrink: 0 }}>ลูกค้ารู้ตัวแค่ไหน</div>
+                {AWARENESS_LEVELS.map(a => (
+                  <button key={a.value} onClick={() => setAwareness(a.value)} title={a.desc} style={{
+                    padding: "4px 10px", borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer",
+                    background: awareness === a.value ? "rgba(99,102,241,.15)" : "rgba(255,255,255,.04)",
+                    color: awareness === a.value ? "#818cf8" : "#64748b",
+                    border: awareness === a.value ? "1px solid rgba(99,102,241,.3)" : "1px solid rgba(255,255,255,.06)",
+                  }}>{a.label}</button>
                 ))}
                 <button onClick={generate} disabled={loading} style={{
                   marginLeft: "auto", background: loading ? "rgba(251,113,133,.05)" : "rgba(251,113,133,.12)",
