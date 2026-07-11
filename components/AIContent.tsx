@@ -1029,6 +1029,7 @@ function ListingTab({ onSave }: { onSave: (item: ContentItem) => void }) {
   const [copied, setCopied] = useState(false);
   const [posting, setPosting] = useState(false);
   const [postResult, setPostResult] = useState<"ok" | "error" | null>(null);
+  const [postError, setPostError] = useState("");
 
   useEffect(() => {
     fetch("/api/property/list")
@@ -1109,7 +1110,7 @@ ${details}
 
   async function postToFacebook() {
     if (!result) return;
-    setPosting(true); setPostResult(null);
+    setPosting(true); setPostResult(null); setPostError("");
     try {
       const imageUrl = selected?.featured_image?.startsWith("https://") ? selected.featured_image : undefined;
       const r = await fetch("/api/fb/publish", {
@@ -1118,8 +1119,13 @@ ${details}
         body: JSON.stringify({ content: result, imageUrl, source: "listing" }),
       });
       const data = await r.json();
-      setPostResult(r.ok && data.ok !== false ? "ok" : "error");
-    } catch { setPostResult("error"); }
+      const ok = r.ok && data.ok !== false;
+      setPostResult(ok ? "ok" : "error");
+      if (!ok) setPostError(data.error ?? `HTTP ${r.status}`);
+    } catch (e) {
+      setPostResult("error");
+      setPostError(e instanceof Error ? e.message : "network error");
+    }
     finally { setPosting(false); }
   }
 
@@ -1230,6 +1236,11 @@ ${details}
                     </button>
                   </div>
                 </div>
+                {postResult === "error" && postError && (
+                  <div style={{ fontSize: 12, color: "#f43f5e", marginBottom: 10, wordBreak: "break-word" }}>
+                    {postError}
+                  </div>
+                )}
                 <textarea
                   value={result}
                   onChange={e => setResult(e.target.value)}
