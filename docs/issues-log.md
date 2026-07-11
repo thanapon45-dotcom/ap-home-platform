@@ -226,3 +226,32 @@ const HUB = (process.env.HUB_URL ?? "").replace(/\/api\/?$/, "").replace(/\/+$/,
 **Fix จริง**: user แก้ taxonomy term ในโพสต์ WordPress จาก "บ้านเดี่ยว" → "ทาวน์เฮ้าส์" โดยตรงผ่าน WP admin
 
 **Lesson**: เวลาบั๊กเนื้อหาแบบนี้เกิดซ้ำหลัง fix โค้ดแล้ว ต้องไล่เช็คต้นทางข้อมูลจริง (WordPress taxonomy ในกรณีนี้) ก่อนจะสันนิษฐานว่าเป็นบั๊ก AI/prompt เสมอ — ควรพิจารณาเพิ่ม validation หรือ warning ใน ListingTab UI ในอนาคตถ้าพบว่า field สำคัญ (property_type, price) ว่างเปล่าหรือดูผิดปกติ เพื่อลดความเสี่ยงจาก data entry error ที่ WP source
+
+---
+
+## ISSUE-013 — Supabase RLS/permission hardening (พบระหว่าง critique ภาพรวม platform)
+**Date**: 2026-07-11 (session 23 ต่อ)
+**Severity**: High (security debt สะสมมาตั้งแต่ PROJECT_AUDIT.md มิ.ย. 5 — scope จริงใหญ่กว่าที่บันทึกไว้)
+**Status**: ส่วนใหญ่ RESOLVED — เหลือ 1 ส่วนที่ตั้งใจไม่แตะ (ต้องตัดสินใจ scope auth ก่อน)
+
+**บริบท**: user ขอให้ critique platform โดยรวม → เสนอ 3 ลำดับความสำคัญ (RLS, CI/CD, data validation) → user เลือกให้เริ่ม RLS ก่อนเพราะ effort ต่ำสุด/impact สูงสุด → เช็ค Supabase advisor จริงแล้วพบว่า scope ใหญ่กว่าที่ CLAUDE.md pending tasks บันทึกไว้มาก (ไม่ใช่แค่ 6 ตารางไม่มี RLS แต่มีอีกชุดใหญ่ที่เปิด RLS แล้วแต่ policy เขียนแบบ `USING (true)`/`WITH CHECK (true)` ซึ่งผลลัพธ์เหมือนไม่มี RLS)
+
+**วิธี verify ก่อนแก้ (สำคัญ — ป้องกันพังโปรดักชัน)**:
+1. ไล่ grep หา `supabase.from(` ทุกไฟล์ client-side (`.tsx`) → พบว่ามีแค่ `components/CRM.tsx` (table `leads`) และ `components/LandAnalyzer.tsx` (table `projects`) ที่เขียนตรงจาก browser ด้วย `NEXT_PUBLIC_SUPABASE_ANON_KEY` (`lib/supabase.ts`) — ตารางอื่นทั้งหมดไม่มี client-side code แตะเลย
+2. เช็ค `server.cjs`/`SupabaseClient.ts` (Hub v1+v2) ยืนยันว่าใช้ `SUPABASE_SERVICE_KEY` (bypass RLS) ทุก query — ตารางที่ไม่มี client-side anon access จึงล็อกได้โดยไม่กระทบ Hub เลย
+3. เช็ค row count + `max(created_at)` ของตารางที่ policy เป็น anon_insert (`fb_listings`, `fb_sellers`, `fb_listing_history`, `agent_reports`) → พบว่านิ่งมา 30+ วัน (ตายแล้ว/legacy) ปลอดภัยที่จะล็อก
+4. เช็ค `scripts/scrape-market.js` ยืนยันว่า `market_listings` anon-insert เป็นของจริง (hardcoded anon key ในสคริปต์) — เก็บไว้แบบเดิม ไม่แตะ
+
+**สิ่งที่แก้ (ผ่าน Supabase MCP `apply_migration`, 2 migrations)**:
+1. `ALTER TABLE ... ENABLE ROW LEVEL SECURITY` บน 6 ตารางที่ไม่มี RLS เลย (sites, line_users, qc_standards, qc_defects, qc_daily_usage, qc_inspections)
+2. `DROP POLICY` ที่เขียนแบบเปิดโล่งออกจาก 7 ตาราง (area_memory, buyer_context_signals, buyer_profiles, content_frames, market_insights, content_posts, properties)
+3. `DROP POLICY` anon_insert บน 4 ตารางที่ตายแล้ว (fb_listings, fb_sellers, fb_listing_history, agent_reports) + hub_state (anon_insert + anon_update)
+4. `REVOKE EXECUTE ... FROM PUBLIC` (ไม่ใช่แค่ `FROM anon, authenticated`) บน `append_line_image_atomic` — เจอว่า Postgres grant EXECUTE ให้ PUBLIC เป็น default แยกจาก per-role grant ต้อง revoke จาก PUBLIC ด้วยถึงจะปิดจริง (verify ผ่าน `has_function_privilege()`)
+5. Pin `search_path` บน 2 ฟังก์ชันที่ advisor เตือน (`update_updated_at_column`, `append_line_image_atomic`)
+6. `ALTER VIEW qc_inspections_view SET (security_invoker = true)` — แก้ SECURITY DEFINER view ให้รันด้วยสิทธิ์ผู้เรียกแทนเจ้าของ
+
+**Verify**: รัน `get_advisors` ซ้ำหลังแก้ — ERROR ทั้งหมดหายไป เหลือแค่ INFO "RLS enabled, no policy" (ตามที่ตั้งใจ — default deny แต่ service_role ยัง bypass ได้) และ WARN ที่เหลือ 2 รายการซึ่งเป็นของจริงที่ตั้งใจเก็บไว้ (`leads`/`projects` anon insert, `market_listings` scraper_insert) ยืนยัน `append_line_image_atomic` execute privilege: `anon=false, authenticated=false, service_role=true`
+
+**ที่ตั้งใจไม่แตะ**: `leads` และ `projects` ยังเปิด anon CRUD เต็มที่ — platform นี้ไม่มีระบบ login เลย ล็อกให้ปลอดภัยจริงต้องเพิ่ม auth ก่อน (Supabase Auth + login page) ไม่ใช่แค่แก้ RLS policy เฉยๆ ไม่งั้น CRM/Land Analyzer ใช้งานไม่ได้ทันที — บันทึกเป็น pending task ใหม่ใน CLAUDE.md รอคุย scope กับ user
+
+**Lesson**: ก่อนแก้ RLS ต้อง trace ให้ชัดว่า client-side code ตัวไหนใช้ anon key เขียนตารางไหนบ้าง ไม่ใช่ดูแค่ advisor แล้วรัวแก้ตามที่ขึ้นเตือน — ถ้าข้ามขั้นตอนนี้ไปมีสิทธิ์ทำ CRM/Land Analyzer พังทันทีเพราะระบบนี้ไม่มี auth มารองรับการจำกัดสิทธิ์แบบปกติ
