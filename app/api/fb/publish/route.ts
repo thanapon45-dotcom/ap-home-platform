@@ -28,6 +28,9 @@ export async function POST(req: NextRequest) {
     });
 
     const data = await r.json();
+    if (!r.ok) {
+      console.error("[api/fb/publish] backend returned error:", r.status, JSON.stringify(data));
+    }
     return NextResponse.json(data, { status: r.status });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "FB publish failed";
