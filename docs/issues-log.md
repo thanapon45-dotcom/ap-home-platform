@@ -215,12 +215,14 @@ const HUB = (process.env.HUB_URL ?? "").replace(/\/api\/?$/, "").replace(/\/+$/,
 ## ISSUE-012 — ListingTab AI เขียนประเภทบ้านผิด ("บ้านเดี่ยว" ทั้งที่ทรัพย์จริงเป็นทาวน์เฮ้าส์)
 **Date**: 2026-07-11 (session 23 ต่อ, พบทันทีหลังแก้ ISSUE-011 เสร็จ — โพสต์แรกที่ทดสอบจริง)
 **Severity**: Medium (เนื้อหาโพสต์ผิดข้อเท็จจริง กระทบความน่าเชื่อถือ ไม่ใช่ระบบล่ม)
-**Status**: Fix แล้ว รอ verify — ยังไม่ได้ redeploy/test ซ้ำ
+**Status**: **RESOLVED 2026-07-11** — root cause คือ data entry ผิดใน WordPress ไม่ใช่บั๊กโค้ด (prompt fix ที่ทำไปยังมีประโยชน์เป็น safety net แต่ไม่ใช่ตัวแก้จริง)
 
-**Symptoms**: โพสต์ "หมู่บ้านสวนทองวิลล่า7 ลำลูกกา คลอง 4" ที่ user ยืนยันว่าเป็น**ทาวน์เฮ้าส์** แต่เนื้อหาที่ AI สร้างเขียนว่า "บ้านเดี่ยว 2 ชั้น ใน..." — ผิดประเภททรัพย์
+**Symptoms**: โพสต์ "หมู่บ้านสวนทองวิลล่า7 ลำลูกกา คลอง 4" ที่ user ยืนยันว่าเป็น**ทาวน์เฮ้าส์** แต่เนื้อหาที่ AI สร้างเขียนว่า "บ้านเดี่ยว 2 ชั้น ใน..." — ผิดประเภททรัพย์ แม้หลัง deploy prompt fix (commit `29070b7`) แล้วก็ยังเขียนผิดเหมือนเดิม
 
-**Root cause**: prompt ใน `ListingTab.generate()` ส่ง `ประเภท: ${selected.property_type}` เข้า system prompt ถูกต้องอยู่แล้ว แต่กฎ "ห้าม hallucinate" เดิมพูดกว้างๆ แค่ "ราคา/ห้องนอน/ทำเล/พื้นที่" ไม่ได้เจาะจงเรื่อง "ประเภทบ้าน" ไว้ตรงๆ — Claude เผลอเขียน "บ้านเดี่ยว" เป็น default word choice ทั้งที่ข้อมูลจริงบอกเป็นทาวน์เฮ้าส์
+**Root cause ที่แท้จริง**: `property_type` ที่ Hub v1 ส่งมา (`server.cjs` → `getTaxTerm("property_type")` บรรทัด 1656) ดึงมาจาก **WordPress taxonomy term ของโพสต์นั้นๆ ตรงๆ** — user เช็ค WP admin แล้วยืนยันว่าโพสต์นี้ติด taxonomy term **"บ้านเดี่ยว" ผิดประเภทมาตั้งแต่ต้น** (data entry error ตอนสร้างโพสต์ใน WordPress) ไม่เกี่ยวกับ prompt/AI เลย — AI เขียนตาม data ที่ได้รับมาถูกต้องแล้ว เพียงแต่ data ต้นทางผิด
 
-**Fix**: เพิ่มกฎเหล็กข้อใหม่ใน system prompt (`components/AIContent.tsx`, ฟังก์ชัน `generate()` ของ `ListingTab`) บังคับให้ประเภทบ้านต้องตรงกับ `selected.property_type` เป๊ะๆ ห้ามเขียน "บ้านเดี่ยว" ถ้าข้อมูลจริงไม่ได้ระบุว่าเป็นบ้านเดี่ยว — ยังไม่ commit/push/redeploy ณ ตอนบันทึก
+**สิ่งที่แก้ไปก่อนหน้า (ยังคงประโยชน์)**: prompt rule ใหม่ใน `components/AIContent.tsx` (commit `29070b7`) ที่บังคับให้ AI ใช้ `property_type` ตรงตามที่ระบุเป๊ะๆ — ไม่ใช่ตัวแก้ปัญหานี้โดยตรง แต่ป้องกันไม่ให้ AI hallucinate เพิ่มเติมในกรณีอื่นที่ data ถูกต้อง ควรเก็บไว้
 
-**สิ่งที่ต้องทำต่อ**: commit + push + redeploy แล้วให้ user gen ทรัพย์ทาวน์เฮ้าส์/บ้านแฝดซ้ำอีกรอบ เช็คว่าประเภทถูกต้อง — ถ้ายังพลาดอีก อาจต้องเช็คว่า `selected.property_type` จาก WordPress API ส่งค่ามาถูกต้องหรือเปล่าด้วย (เผื่อ field ว่างเปล่าที่ WP source เอง ไม่ใช่ prompt)
+**Fix จริง**: user แก้ taxonomy term ในโพสต์ WordPress จาก "บ้านเดี่ยว" → "ทาวน์เฮ้าส์" โดยตรงผ่าน WP admin
+
+**Lesson**: เวลาบั๊กเนื้อหาแบบนี้เกิดซ้ำหลัง fix โค้ดแล้ว ต้องไล่เช็คต้นทางข้อมูลจริง (WordPress taxonomy ในกรณีนี้) ก่อนจะสันนิษฐานว่าเป็นบั๊ก AI/prompt เสมอ — ควรพิจารณาเพิ่ม validation หรือ warning ใน ListingTab UI ในอนาคตถ้าพบว่า field สำคัญ (property_type, price) ว่างเปล่าหรือดูผิดปกติ เพื่อลดความเสี่ยงจาก data entry error ที่ WP source
