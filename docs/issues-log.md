@@ -258,6 +258,11 @@ const HUB = (process.env.HUB_URL ?? "").replace(/\/api\/?$/, "").replace(/\/+$/,
 
 **Lesson**: ก่อนแก้ RLS ต้อง trace ให้ชัดว่า client-side code ตัวไหนใช้ anon key เขียนตารางไหนบ้าง ไม่ใช่ดูแค่ advisor แล้วรัวแก้ตามที่ขึ้นเตือน — ถ้าข้ามขั้นตอนนี้ไปมีสิทธิ์ทำ CRM/Land Analyzer พังทันทีเพราะระบบนี้ไม่มี auth มารองรับการจำกัดสิทธิ์แบบปกติ
 
+**Update (ต่อในวันเดียวกัน, หลัง deploy)**: user ทดสอบจริงหลัง deploy แล้วเจอ 2 บั๊กที่ **มีอยู่ก่อนแล้ว** ไม่เกี่ยวกับการย้าย write ไป server-side (payload ที่ส่งเหมือนเดิมทุกตัวอักษร แค่เปลี่ยน transport) — บันทึกและแก้ไปพร้อมกันเพราะเจอระหว่างทดสอบ:
+1. **CRM "เพิ่ม Lead"** — `leads.area` เป็นคอลัมน์ `numeric` (ตร.ม. จาก Budget Tool) แต่ `AddLeadModal` ส่งชื่อเขตเป็น text (เช่น "ปทุมธานี") เข้าคอลัมน์เดียวกัน → error `invalid input syntax for type numeric` ทุกครั้งที่กด "เพิ่ม Lead" ด้วยมือ **แก้**: เอาค่านั้นไปรวมกับ `location` แทน (คอนเซปต์เดียวกับช่อง "พื้นที่ที่สนใจ" ที่มีอยู่แล้ว) ไม่ส่ง `area` จากฟอร์มนี้อีกต่อไป — เจอบั๊กเดียวกันซ้ำใน CSV import ด้วย (`area: cols[4] || ""` เป็น text จาก CSV) แก้ให้ parse เป็นตัวเลขถ้าได้ ไม่งั้น fold เข้า notes แทน — และแก้ `PipelineTab` filter (`l.area.includes(search)`) ที่จะ crash ทั้งแท็บถ้ามี lead ที่ `area` เป็นตัวเลขหรือ null (Budget Tool leads ทุกตัว) เพราะ number ไม่มี `.includes()`
+2. **Land Analyzer "บันทึก"** — `LandAnalyzer.tsx` เดิมส่ง `type`/`pin`/`form`/`result` เข้า insert แต่ตาราง `projects` จริงมีแต่คอลัมน์ normalized (`land_price`, `land_size`, `dev_cost`, `plots`, `area`, `build_cost`, `profit_per_plot`, `market_price`, `roi`, `lat`, `lng`, `notes`) ไม่มี `type`/`pin`/`form`/`result` เลย → error `PGRST204 Could not find the 'type' column` ทุกครั้งที่กด "บันทึก" **แก้**: `ALTER TABLE projects ADD COLUMN type text, ADD COLUMN result numeric` (2 คอลัมน์ที่หน้า saved-projects list ยังใช้อยู่จริง) + แก้ `save()` ให้ map ค่าเข้าคอลัมน์ normalized ที่มีอยู่แล้วให้ครบ (ก่อนหน้านี้ไม่เคยถูกใช้เลยทั้งที่มีอยู่ในตาราง) แทนที่จะยัดเป็น JSON blob แบบเดิม — `pin` (lat/lng) เก็บแยกเป็น 2 คอลัมน์ที่มีอยู่แล้วพอดี
+**สรุป**: ทั้งสองจุดคือ schema/form mismatch ที่มีมาก่อนงานความปลอดภัยรอบนี้ (แค่ไม่เคยมีใครกดทดสอบฟอร์มเหล่านี้จริงจนกระทบให้เห็น) ไม่ใช่ regression จากการย้าย write ไป server-side
+
 ---
 
 ## ISSUE-014 — WF1 Publish Guard บล็อกเงียบ — slug fallback สั้นเกินไป + ไม่มี node แจ้งเตือน

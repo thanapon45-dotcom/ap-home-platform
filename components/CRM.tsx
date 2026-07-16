@@ -71,7 +71,7 @@ const MARKET_DATA = [
 type Lead = {
   id: string;
   name: string; phone: string; budget: string; style: string;
-  stage: string; score: number; source: string; lead_date: string; area: string; notes: string;
+  stage: string; score: number; source: string; lead_date: string; area: number | string | null; notes: string;
   business_unit: "build" | "reno" | "list";
   intent?: string;
   urgency?: string;
@@ -151,19 +151,24 @@ function AddLeadModal({ onClose, onAdd }: { onClose: () => void; onAdd: (lead: L
   async function submit() {
     if (!form.name || !form.phone || !form.budget || !form.area) { setError("กรุณากรอก ชื่อ, เบอร์, งบ, พื้นที่"); return; }
     setSaving(true);
+    // NOTE (session 25, Jul 16 2026): fixed pre-existing bug — `leads.area` is a
+    // numeric column (square meters, populated by the Budget Tool) but this form's
+    // "พื้นที่" field is a district name (text), causing "invalid input syntax for
+    // type numeric" on every manual Add Lead. Fold the district text into `location`
+    // instead (same concept as the "พื้นที่ที่สนใจ" field below) and leave the
+    // numeric `area` column unset for manually-added leads.
     const payload = {
       name: form.name,
       phone: form.phone,
       budget: form.budget,
       style: form.style,
-      area: form.area,
       source: form.source,
       notes: form.notes,
       stage: form.stage,
       business_unit: form.business_unit,
       intent: form.intent,
       urgency: form.urgency,
-      location: form.location,
+      location: form.location || form.area,
       outcome: form.outcome,
       score: Math.floor(Math.random() * 30) + 55,
       lead_date: todayLabel(),
@@ -290,7 +295,9 @@ function PipelineTab({ leads, setLeads, deleteLead }: { leads: Lead[]; setLeads:
   const [search, setSearch]         = useState("");
   const [showAdd, setShowAdd]       = useState(false);
 
-  const filtered = leads.filter(l => l.name.includes(search) || l.area.includes(search) || l.source.toLowerCase().includes(search.toLowerCase()));
+  // `area` is a numeric DB column (square meters) — can be a number, null, or (for
+  // legacy/CSV rows) a string, so coerce before .includes() to avoid a TypeError crash.
+  const filtered = leads.filter(l => l.name.includes(search) || String(l.area ?? "").includes(search) || l.source.toLowerCase().includes(search.toLowerCase()));
 
   async function analyzeLead(lead: Lead) {
     setSelected(lead); setAnalyzing(true); setAiAnalysis("");
@@ -670,12 +677,18 @@ export default function CRM() {
       const rows = lines.map(line => {
         const cols = line.split(",").map(c => c.replace(/^"|"$/g, "").trim());
         const bu = cols[10] as "build" | "reno" | "list";
+        // `area` is a numeric DB column — CSV's "พื้นที่" column is often a district
+        // name (text), which fails Postgres numeric validation. Only send it through
+        // if it actually parses as a number; otherwise fold it into notes instead of
+        // dropping it silently.
+        const areaNum = cols[4] && !isNaN(Number(cols[4])) ? Number(cols[4]) : null;
+        const areaNote = cols[4] && areaNum === null ? `พื้นที่: ${cols[4]}` : "";
         return {
           name: cols[0] || "", phone: cols[1] || "", budget: cols[2] || "",
-          style: cols[3] || "Modern Minimal", area: cols[4] || "",
+          style: cols[3] || "Modern Minimal", area: areaNum,
           source: cols[5] || "CSV Import", stage: cols[6] || "new",
           score: parseInt(cols[7]) || 60, lead_date: cols[8] || "",
-          notes: cols[9] || "",
+          notes: [cols[9], areaNote].filter(Boolean).join(" | "),
           business_unit: (["build","reno","list"].includes(bu) ? bu : "build") as "build" | "reno" | "list",
         };
       }).filter(r => r.name);

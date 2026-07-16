@@ -99,12 +99,31 @@ export default function LandAnalyzer() {
   const save = async () => {
     if (!pname.trim()) { msg("กรุณาใส่ชื่อโปรเจค", false); return; }
     setSaving(true);
+    // NOTE (session 25, Jul 16 2026): fixed pre-existing bug — this used to send
+    // type/pin/form/result fields that never existed as columns on `projects`
+    // (PGRST204 "column not found"). Table actually has normalized columns
+    // (land_price, land_size, etc. + lat/lng) — map to those; `type`/`result`
+    // were added as columns since the saved-projects list still reads them.
+    const pl = Number(form.plots) || 0;
     const res = await fetch("/api/projects", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        name: pname.trim(), type, pin: pin ? JSON.stringify(pin) : null,
-        form: JSON.stringify(form), result: Math.round(c.roi),
+        name: pname.trim(),
+        type,
+        result: Math.round(c.roi),
+        land_price: Number(form.landPrice) || null,
+        land_size: Number(form.landSize) || null,
+        dev_cost: Number(form.devCost) || null,
+        plots: pl || null,
+        area: Number(form.area) || null,
+        build_cost: Number(form.buildCost) || null,
+        profit_per_plot: pl > 0 ? Math.round(c.totalProfit / pl) : null,
+        market_price: Number(form.market) || null,
+        roi: c.roi,
+        lat: pin?.lat ?? null,
+        lng: pin?.lng ?? null,
+        notes: form.note || null,
         created_at: new Date().toISOString(),
       }),
     });
