@@ -252,6 +252,29 @@ const HUB = (process.env.HUB_URL ?? "").replace(/\/api\/?$/, "").replace(/\/+$/,
 
 **Verify**: รัน `get_advisors` ซ้ำหลังแก้ — ERROR ทั้งหมดหายไป เหลือแค่ INFO "RLS enabled, no policy" (ตามที่ตั้งใจ — default deny แต่ service_role ยัง bypass ได้) และ WARN ที่เหลือ 2 รายการซึ่งเป็นของจริงที่ตั้งใจเก็บไว้ (`leads`/`projects` anon insert, `market_listings` scraper_insert) ยืนยัน `append_line_image_atomic` execute privilege: `anon=false, authenticated=false, service_role=true`
 
-**ที่ตั้งใจไม่แตะ**: `leads` และ `projects` ยังเปิด anon CRUD เต็มที่ — platform นี้ไม่มีระบบ login เลย ล็อกให้ปลอดภัยจริงต้องเพิ่ม auth ก่อน (Supabase Auth + login page) ไม่ใช่แค่แก้ RLS policy เฉยๆ ไม่งั้น CRM/Land Analyzer ใช้งานไม่ได้ทันที — บันทึกเป็น pending task ใหม่ใน CLAUDE.md รอคุย scope กับ user
+**ที่ตั้งใจไม่แตะตอนนั้น — ปิดแล้วจริง session 25 (Jul 16, 2026)**: `leads` และ `projects` เดิมเปิด anon **SELECT + INSERT** (ไม่มี UPDATE/DELETE policy เลย — RLS default-deny ป้องกัน update/delete ผ่าน anon key ไว้อยู่แล้วตั้งแต่ต้น เป็นข้อมูลที่แก้ไขจากที่เข้าใจผิดไว้ก่อนหน้าว่าเปิด CRUD เต็มที่) แต่ anon SELECT ที่เปิดโล่งหมายความว่าใครก็ตามที่มี anon key (ฝังอยู่ใน browser bundle ทุกหน้า) อ่านข้อมูล lead ทั้งหมด (ชื่อ/เบอร์โทร/งบประมาณ) ได้ตรงๆ และ anon INSERT เปิดให้ยัด lead ปลอมได้ไม่จำกัด — ตัดสินใจแก้โดยไม่ต้องสร้างระบบ auth เต็มรูป: ย้าย CRUD ทั้งหมดไปทำฝั่ง server แทน (`/api/leads/*`, `/api/projects/*` ใช้ `SUPABASE_SERVICE_KEY` เหมือน pattern ที่ `/api/market-intel/insights` ใช้อยู่แล้ว) แก้ `components/CRM.tsx`, `components/LandAnalyzer.tsx`, `components/DashboardOS.tsx`, `app/budget/page.tsx` ให้เรียก API แทนเรียก Supabase ตรง แล้ว `DROP POLICY` anon SELECT/INSERT ทั้ง 4 policy บน `leads`/`projects` → verify ผ่าน `get_advisors` แล้วว่าทั้งสองตารางกลายเป็น "RLS enabled, no policy" (default-deny) เหมือนตารางอื่นที่แก้ไปแล้ว ไม่มี WARN ใหม่เกิดขึ้น
+
+**หมายเหตุ**: การย้าย write ไป server-side ปิดช่องโหว่ "ยิง Supabase REST ตรงด้วย anon key ที่ public" ได้เต็มที่ แต่**ไม่ใช่ auth** — หน้า `/crm` และ `/land-analyzer` เองยังไม่มี login gate ใครก็เปิดเว็บแล้วเรียก `/api/leads` ของแอปเองได้อยู่ (ผ่าน UI ปกติ) เป็นความเสี่ยงที่เหลืออยู่และเป็นที่ยอมรับได้ตามที่ user เลือก scope ไว้ (ไม่ทำ Supabase Auth เต็มรูปตอนนี้)
 
 **Lesson**: ก่อนแก้ RLS ต้อง trace ให้ชัดว่า client-side code ตัวไหนใช้ anon key เขียนตารางไหนบ้าง ไม่ใช่ดูแค่ advisor แล้วรัวแก้ตามที่ขึ้นเตือน — ถ้าข้ามขั้นตอนนี้ไปมีสิทธิ์ทำ CRM/Land Analyzer พังทันทีเพราะระบบนี้ไม่มี auth มารองรับการจำกัดสิทธิ์แบบปกติ
+
+---
+
+## ISSUE-014 — WF1 Publish Guard บล็อกเงียบ — slug fallback สั้นเกินไป + ไม่มี node แจ้งเตือน
+**Date**: 2026-07-13 (session 24)
+**Severity**: High (Blog Runner ค้าง "running" 11+ ชม. ไม่มีใครรู้จนกว่า Health Check จะเตือน)
+**Status**: **RESOLVED 2026-07-13 (session 24)**
+
+**หมายเหตุการบันทึก (session 25, Jul 16)**: บั๊กนี้ถูกแก้จริงและบันทึกไว้ใน `CLAUDE.md` Known Bugs #11 ตั้งแต่ session 24 แต่ cross-reference ชี้ไปที่ "ISSUE-012" ผิด (เลขนั้นถูกใช้ไปแล้วกับบั๊กคนละเรื่อง — "AI เขียนประเภทบ้านผิด" จาก session 23) และไม่เคยถูกเพิ่มเป็น entry จริงใน `issues-log.md` เลย เพิ่มเป็น ISSUE-014 ตอนนี้เพื่อให้เลขตรงกับที่อ้างถึง
+
+**ปัญหา**: node "Edit Fields" มี fallback `article_slug = ... || 'post'` เวลา AI model ไม่คืนค่า slug มา แต่ node "Publish Guard + Dedupe History" เช็คว่า slug ต้องยาว ≥6 ตัวอักษร — "post" มีแค่ 4 ตัว **ไม่มีทางผ่านได้เลย** (fallback ขัดแย้งกับกฎของตัวเอง) → เดินไปทาง "Blocked Log" ซึ่งไม่มี node ไหน callback กลับ Hub เลย → `content_queue` item + `state.blog` ค้าง "running" ตลอดไป จนกว่า Health Check จะเตือนทาง Telegram (ค้างไป 11+ ชม.ก่อนพบ)
+
+**วิธีตรวจพบ**: เช็ค execution ใน n8n เห็นว่า "Succeeded" ทุก node เขียว (ไม่มี error) — แต่ดูที่ node ไหน**เดินผ่านจริง**ไม่ใช่แค่ดูสถานะรวม พบว่าไปทาง "Blocked Log" ไม่ใช่ "Create a post"
+
+**แก้**: (1) เปลี่ยน slug fallback เป็น chain: slug จากโมเดล → derive จาก title ถ้าสั้นเกิน → `post-<timestamp>` ถ้ายังสั้นอีก (การันตีผ่าน guard เสมอ) (2) เพิ่ม node "Notify Hub Blocked" ต่อจาก Blocked Log ให้ callback กลับ Hub ด้วย `status:"failed"` + `queue_item_id` เสมอ (3) เพิ่ม `queue_item_id` เข้า "Notify Hub Published" ด้วย (เดิมไม่มี ทำให้ item ที่ publish สำเร็จก็ค้าง "running" เหมือนกัน)
+
+**ไฟล์**: `memory/n8n-workflows/Finnhouses WF1 — Article + Publish (9_queue_sync_fix).json`
+
+**กฎใหม่**: (1) ห้ามตั้ง fallback value ที่สอบตกกฎ validation ที่ตามมาทันที — เช็คทุก fallback เทียบกับทุก guard/validation ที่อยู่ downstream (2) ทุก branch ที่จบ workflow แบบไม่ publish (blocked/error/skip) ต้อง callback กลับ Hub เสมอ ห้ามจบเงียบๆ — ไม่งั้น state ค้างและไม่มีใครรู้จนกว่า Health Check จะจับได้
+
+**ดู**: `CLAUDE.md` Known Bugs #11, `docs/HANDOFF.md` session 24

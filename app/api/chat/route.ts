@@ -16,8 +16,18 @@ const ALLOWED_MODELS = [
 
 /**
  * Fetch top-5 content_frames from Supabase and format as system prompt appendix.
- * Returns "" if Supabase is unavailable or table is empty — never throws.
+ * Returns "" if Supabase is unavailable or table is empty — never throws, but
+ * DOES log the reason server-side so a real failure is visible instead of
+ * silently degrading forever (see issues-log.md ISSUE-007 / ADR-005 context —
+ * this route was previously querying positioning_angle/emotional_hook/content_angle,
+ * columns that never existed in content_frames; fixed to the real flat-schema
+ * columns: target_segment, keyword, frame_text).
  * Cached 5 minutes to avoid hitting Supabase on every generate() call.
+ *
+ * NOTE: once ADR-005's additive `positioned_content` JSONB column lands and is
+ * populated by the n8n dual-write, this should prefer positioned_content.hook
+ * over the legacy `keyword` field. Not done yet — that column doesn't exist
+ * in the DB at the time of this fix.
  */
 async function fetchContentFrames(): Promise<string> {
   const url = process.env.SUPABASE_URL;
@@ -25,22 +35,27 @@ async function fetchContentFrames(): Promise<string> {
   if (!url || !key) return "";
   try {
     const res = await fetch(
-      `${url}/rest/v1/content_frames?select=positioning_angle,emotional_hook,content_angle&order=created_at.desc&limit=5`,
+      `${url}/rest/v1/content_frames?select=target_segment,keyword,frame_text&order=created_at.desc&limit=5`,
       {
         headers: { apikey: key, Authorization: `Bearer ${key}` },
         next: { revalidate: 300 }, // cache 5 min
       }
     );
-    if (!res.ok) return "";
-    const frames: { positioning_angle?: string; emotional_hook?: string; content_angle?: string }[] = await res.json();
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      console.error(`[fetchContentFrames] Supabase ${res.status}: ${body.slice(0, 300)}`);
+      return "";
+    }
+    const frames: { target_segment?: string; keyword?: string; frame_text?: string }[] = await res.json();
     if (!Array.isArray(frames) || frames.length === 0) return "";
     const lines = frames
       .map(f =>
-        `- [${f.positioning_angle ?? "general"}] ${f.emotional_hook ?? ""}${f.content_angle ? ` → ${f.content_angle}` : ""}`
+        `- [${f.target_segment ?? "general"}] ${f.keyword ?? ""}${f.frame_text ? ` → ${f.frame_text.slice(0, 200)}` : ""}`
       )
       .join("\n");
     return `\n\nPositioned Content Frames (จาก Market Intelligence — ใช้เป็น angle ในการสร้าง content):\n${lines}`;
-  } catch {
+  } catch (err) {
+    console.error("[fetchContentFrames] fetch failed:", err instanceof Error ? err.message : String(err));
     return "";
   }
 }

@@ -1,7 +1,10 @@
 "use client";
 import { useState, useMemo, useCallback, useEffect } from "react";
 import dynamic from "next/dynamic";
-import { supabase } from "@/lib/supabase";
+// NOTE (session 25, Jul 16 2026): projects CRUD moved server-side to /api/projects
+// — direct supabase.from("projects") calls with the public anon key were removed
+// here because RLS on `projects` is now locked down (deny anon entirely).
+// See docs/issues-log.md ISSUE-013.
 
 const MapPicker = dynamic(() => import("./MapPicker"), { ssr: false });
 
@@ -86,8 +89,9 @@ export default function LandAnalyzer() {
   }, [form, caPct, sellPct]);
 
   const loadProjects = useCallback(async () => {
-    const { data } = await supabase.from("projects").select("*").order("created_at", { ascending: false }).limit(20);
-    if (data) setProjects(data as Project[]);
+    const res = await fetch("/api/projects");
+    const json = await res.json();
+    if (json.ok !== false) setProjects((json.data ?? []) as Project[]);
   }, []);
 
   useEffect(() => { loadProjects(); }, [loadProjects]);
@@ -95,13 +99,18 @@ export default function LandAnalyzer() {
   const save = async () => {
     if (!pname.trim()) { msg("กรุณาใส่ชื่อโปรเจค", false); return; }
     setSaving(true);
-    const { error } = await supabase.from("projects").insert([{
-      name: pname.trim(), type, pin: pin ? JSON.stringify(pin) : null,
-      form: JSON.stringify(form), result: Math.round(c.roi),
-      created_at: new Date().toISOString(),
-    }]);
+    const res = await fetch("/api/projects", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: pname.trim(), type, pin: pin ? JSON.stringify(pin) : null,
+        form: JSON.stringify(form), result: Math.round(c.roi),
+        created_at: new Date().toISOString(),
+      }),
+    });
+    const json = await res.json();
     setSaving(false);
-    if (error) { msg("บันทึกไม่สำเร็จ: " + error.message, false); }
+    if (!res.ok || json.ok === false) { msg("บันทึกไม่สำเร็จ: " + (json.error ?? `HTTP ${res.status}`), false); }
     else { msg("บันทึกสำเร็จ ✓"); setPname(""); loadProjects(); }
   };
 

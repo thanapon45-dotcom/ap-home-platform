@@ -1,0 +1,116 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://ap-home-platform/schemas/market-intel-content-frame.v2.schema.json",
+  "title": "Market Intel Content Frame v2",
+  "description": "Additive structure layered on top of the REAL production content_frames table (18 columns as of 2026-07-07: id, created_at, frame_text, frame_type, target_segment, target_context, keyword, tone, channel, publish_date, engagement_score, likes, comments, shares, post_url, is_starred, star_note, performance_data — verified via Supabase MCP, see docs/ADR/2026-07-07-market-intel-signals-schema.md 'Production Baseline Correction'). This schema describes the 4 NEW additive columns only: signals, positioned_content, ai_summary, collector_version. Adds 9 independently-queryable signal dimensions, traceable evidence per signal, and an explicit link from positioned_content back to the signals that produced it.",
+  "type": "object",
+  "required": ["metadata", "signals", "positioned_content", "ai_summary"],
+  "properties": {
+    "metadata": {
+      "type": "object",
+      "description": "Who/what/where this frame came from. IMPORTANT — corrected 2026-07-07: 'area' and 'source_type' below are NOT dedicated columns in the real content_frames table. Per the ISSUE-007 fix (memory/n8n-workflows/Finnhouses — Market Intelligence Collector v1 (2).json), area/timing/source info is currently folded into the composite `target_context` TEXT column (e.g. 'บางนา | timing:bonus | source:manual'), and there is no dedicated source_type column at all (the real columns are `frame_type` and `channel`). This metadata object is therefore a LOGICAL grouping for this JSON Schema's own signals/positioned_content fields, not a 1:1 map to real columns — Phase 3 must decide whether to parse area back out of target_context, or carry it redundantly inside the new `signals`/`positioned_content` JSONB until/unless a dedicated `area` column is added in a future migration.",
+      "required": ["collector_version"],
+      "properties": {
+        "area": { "type": ["string", "null"], "description": "NOT a real column today — see description above. Populate from target_context parsing or duplicate here inside positioned_content/signals until a dedicated column exists." },
+        "property_type": { "type": ["string", "null"], "description": "e.g. 'townhome', 'single_detached', 'land' — not a real column either; same caveat as area." },
+        "buyer_segment": {
+          "type": "string",
+          "enum": ["resale", "build_handsoff", "build_handson", "general"],
+          "default": "general",
+          "description": "Maps to the real `target_segment` column, which already exists and is already written correctly by the Collector."
+        },
+        "source_type": {
+          "type": ["string", "null"],
+          "description": "NOT a real column. Real columns are `frame_type` (default 'fb_post') and `channel` (default 'facebook') — those already capture most of what this field was meant for. Kept here for the manual-observation vs facebook_post distinction until reconciled with frame_type/channel in Phase 3."
+        },
+        "source_ref": { "type": ["string", "null"], "description": "Post ID / URL / message ID this frame was extracted from, for traceability back to raw source. No existing column for this — new information, not currently captured anywhere." },
+        "collector_version": {
+          "type": "string",
+          "enum": ["v1", "v2"],
+          "description": "Real column, added by the Phase 2 migration (2026-07-07) with DEFAULT 'v1'. All 75 pre-existing rows now read 'v1'. New rows written by the Phase-3-updated Collector should explicitly set 'v2'."
+        }
+      }
+    },
+
+    "signals": {
+      "type": "object",
+      "description": "9 independent dimensions. Each MUST use the shared signal shape below so they stay queryable and comparable (e.g. filter WHERE signals->urgency->>level = 'high' AND signals->liquidity->>level = 'low'). See ADR Implementation Notes for the rubric that keeps urgency / seller_motivation / liquidity from bleeding into each other.",
+      "required": ["demand", "price", "liquidity", "offer", "finance", "value", "location", "urgency", "seller_motivation"],
+      "properties": {
+        "demand":            { "$ref": "#/definitions/signal", "description": "Buyer interest level for this property/area (inquiry volume, view count, comment activity)" },
+        "price":             { "$ref": "#/definitions/signal", "description": "Price positioning vs comparable listings (over/under/at-market) — NOT the raw price number, that lives in metadata/raw payload if needed" },
+        "liquidity":         { "$ref": "#/definitions/signal", "description": "AREA-LEVEL aggregate: how fast properties in this area typically sell. NOT derivable from a single post's text — see ADR. source_scope MUST be 'area_aggregate'." },
+        "offer":             { "$ref": "#/definitions/signal", "description": "Concessions/incentives present in the listing (free furniture, price includes transfer fee, negotiable, etc.)" },
+        "finance":           { "$ref": "#/definitions/signal", "description": "Financing signals (loan-ready, bank rejection mentioned, cash-buyer-only, rent-to-own offered)" },
+        "value":             { "$ref": "#/definitions/signal", "description": "Perceived value-for-money framing used in the listing itself (renovated, corner unit, extra land, etc.)" },
+        "location":          { "$ref": "#/definitions/signal", "description": "Locational advantage signals explicitly called out (near BTS, school zone, main road access)" },
+        "urgency":           { "$ref": "#/definitions/signal", "description": "SURFACE signal from the post text itself — explicit urgency language or an explicit deadline. Keyword/phrase-detectable. source_scope = 'post'." },
+        "seller_motivation": { "$ref": "#/definitions/signal", "description": "INFERRED reason behind urgency (relocation, debt, inheritance sale, upgrading) — requires contextual inference beyond keyword matching, not just urgency restated. source_scope = 'post'." }
+      }
+    },
+
+    "positioned_content": {
+      "type": "object",
+      "description": "The marketing angle derived from the signals above. signal_refs makes the link explicit so prompt/model changes can be debugged against which signals actually drove which hook.",
+      "required": ["hook", "signal_refs"],
+      "properties": {
+        "hook": { "type": "string", "description": "Replaces the old 'keyword'/'positioned_hook' field — the actual content angle text" },
+        "signal_refs": {
+          "type": "array",
+          "description": "Which signal keys this hook was derived from, e.g. [\"urgency\", \"value\"]",
+          "items": { "type": "string", "enum": ["demand", "price", "liquidity", "offer", "finance", "value", "location", "urgency", "seller_motivation"] },
+          "minItems": 1
+        },
+        "channel": { "type": ["string", "null"], "description": "Intended output channel: facebook_post, blog, line_broadcast" },
+        "example_copy": { "type": ["string", "null"], "description": "Optional draft copy for the channel above" }
+      }
+    },
+
+    "ai_summary": {
+      "type": "object",
+      "description": "One-paragraph human-readable synthesis for the dashboard, kept separate from the raw signals so the dashboard doesn't need to re-derive prose from structured data every render.",
+      "required": ["text", "confidence"],
+      "properties": {
+        "text": { "type": "string" },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+        "model": { "type": ["string", "null"], "description": "e.g. 'gpt-4o-mini', 'claude-sonnet' — for the AI cost/audit trail per AI_TEAM.md section 9" }
+      }
+    }
+  },
+
+  "definitions": {
+    "signal": {
+      "type": "object",
+      "description": "Shared shape for every signal dimension. {level, confidence, evidence} is mandatory so nothing is a bare string/boolean that can't be traced back to source.",
+      "required": ["level", "confidence", "evidence", "source_scope"],
+      "properties": {
+        "level": {
+          "type": ["string", "null"],
+          "enum": ["low", "medium", "high", null],
+          "description": "null + confidence 0 means 'insufficient data', not 'low' — important for liquidity before an area has enough historical volume"
+        },
+        "score": {
+          "type": ["number", "null"],
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Optional numeric alternative to level for sorting/ranking; not required if level is sufficient"
+        },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+        "evidence": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Verbatim snippet(s) from source text (or, for liquidity, the aggregate stat used) that justify this level — required for every non-null level, ties back to Phase 3 self-improving loop in HANDOFF.md"
+        },
+        "source_scope": {
+          "type": "string",
+          "enum": ["post", "area_aggregate"],
+          "description": "post = derived from this single listing's text by the LLM at ingestion time. area_aggregate = computed by the Hub from historical rows for the same area, not per-post. Only 'liquidity' should ever be area_aggregate."
+        },
+        "rubric_note": {
+          "type": ["string", "null"],
+          "description": "Which rubric rule fired, for prompt debugging — e.g. 'explicit_urgency_keyword: ด่วน' vs 'inferred_reason: relocation'"
+        }
+      }
+    }
+  }
+}

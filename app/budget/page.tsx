@@ -1,7 +1,9 @@
 "use client";
 export const dynamic = "force-dynamic";
 import { useState } from "react";
-import { supabase } from "@/lib/supabase";
+// NOTE (session 25, Jul 16 2026): lead insert moved server-side to /api/leads
+// (public form — still open by design, just no longer via direct anon-key Supabase write).
+// See docs/issues-log.md ISSUE-013.
 
 const fmt = (n: number) => new Intl.NumberFormat("th-TH").format(Math.round(n));
 const PRICE_PER_SQM = 18000;
@@ -31,23 +33,27 @@ export default function BudgetPage() {
     const months = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
     const d = new Date();
     const budgetLabel = `${(budget! / 1_000_000).toFixed(1)}M`;
-    await supabase.from("leads").insert([{
-      name,
-      phone,
-      area:          Number(area),
-      budget:        budgetLabel,
-      stage:         "new",
-      source:        "Budget Tool",
-      business_unit: intent === "renovate" ? "reno" : intent === "buy" ? "list" : "build",
-      style:         "Modern Minimal",
-      score:         urgency === "hot" ? 85 : urgency === "warm" ? 70 : 55,
-      intent,
-      urgency,
-      location,
-      outcome:       "pending",
-      notes:         `พื้นที่ ${area} ตร.ม.${location ? ` | โซน: ${location}` : ""}`,
-      lead_date:     `${d.getDate()} ${months[d.getMonth()]}`,
-    }]);
+    await fetch("/api/leads", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name,
+        phone,
+        area:          Number(area),
+        budget:        budgetLabel,
+        stage:         "new",
+        source:        "Budget Tool",
+        business_unit: intent === "renovate" ? "reno" : intent === "buy" ? "list" : "build",
+        style:         "Modern Minimal",
+        score:         urgency === "hot" ? 85 : urgency === "warm" ? 70 : 55,
+        intent,
+        urgency,
+        location,
+        outcome:       "pending",
+        notes:         `พื้นที่ ${area} ตร.ม.${location ? ` | โซน: ${location}` : ""}`,
+        lead_date:     `${d.getDate()} ${months[d.getMonth()]}`,
+      }),
+    });
     await fetch("/api/telegram", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, phone, area, budget }),

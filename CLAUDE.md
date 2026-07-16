@@ -126,12 +126,20 @@ Remove-Item ".git\index.lock" -Force
 **แก้**: `.bat` ทุกไฟล์ที่ deploy ต้อง (1) `git commit -m "..."` เป็น **บรรทัดเดียวเท่านั้น** ห้าม multi-line ห้ามมีบรรทัดขึ้นต้นด้วย `-` (2) เพิ่ม `if exist ".git\index.lock" del /f ".git\index.lock"` ไว้ต้น script เสมอกันปัญหา lock ค้างจากรอบก่อน
 **ป้องกัน**: หลัง user รัน `.bat` push แล้ว ให้ขอดู console output เต็มเสมอ (ไม่ใช่แค่ถามว่า "เสร็จหรือยัง") เพื่อเช็ค error message ที่อาจซ่อนอยู่ก่อนบรรทัด "Done"
 
-### 10. ListingTab "Post to Facebook" คืน HTTP 500 — OPEN, ยังไม่แก้ (พบ session 23, Jul 10-11)
-**ปัญหา**: กด "Post to Facebook" ใน AI Content → ListingTab → ได้ "❌ ผิดพลาด" (500) — เกิดซ้ำแม้เปลี่ยน `FB_PAGE_ACCESS_TOKEN` เป็น long-lived token ใหม่แล้ว (ผ่าน Graph API Explorer → extend → derived Page token จาก `/me/accounts`) และ redeploy Railway แล้ว
-**ตัดสาเหตุออกแล้ว**: ไม่ใช่ STUB mode (`/health` ยืนยัน `fb_configured:true`), ไม่ใช่ token เก่าหมดอายุ (เปลี่ยนใหม่แล้วยังพัง)
-**Root cause**: ยังไม่ทราบ — ยังไม่มี error body จริงจาก Facebook Graph API เพราะ Vercel `get_runtime_logs` เห็นแค่ status code, sandbox curl ยิง Railway ตรงไม่ได้ (network allowlist บล็อก), user ส่ง Console tab มาแทน Network tab (ไม่มี error body)
-**ขั้นต่อไป**: ต้องขอ user เปิด DevTools → **Network tab** (ไม่ใช่ Console) → กด Post to Facebook → คลิกแถว `publish` (500) → แท็บ Response/Preview → เอา JSON error message เต็มมาก่อนถึงจะวินิจฉัยได้ ห้ามเดา fix
-**ดู**: `docs/issues-log.md` ISSUE-011, `docs/HANDOFF.md` session 23
+### 10. ListingTab "Post to Facebook" คืน HTTP 500 — RESOLVED (พบ session 23 Jul 10-11, แก้จริง session 23 ต่อ, cross-check session 25 Jul 16)
+**ปัญหา**: กด "Post to Facebook" ใน AI Content → ListingTab → ได้ "❌ ผิดพลาด" (500)
+**Root cause จริง**: `app/api/fb/publish/route.ts` proxy ไปยัง service แยกต่างหากชื่อ `services/fb-backend` (Railway alias "easygoing-friendship") ที่**ไม่เคยถูกบันทึกไว้ใน CLAUDE.md เลย** — ไม่ใช่ Hub v1/v2 — Vercel ขาด env var `FB_BACKEND_URL` ทำให้ route คืน `{error:"FB_BACKEND_URL not configured"}` status 500 ตัว token ไม่ใช่สาเหตุตั้งแต่แรก (เสียเวลาไล่ผิดทางไปหนึ่งรอบเพราะ assume ว่าเป็น token)
+**วิธี diagnose ที่ได้ผลจริง**: ไม่ต้องพึ่ง DevTools Network tab เลย — `ListingTab` (`components/AIContent.tsx` บรรทัด ~1240) มี state `postError` ที่ render ข้อความ error สีแดงใต้ปุ่มโพสต์อยู่แล้วในหน้าจอปกติ กดปุ่มแล้วอ่านข้อความแดงตรงนั้นได้เลย
+**Fix**: เพิ่ม `FB_BACKEND_URL=https://easygoing-friendship-production-e663.up.railway.app` ใน Vercel Environment Variables (Production + Preview) → redeploy → โพสต์ผ่านจริง ยืนยันจาก screenshot ปุ่มขึ้น "✅ โพสต์แล้ว!" และเห็นโพสต์บน Facebook Page จริง
+**ดู**: `docs/issues-log.md` ISSUE-011 (มี root cause + fix ครบอยู่แล้ว — CLAUDE.md เคยไม่ sync ตามให้ถูกต้อง แก้ไว้ตรงนี้แล้ว session 25)
+
+### 11. WF1 Publish Guard บล็อกเงียบ — slug fallback สั้นเกินไป + ไม่มี node แจ้งเตือน — FIXED (session 24, Jul 13)
+**ปัญหา**: node "Edit Fields" มี fallback `article_slug = ... || 'post'` เวลา AI model ไม่คืนค่า slug มา แต่ node "Publish Guard + Dedupe History" เช็คว่า slug ต้องยาว ≥6 ตัวอักษร — "post" มีแค่ 4 ตัว **ไม่มีทางผ่านได้เลย** (fallback ขัดแย้งกับกฎของตัวเอง) → เดินไปทาง "Blocked Log" ซึ่งไม่มี node ไหน callback กลับ Hub เลย → `content_queue` item + `state.blog` ค้าง "running" ตลอดไป จนกว่า Health Check จะเตือนทาง Telegram (ค้างไป 11+ ชม.ก่อนพบ)
+**วิธีตรวจพบ**: เช็ค execution ใน n8n เห็นว่า "Succeeded" ทุก node เขียว (ไม่มี error) — แต่ดูที่ node ไหน**เดินผ่านจริง**ไม่ใช่แค่ดูสถานะรวม พบว่าไปทาง "Blocked Log" ไม่ใช่ "Create a post"
+**แก้**: (1) เปลี่ยน slug fallback เป็น chain: slug จากโมเดล → derive จาก title ถ้าสั้นเกิน → `post-<timestamp>` ถ้ายังสั้นอีก (การันตีผ่าน guard เสมอ) (2) เพิ่ม node "Notify Hub Blocked" ต่อจาก Blocked Log ให้ callback กลับ Hub ด้วย `status:"failed"` + `queue_item_id` เสมอ (3) เพิ่ม `queue_item_id` เข้า "Notify Hub Published" ด้วย (เดิมไม่มี ทำให้ item ที่ publish สำเร็จก็ค้าง "running" เหมือนกัน)
+**ไฟล์**: `memory/n8n-workflows/Finnhouses WF1 — Article + Publish (9_queue_sync_fix).json`
+**กฎใหม่**: (1) ห้ามตั้ง fallback value ที่สอบตกกฎ validation ที่ตามมาทันที — เช็คทุก fallback เทียบกับทุก guard/validation ที่อยู่ downstream (2) ทุก branch ที่จบ workflow แบบไม่ publish (blocked/error/skip) ต้อง callback กลับ Hub เสมอ ห้ามจบเงียบๆ — ไม่งั้น state ค้างและไม่มีใครรู้จนกว่า Health Check จะจับได้
+**ดู**: `docs/issues-log.md` ISSUE-014 (⚠️ แก้ cross-reference session 25 — เดิมเขียนผิดเป็น ISSUE-012 ซึ่งจริงๆ คือคนละเรื่อง คือบั๊ก "AI เขียนประเภทบ้านผิด" จาก session 23 เลข ISSUE-012 ถูกใช้ไปแล้ว ไม่เคยมีการบันทึกบั๊กนี้ลง issues-log.md จริงๆ จนกระทั่งเพิ่มเป็น ISSUE-014 ใน session 25)
 
 ---
 
@@ -144,6 +152,14 @@ Remove-Item ".git\index.lock" -Force
 - Architectural decisions → ต้อง document และถามก่อน implement
 
 ---
+
+## FB Backend Service (พบว่าไม่เคยบันทึกไว้ — เพิ่ม session 25, Jul 16)
+
+`services/fb-backend/server.js` — Express service แยกต่างหาก deploy บน Railway (alias **"easygoing-friendship"**), **ไม่ใช่ Hub v1 หรือ Hub v2**
+- Endpoint: `POST /api/fb/publish` — โพสต์เข้า Facebook Graph API จริง (`/{page_id}/photos` ถ้ามี public image URL, `/{page_id}/feed` ถ้าไม่มี)
+- Auth: header `x-hub-token` เทียบกับ env var `HUB_SECRET` ของ **service นี้เอง** (Railway) — คนละตัวกับ `HUB_SECRET`/`HUB_TOKEN` ของ Hub v1
+- Next.js เรียกผ่าน `app/api/fb/publish/route.ts` (proxy) ซึ่งต้องมี Vercel env var `FB_BACKEND_URL` ชี้มาที่ Railway URL ของ service นี้ — **ถ้า env var นี้หายไป Next.js route คืน 500 ทันที** (ดู Known Bugs #10 / ISSUE-011)
+- STUB mode: ถ้า `FB_PAGE_ACCESS_TOKEN`/`FB_PAGE_ID` ไม่ตั้งค่าใน Railway ของ service นี้ → log แล้วตอบสำเร็จเฉยๆ ไม่โพสต์จริง (เช็คผ่าน `GET /health` → `fb_configured`)
 
 ## Hub v2 File Structure
 
@@ -191,18 +207,22 @@ Invoke-RestMethod -Method POST -Uri "https://ap-home-platform-production.up.rail
 ### Critical
 - [x] QC LINE end-to-end test → **PASS Jul 2 (session 19b)** — ส่งรูปจริง 4 เคสจาก LINE OA, reply ภาษาไทยครบภายใน ≤15s, AI ใช้เกณฑ์ "cover block" จากรูปอ้างอิงใหม่ถูกต้อง (ดู qc_standards เพิ่ม 10 รูป/7 หมวด)
 - [x] QC feedback loop (ปุ่ม "✅ ตรง / ❌ ไม่ตรง") → **DONE + tested Jul 2 (session 19d)** — เพิ่ม `human_feedback`/`human_feedback_at` ใน `qc_inspections`, endpoint `POST /api/qc/feedback`, n8n `wf_qc_line (2)` เพิ่ม Quick Reply + postback branch — สลับ active workflow แล้ว, user ทดสอบกดปุ่มผ่านจริง (แก้บั๊ก URLSearchParams ระหว่างทาง ดู Known Bugs #7) — **ยังไม่มี dashboard/query ดูสถิติ % ถูก/ผิดสะสม** เก็บแค่ raw data ในคอลัมน์ ต้องมาทำรายงานทีหลัง
-- [ ] Verify FB token expiry (tokens.md มีข้อมูลขัดแย้ง: Jun 26 vs Aug 2) — health check ล่าสุด (Jul 2) บอก "เหลือ 30 วัน" ยังไม่ reconcile กับ tokens.md
-- [ ] Import/verify WF1 v8 ACTIVE ใน n8n
+- [x] Verify FB token expiry → **RESOLVED session 25 (Jul 16)** — tokens.md เคยขัดแย้งกันเอง (Jun 26 vs Aug 2) แก้แล้วทั้ง 2 ไฟล์ (`memory/tokens.md` + `CORE/ap-home-platform/memory/tokens.md`) ยืนยัน **~Aug 2, 2026 ถูกต้อง** จากหลักฐานที่โพสต์ FB สำเร็จจริงวันนี้ (ถ้าหมดตั้งแต่ Jun 26 จะโพสต์ไม่ผ่าน) — ตั้ง reminder renew ล่วงหน้า ~25 Jul 2026
 - [ ] เอาเกณฑ์ตัวเลขจริงจาก `Check list/02 QC List Revise02 2018.xlsx` + `inspect โครงสร้าง.pdf` (`D:\Finnhouses brand\`) ไปเสริม `QC_SYSTEM_PROMPT` ใน server.cjs — สกัดไว้บางส่วนแล้ว (ดู decisions.md, issues-log.md session 19b) ยังไม่ได้ใส่จริง
-- [ ] เช็ค Health Check "Blog Queue ว่าง" (พบ Jul 2) ทั้งที่เพิ่งเติม 7 รายการ (3-9 ก.ค.) — ยังไม่ verify ว่าเป็นปัญหาจริงหรือ timing เฉยๆ
 - [ ] เพิ่มรูปอ้างอิง qc_standards หมวด structure, cleanliness — ยังไม่มีรูปเลยทั้งคู่ (structure พอมี PDF checklist ช่วยได้)
+
+### Blog Runner — WF1 Publish Guard fix (session 24, Jul 13) — DONE
+- [x] Blog Runner ค้าง "running" 11+ ชม. (runId `blog_0134d26d`) → root cause: slug fallback `'post'` (4 ตัว) สอบตกกฎ Publish Guard (≥6 ตัว) เสมอ → บล็อกเงียบไม่ callback กลับ Hub → **FIXED**: slug fallback chain ใหม่ + เพิ่ม node "Notify Hub Blocked" + เพิ่ม `queue_item_id` เข้า "Notify Hub Published" ด้วย (เดิมก็ไม่มี ทำให้ item ที่ publish สำเร็จค้าง "running" เหมือนกัน) → ไฟล์ `Finnhouses WF1 — Article + Publish (9_queue_sync_fix).json` import + active แล้ว
+- [x] Unblock ของค้างวันนี้ + backfill queue item เก่า (07-11, 07-12) ให้ status ตรงความจริง → ผ่าน Supabase MCP ตรง
+- [ ] Monitor ต่อเนื่อง — spot-check ว่า Publish Guard ไม่บล็อกซ้ำ และ `content_queue` status sync ถูกต้องทุกวันหลังจากนี้ (ดู `docs/issues-log.md` ISSUE-012)
 
 ### Security
 - [x] Enable RLS: sites, line_users, qc_inspections, qc_defects, qc_standards, qc_daily_usage → **DONE 2026-07-11 (session 23)** — verified via Supabase advisor before/after, zero impact on Hub (uses service_role, bypasses RLS)
 - [x] REVOKE anon from `append_line_image_atomic` → **DONE 2026-07-11** — REVOKE per-role ไม่พอ ต้อง `REVOKE ... FROM PUBLIC` ด้วย (Postgres grants EXECUTE to PUBLIC by default) แก้แล้ว + verified ผ่าน `has_function_privilege`
 - [x] DROP `hub_state` anon_update policy → **DONE 2026-07-11** — พร้อม anon_insert ด้วย (hub_state เขียนโดย Hub service_role เท่านั้น ยืนยันจาก `updated_at` ที่ยังขยับวันนี้แม้ตัด anon แล้ว)
 - [x] **เพิ่มเติมนอกแผนเดิม (พบระหว่างแก้)**: ลบ `USING (true)`/`WITH CHECK (true)` policy ที่เปิดโล่งบน area_memory, buyer_context_signals, buyer_profiles, content_frames, market_insights, content_posts, properties + ปิด 4 ตารางที่ตายแล้ว (fb_listings, fb_sellers, fb_listing_history, agent_reports — ไม่มีการเขียนมา 30+ วัน) + fix `qc_inspections_view` SECURITY DEFINER → security_invoker + pin search_path 2 ฟังก์ชัน — ดู issues-log.md ISSUE-013
-- [ ] **ใหม่ — ยังไม่แก้**: `leads` (CRM) และ `projects` (Land Analyzer) ยังเปิดให้ `anon` CRUD เต็มที่ผ่าน browser (`lib/supabase.ts` ใช้ `NEXT_PUBLIC_SUPABASE_ANON_KEY` ตรง) เพราะ**แพลตฟอร์มนี้ไม่มีระบบ login เลย** — ล็อกให้ปลอดภัยจริงต้องออกแบบ auth ก่อน (Supabase Auth + หน้า login) ไม่ใช่แค่แก้ policy เฉยๆ ไม่งั้น CRM/Land Analyzer จะพังทันที ต้องคุย scope กับ user ก่อนเริ่ม
+- [x] `leads` (CRM) / `projects` (Land Analyzer) anon exposure → **RESOLVED session 25 (Jul 16)** — user เลือกทางแก้แบบไม่ต้องสร้าง auth เต็มรูป: ย้าย CRUD ทั้งหมดไปทำฝั่ง server (`/api/leads/*`, `/api/projects/*` ใช้ `SUPABASE_SERVICE_KEY`) แก้ `CRM.tsx`/`LandAnalyzer.tsx`/`DashboardOS.tsx`/`budget/page.tsx` ให้เรียก API แทน แล้ว lock RLS anon SELECT/INSERT ทิ้งทั้ง 2 ตาราง — verify ผ่าน `get_advisors` แล้ว ดู `docs/issues-log.md` ISSUE-013
+  - **เหลืออยู่ (ยอมรับความเสี่ยงนี้ตามที่ user เลือก scope)**: หน้า `/crm` และ `/land-analyzer` เองยังไม่มี login gate — ปิดช่องโหว่ "ยิง Supabase ตรงด้วย anon key" ได้แล้ว แต่ยังไม่ใช่ auth เต็มรูป ถ้าต้องการล็อกหน้าเว็บเองต้องคุย scope Supabase Auth ใหม่
 - [x] `market_listings` anon insert — เช็คแล้วว่าเป็นของจริง (`scripts/scrape-market.js` ใช้ anon key ตรง, INSERT-only อยู่แล้ว) ไม่ต้องแก้
 
 ### Hub v2 Remaining
@@ -220,11 +240,11 @@ Invoke-RestMethod -Method POST -Uri "https://ap-home-platform-production.up.rail
 
 ### AI Content — ListingTab resale persona (ADR-007) — เพิ่ง done session 23
 - [x] Inject resale persona + BRAND_FACTS + hook structure บังคับเข้า ListingTab prompt → deploy สำเร็จ + verify ผ่าน production จริง (Jul 10)
-- [ ] **CRITICAL — OPEN**: "Post to Facebook" ใน ListingTab คืน 500 แม้เปลี่ยน token ใหม่แล้ว — root cause ยังไม่ทราบ, block อยู่ที่ต้องรอ error body จริงจาก browser Network tab (user ส่ง Console tab มาผิดแท็บ 2 รอบ) ดู `docs/issues-log.md` ISSUE-011, Known Bugs #10
+- [x] "Post to Facebook" ใน ListingTab คืน 500 → **RESOLVED session 23 ต่อ, cross-checked session 25 (Jul 16)** — root cause คือ Vercel ขาด env var `FB_BACKEND_URL` (proxy ไปยัง service `services/fb-backend` ที่ไม่เคยบันทึกไว้) ไม่ใช่ token ดู `docs/issues-log.md` ISSUE-011, Known Bugs #10
 - [ ] Option 2 (House Matching Engine เต็มรูป) / Option 3 (persona tag บน properties table) — พักไว้ตามที่ user ตกลง รอพัฒนาต่อวันหน้า
-- [ ] `memory/tokens.md` ยังไม่ sync ด้วย FB token ใหม่ที่เพิ่งใส่ — รอแก้ ISSUE-011 ให้จบก่อน
+- [x] `memory/tokens.md` sync กับ FB token — unblocked แล้ว (ISSUE-011 ปิดแล้ว), ยังต้องเช็คว่าไฟล์ tokens.md ถูกอัปเดตจริงหรือยัง (ดู pending "Verify FB token expiry" ด้านบน)
 
-Last updated: 2026-07-11 (session 23 — AI Content ListingTab resale persona fix DONE + deployed + verified; FB "Post to Facebook" 500 error ยังเปิดอยู่ ยังไม่ resolve รอ error body จาก user — ดู HANDOFF.md/decisions.md ADR-007/issues-log.md ISSUE-011/glossary.md session 23)
+Last updated: 2026-07-16 (session 25 — doc sync: CLAUDE.md เคยไม่ตรงกับ issues-log.md ในหลายจุด แก้แล้ว (1) ISSUE-011 "Post to Facebook" 500 ปิดจริงตั้งแต่ session 23 แล้ว (root cause: ขาด Vercel env var `FB_BACKEND_URL`, ไม่ใช่ token) แต่ CLAUDE.md ยังเขียนว่า OPEN ค้างมา — แก้ Known Bugs #10 + Pending Tasks ให้ตรง (2) Known Bugs #11 cross-reference ผิด — เขียนว่า ISSUE-012 ทั้งที่เลขนั้นถูกใช้กับบั๊กคนละเรื่องไปแล้ว (AI เขียนประเภทบ้านผิด, session 23) เพิ่มเป็น ISSUE-014 ใน issues-log.md แล้วแก้ reference (3) เพิ่มเอกสาร `services/fb-backend` (Railway "easygoing-friendship") ที่ไม่เคยถูกบันทึกไว้เลยทั้งที่เป็น service จริงที่ใช้งานอยู่ — ดู FB Backend Service section ด้านบน)
 
 ### Doc sync — 2026-07-04 (session 20)
 `decisions.md` (+ADR-004), `issues-log.md` (+ISSUE-005/006/007), `HANDOFF.md` (rewritten), `glossary.md`, และ `AI_TEAM.md` เขียนไว้ตอน Jun 30 ก่อน Hub v2 revert — sync ตรงกับสถานะจริงแล้วทั้งหมด (Hub v1 live, `x-hub-token`, `/action/...` paths) ไม่มีการเปลี่ยน architecture หรือ code ใน session นี้ — เป็นแค่ doc maintenance

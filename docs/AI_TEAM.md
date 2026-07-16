@@ -2,11 +2,11 @@
 
 | Field | Value |
 |---|---|
-| **Version** | 1.2.1 |
+| **Version** | 1.2.2 |
 | **Status** | Active |
 | **Owner** | Product Owner (Archi) |
 | **Review Cycle** | Every 90 Days |
-| **Last Updated** | Jun 30, 2026 (v1.2.1) |
+| **Last Updated** | Jul 4, 2026 (v1.2.2 — Current System State synced to Jul 1 Hub v1 revert) |
 
 > **This is the engineering constitution of AP-Home Platform OS.**  
 > Every engineer or AI assistant must read this document before contributing to the repository.  
@@ -706,26 +706,31 @@ Every feature we build today must feed data into this intelligence loop. We are 
 
 ## Current System State
 
+> ⚠️ **Jul 1, 2026 — Hub v2 cutover REVERTED.** `fb/blog queue` routes were never actually implemented on Hub v2 (see `decisions.md` ADR-004, `issues-log.md` ISSUE-005). Production routing is back on Hub v1 until those routes are built and smoke-tested. This table (and the routing table below) reflects that reality, not the Jun 30 cutover attempt.
+
 | Service | Status | URL |
 |---|---|---|
 | Dashboard | ✅ Live | ap-home-platform.vercel.app |
-| Hub v1 | ✅ Live | ap-home-platform-production.up.railway.app |
-| Hub v2 Shadow | ✅ Online (~82%) | exciting-creativity-production-4b85.up.railway.app |
+| Hub v1 | ✅ **Live — production traffic** | ap-home-platform-production.up.railway.app |
+| Hub v2 | 🟡 Shadow only (~79-82% built, not serving traffic) | exciting-creativity-production-4b85.up.railway.app |
 | n8n | ✅ Live | primary-production-8158a.up.railway.app |
 | Supabase | ✅ Live | PostgreSQL + Storage |
 | WordPress | ✅ Live | finnhouses.com |
-| QC Line | ✅ Live | LINE OA → GPT-4o Vision |
+| QC Line | ✅ Live (feedback loop added Jul 2) | LINE OA → GPT-4o Vision |
 
-### n8n Workflow Routing (as of Jun 30, 2026)
+### n8n Workflow Routing (as of Jul 4, 2026 — post-revert)
 
 | Workflow | Active Version | Hub Endpoint | Status |
 |---|---|---|---|
-| Queue Auto-run | v4 | Hub v2 `/api/blog/queue/run-next` via Vercel proxy | ✅ Active |
-| WF1 Article + Publish | v8 (wb_fix) | Hub v2 `/webhook/n8n?token=<hmac>` | ✅ Active (verify in n8n) |
-| WF2 Image + Patch | v5 (hub_v2) | Hub v2 `/webhook/image-done` | ✅ Active |
-| Wake-up | latest | Hub v2 `/api/health/state` | ✅ Active |
+| Queue Auto-run | v4 | Hub **v1** `/action/blog\|fb/queue/run-next` via Vercel proxy | ✅ Active |
+| WF1 Article + Publish | v8 (wb_fix) | Hub **v1** `/webhook/n8n?token=<hmac>` | ✅ Active (verify v8 in n8n — still pending) |
+| WF2 Image + Patch | v5 (hub_v2 file name, points at v1 now) | Hub **v1** `/webhook/image-done` | ✅ Active |
+| Wake-up | latest | Hub **v1** `/api/state` | ✅ Active |
+| wf_qc_line (2) | current | Hub **v1** `/api/qc/ingest` + `/api/qc/feedback` | ✅ Active |
+
+Header for all Hub v1 calls: `x-hub-token` (not `x-hub-secret` — that's the Hub v2 convention, currently unused in production).
 
 ---
 
-*Last updated: Jun 30, 2026 · v1.2.1 · by Claude (Lead Software Engineer)*  
+*Last updated: Jul 4, 2026 · v1.2.2 · doc-sync pass by Claude (Lead Software Engineer) — corrected Current System State + routing table to reflect Jul 1 Hub v1 revert; no architecture/governance changes*  
 *Next review: Sep 28, 2026 (90-day cycle) or after Hub v2 cutover (TASK-601/602/603)*

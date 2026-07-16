@@ -8,11 +8,11 @@
 
 | Field | Value |
 |---|---|
-| **Expiry** | Aug 2, 2026 (tentative — ดู CLAUDE.md §13 สำหรับ conflict note) |
-| **Where** | Railway env var: `FB_PAGE_ACCESS_TOKEN` (service: Hub v2) |
+| **Expiry** | **~Aug 2, 2026 — confirmed (session 25, Jul 16)** |
+| **Where** | Railway env var: `FB_PAGE_ACCESS_TOKEN` (service: **fb-backend / Railway alias "easygoing-friendship"** — ⚠️ ไม่ใช่ Hub v2 ตามที่เคยเขียนผิดไว้ ดู `CLAUDE.md` § FB Backend Service) |
 | **Renew via** | Graph API Explorer → Page Token → exchange for Long-lived |
-| **After renew** | Update Railway env var → verify FB routes |
-| **Note** | tokens.md เดิม (pre-AI_TEAM) มีข้อมูลขัดแย้ง "Jun 26" vs "Aug 2" → ต้องยืนยัน |
+| **After renew** | Update Railway **fb-backend (easygoing-friendship)** env var → verify FB routes |
+| **Note** | Jun 26 vs Aug 2 conflict resolved: user โพสต์ผ่าน ListingTab สำเร็จจริงวันที่ 16 Jul 2026 — ถ้า token หมดตั้งแต่ 26 Jun จะโพสต์ไม่ผ่าน ยืนยันว่า **Aug 2, 2026 ถูกต้อง** ตั้ง reminder renew ล่วงหน้า ~25 Jul 2026 |
 
 ## LINE_CHANNEL_ACCESS_TOKEN
 

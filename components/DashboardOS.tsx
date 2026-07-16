@@ -1,7 +1,9 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+// NOTE (session 25, Jul 16 2026): lead counts now read via /api/leads (server-side,
+// service_role key) — direct supabase.from("leads") with the public anon key was
+// removed because RLS on `leads` is now locked down. See docs/issues-log.md ISSUE-013.
 import PropertyReview from "@/components/PropertyReview";
 import OperationalDashboard from "@/components/OperationalDashboard";
 
@@ -28,10 +30,10 @@ function useLeadCounts() {
 
   useEffect(() => {
     async function fetch_() {
-      const { data, error } = await supabase
-        .from("leads")
-        .select("stage, business_unit");
-      if (error || !data) return;
+      const res = await fetch("/api/leads");
+      const json = await res.json();
+      const data = json.ok !== false ? json.data : null;
+      if (!data) return;
       const bu = (l: { business_unit?: string }) => l.business_unit || "build";
       setCounts({
         total:     data.length,

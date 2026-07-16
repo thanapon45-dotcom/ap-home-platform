@@ -1,6 +1,9 @@
 "use client";
 import { useState, useEffect } from "react";
-import { supabase } from "@/lib/supabase";
+// NOTE (session 25, Jul 16 2026): leads CRUD moved server-side to /api/leads/*
+// — direct supabase.from("leads") calls with the public anon key were removed
+// here because RLS on `leads` is now locked down (deny anon entirely).
+// See docs/issues-log.md ISSUE-013.
 
 const BRAND_NAME = "Finnhouses";
 
@@ -165,10 +168,15 @@ function AddLeadModal({ onClose, onAdd }: { onClose: () => void; onAdd: (lead: L
       score: Math.floor(Math.random() * 30) + 55,
       lead_date: todayLabel(),
     };
-    const { data, error: err } = await supabase.from("leads").insert([payload]).select().single();
+    const res = await fetch("/api/leads", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const json = await res.json();
     setSaving(false);
-    if (err) { setError(`บันทึกไม่สำเร็จ: ${err.message}`); return; }
-    onAdd(data as Lead);
+    if (!res.ok || json.ok === false) { setError(`บันทึกไม่สำเร็จ: ${json.error ?? `HTTP ${res.status}`}`); return; }
+    onAdd(json.data as Lead);
     onClose();
   }
 
@@ -300,7 +308,11 @@ function PipelineTab({ leads, setLeads, deleteLead }: { leads: Lead[]; setLeads:
     const idx = STAGES.findIndex(s => s.key === lead.stage);
     const next = STAGES[idx + dir];
     if (!next) return;
-    await supabase.from("leads").update({ stage: next.key, updated_at: new Date().toISOString() }).eq("id", lead.id);
+    await fetch(`/api/leads/${encodeURIComponent(lead.id)}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ stage: next.key, updated_at: new Date().toISOString() }),
+    });
     setLeads(ls => ls.map(l => l.id === lead.id ? { ...l, stage: next.key } : l));
     if (selected?.id === lead.id) setSelected(prev => prev ? { ...prev, stage: next.key } : null);
   }
@@ -632,21 +644,20 @@ export default function CRM() {
   const [leads, setLeads]         = useState<Lead[]>([]);
   const [loadErr, setLoadErr]     = useState("");
 
-  // ── Fetch from Supabase on mount ──
+  // ── Fetch from /api/leads on mount ──
   useEffect(() => {
-    supabase
-      .from("leads")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .then(({ data, error }) => {
-        if (error) { setLoadErr(error.message); return; }
-        setLeads((data ?? []) as Lead[]);
-      });
+    fetch("/api/leads")
+      .then(r => r.json())
+      .then(json => {
+        if (json.ok === false) { setLoadErr(json.error ?? "โหลดไม่สำเร็จ"); return; }
+        setLeads((json.data ?? []) as Lead[]);
+      })
+      .catch(e => setLoadErr(e instanceof Error ? e.message : "โหลดไม่สำเร็จ"));
   }, []);
 
   async function deleteLead(id: string) {
     if (!window.confirm("ลบ Lead นี้?")) return;
-    await supabase.from("leads").delete().eq("id", id);
+    await fetch(`/api/leads/${encodeURIComponent(id)}`, { method: "DELETE" });
     setLeads(ls => ls.filter(l => l.id !== id));
   }
 
@@ -671,9 +682,14 @@ export default function CRM() {
 
       if (!rows.length) { setImportMsg("❌ ไม่พบข้อมูล"); return; }
 
-      const { data, error } = await supabase.from("leads").insert(rows).select();
-      if (error) { setImportMsg(`❌ ${error.message}`); return; }
-      setLeads(ls => [...(data as Lead[]), ...ls]);
+      const res = await fetch("/api/leads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rows }),
+      });
+      const json = await res.json();
+      if (!res.ok || json.ok === false) { setImportMsg(`❌ ${json.error ?? `HTTP ${res.status}`}`); return; }
+      setLeads(ls => [...(json.data as Lead[]), ...ls]);
       setImportMsg(`✅ Import ${rows.length} Lead`);
       setTimeout(() => setImportMsg(""), 3000);
     };
