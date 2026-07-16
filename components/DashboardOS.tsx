@@ -32,7 +32,7 @@ function useLeadCounts() {
     async function fetch_() {
       const res = await fetch("/api/leads");
       const json = await res.json();
-      const data = json.ok !== false ? json.data : null;
+      const data = (json.ok !== false ? json.data : null) as { stage?: string; business_unit?: string }[] | null;
       if (!data) return;
       const bu = (l: { business_unit?: string }) => l.business_unit || "build";
       setCounts({
