@@ -228,7 +228,7 @@ async function callClaude(system: string, prompt: string, model = "claude-haiku-
   const res = await fetch("/api/chat", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ system, prompt, maxTokens: 800, model }),
+    body: JSON.stringify({ system, prompt, maxTokens: 2000, model }),
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error ?? "Claude API error");
