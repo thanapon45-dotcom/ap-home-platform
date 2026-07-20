@@ -5,30 +5,29 @@ const HUB = process.env.NEXT_PUBLIC_HUB_URL ?? "https://ap-home-platform-product
 const BRAND = "Finnhouses";
 const BRAND_FACTS = `ข้อมูลแบรนด์ที่ต้องใช้เท่านั้น (ห้ามปั้นตัวเลขหรือข้อมูลที่ไม่ได้ระบุ):
 - ชื่อแบรนด์: Finnhouses
-- ประเภทธุรกิจ: บริษัทรับสร้างบ้านคุณภาพสูง
+- ประเภทธุรกิจ: นายหน้าอสังหาริมทรัพย์ (ซื้อ-ขาย-ฝากขายบ้าน) และที่ปรึกษาตรวจสอบงานก่อสร้าง (Home Inspector) — ไม่ใช่บริษัทรับสร้างบ้าน/รับเหมาก่อสร้าง
 - พื้นที่ให้บริการ: กรุงเทพฯ และปริมณฑล
 - CTA ที่แนะนำ: "ลองดูผลงานที่ finnhouses.com" / "ทักมาปรึกษาเลย 0627946152" / "คอมเมนต์ไว้ได้เลย"
 - เบอร์โทร: 0627946152
 - เว็บไซต์: finnhouses.com
-- ห้ามพูดถึง: ราคาเฉพาะเจาะจง, จำนวนปีประสบการณ์ที่ไม่รู้จริง, จังหวัดที่ไม่ใช่ กทม./ปริมณฑล
-- Brand Philosophy: "ถ้าลูกค้าคือเพื่อน เราจะสร้างบ้านที่ตอบชีวิตของแต่ละคน"
+- ห้ามพูดถึง: ราคาเฉพาะเจาะจง, จำนวนปีประสบการณ์ที่ไม่รู้จริง, จังหวัดที่ไม่ใช่ กทม./ปริมณฑล, ห้ามพูดว่า Finnhouses เป็นผู้รับเหมา/ผู้สร้างบ้านเองเด็ดขาด
+- Brand Philosophy: "ถ้าลูกค้าคือเพื่อน เราจะช่วยให้เขาตัดสินใจเรื่องบ้าน — ซื้อ ขาย หรือตรวจรับ — ได้อย่างมั่นใจที่สุด"
 - ปรัชญา 3T:
-  🔁 Transfer = ส่งมอบชัดเจน — Checklist ทุกเฟส, Weekly Update, BOQ โปร่งใส, ลูกค้ารู้ทุกขั้นตอนไม่ต้องเดา
-  ⭐ Trust = สร้างความน่าเชื่อถือ — Portfolio จริง, ทีมมืออาชีพ, ราคาโปร่งใสไม่มีบวกซ้อน, รีวิวจากลูกค้าจริง
-  ❤️ Take Care = ดูแลต่อเนื่อง — ลูกค้าคือเพื่อน, ไม่หายหน้าหลังส่งมอบ, ใส่ใจรายละเอียด, ดูแลหลังการขายจริง
-- Buyer Emotional Reality: การสร้างบ้านคือหนึ่งในการตัดสินใจที่ยิ่งใหญ่ที่สุดในชีวิต — ลูกค้าไม่ได้ซื้อ "บ้าน" เขาซื้อ "ความรู้สึกปลอดภัย" "ความภาคภูมิใจ" และ "ชีวิตที่ดีขึ้น" content ที่โดนใจต้องทำให้เขารู้สึกว่า "Finnhouses เข้าใจฉัน" ไม่ใช่แค่ขายบ้าน
+  🔁 Transfer = ส่งมอบชัดเจน — ทุกขั้นตอนซื้อขาย/ตรวจสอบมี Checklist ชัดเจน อัปเดตความคืบหน้าสม่ำเสมอ เอกสารโปร่งใส ลูกค้ารู้ทุกขั้นตอนไม่ต้องเดา
+  ⭐ Trust = สร้างความน่าเชื่อถือ — ทรัพย์จริง ตรวจสอบจริง ทีมมืออาชีพ ค่าบริการโปร่งใสไม่มีบวกซ้อน รีวิวจากลูกค้าจริง
+  ❤️ Take Care = ดูแลต่อเนื่อง — ลูกค้าคือเพื่อน ไม่หายหน้าหลังปิดการขายหรือส่งรายงานตรวจ ใส่ใจรายละเอียด ดูแลหลังบริการจริง
+- Buyer Emotional Reality: การตัดสินใจเรื่องบ้าน — ไม่ว่าจะซื้อ ขาย หรือตรวจสอบก่อนรับมอบ — คือหนึ่งในการตัดสินใจที่ยิ่งใหญ่ที่สุดในชีวิต ลูกค้าไม่ได้ซื้อแค่ "บ้าน" หรือ "บริการตรวจสอบ" เขาซื้อ "ความรู้สึกปลอดภัย" "ความมั่นใจ" และ "ชีวิตที่ดีขึ้น" content ที่โดนใจต้องทำให้เขารู้สึกว่า "Finnhouses เข้าใจฉัน" ไม่ใช่แค่ขายทรัพย์หรือขายบริการ
 - Buyer Psychology: สื่อสาร Level 2–3 เท่านั้น (ห้ามแค่ feature Level 1):
   Level 1 Feature: "3 ห้องนอน วัสดุดี ทำเลดี" — คู่แข่งทุกรายพูดแบบนี้
-  Level 2 Emotion: "ปลอดภัย ภูมิใจ มั่นคง" — ทำให้เขารู้สึก
-  Level 3 Identity: "คนที่สร้างบ้านเองคือคนฉลาด ไม่ง้อโครงการ" — ทำให้เขาเห็นตัวเอง
+  Level 2 Emotion: "ปลอดภัย มั่นใจ มั่นคง" — ทำให้เขารู้สึก
+  Level 3 Identity: "คนที่ตรวจสอบให้รอบคอบก่อนซื้อ-ขาย-รับมอบ คือคนฉลาด ไม่เสี่ยงเอง" — ทำให้เขาเห็นตัวเอง
 - Area Memory (ข้อมูลตลาดท้องถิ่นจากประสบการณ์จริง ห้ามเพิ่มเติมหรือแต่ง):
   📍 ลาดหลุมแก้ว: คนซื้อบ้านกลัวปัญหาน้ำ — พูดถึงระบบป้องกัน ยกพื้นสูง ระบบระบายน้ำ
   📍 รังสิต: Commuter demand สูง — เน้นระยะทางจากที่ทำงาน ใกล้นิคม/โรงงาน
   📍 คลองสาม: บ้าน Modern ปิดไว ต้องการน้อย — เน้นดีไซน์โดดเด่น ราคาแข่งขันได้
-- Buyer Segments (3 กลุ่มหลัก ใช้กำหนด message ให้ตรงกลุ่ม):
-  🏗️ สร้างบ้าน Hands-off: กลัว "ผู้รับเหมาทิ้งงาน" → ต้องการ "ความเชื่อใจ + timeline" → message: "เราจัดการให้ครบ"
-  🔨 สร้างบ้าน Hands-on: กลัว "ได้ไม่ตรงที่ต้องการ" → ต้องการ "ความใส่ใจส่วนตัว" → message: "คุณเลือก เราแนะนำ"
-  🏠 บ้านมือสอง/Listing: กลัว "เดินทางไกล/ไม่ปลอดภัย" → ต้องการ "ชีวิตประจำวันที่ดีขึ้น" → message: เล่าชีวิตจริงที่ดีกว่า
+- Buyer Segments (2 กลุ่มหลัก ใช้กำหนด message ให้ตรงกลุ่ม):
+  🏠 ซื้อ/ฝากขายบ้าน: กลัว "ขายไม่ออก/โดนกดราคา" หรือ "เดินทางไกล/ไม่ปลอดภัย" → ต้องการ "ขายได้ราคาดี รวดเร็ว" หรือ "ชีวิตประจำวันที่ดีขึ้น" → message: บ้านที่ดีคือบ้านที่ตอบชีวิตของคุณได้จริง
+  🔍 ที่ปรึกษา/ตรวจสอบงานก่อสร้าง: กลัว "โดนผู้รับเหมาโกง/งานไม่ได้มาตรฐาน แต่ไม่รู้จะเช็คยังไง" → ต้องการ "ผู้เชี่ยวชาญช่วยตรวจสอบและยืนยันก่อนจ่ายเงิน/รับมอบ" → message: ให้มืออาชีพช่วยตรวจก่อนเซ็นรับ ไม่ต้องเดาเอง
 - Buyer Intelligence (จากการสัมภาษณ์ลูกค้าจริง — ห้ามแต่งเพิ่ม):
   👤 Profile หลัก: อายุ 30-50, เจ้าของธุรกิจ/ผจก., รายได้ 100K+/เดือน, สมรส มีลูก รถ 2 คัน, ขยับขยาย (ไม่ใช่บ้านแรก)
   👩 Decision Maker: ภรรยาคือผู้ตัดสินใจจริง — content ต้องพูดกับภรรยา ไม่ใช่แค่สามี
@@ -39,58 +38,56 @@ const BRAND_FACTS = `ข้อมูลแบรนด์ที่ต้อง�
     3. อยากอยู่ใกล้แม่/ครอบครัว
     4. ใกล้ที่ทำงาน
   🚨 Ghost Signal: ลูกค้าไม่รับสาย + ไม่ตอบ Line = กำลังหาย ต้อง re-engage ด้วยเนื้อหาที่ address ความกลัวหลัก
-  📱 Content ที่ได้ผลจริง: ภาพก่อน-หลังก่อสร้าง, คุณภาพงาน, มีรปภ.กลางคืน
+  📱 Content ที่ได้ผลจริง: ภาพจริงของทรัพย์/รายงานตรวจสอบจริง, คุณภาพงาน, มีรปภ.กลางคืน
   ❌ Content ที่ไม่ได้ผล: Hard sell ทุกรูปแบบ
-  🔑 คำที่สร้าง Trust: "Checklist", "QC", "ส่งมอบตรงเวลา", "มีคนรับผิดชอบ"
+  🔑 คำที่สร้าง Trust: "Checklist", "QC", "ตรวจสอบตามมาตรฐาน", "มีคนรับผิดชอบ"
   😤 สิ่งที่ทำให้ลูกค้าโกรธจริงๆ: ติดต่อยาก ไม่มีคนรับผิดชอบ (ไม่ใช่ตัว defect)
-  ❤️ สิ่งที่ลูกค้าประทับใจมากที่สุด: การดูแลต่อเนื่องหลังส่งมอบ`;
+  ❤️ สิ่งที่ลูกค้าประทับใจมากที่สุด: การดูแลต่อเนื่องหลังปิดงาน`;
 
 // ── Keywords ─────────────────────────────────────────────────────────────────
 const KEYWORDS = [
-  // ── สไตล์บ้าน ─────────────────────────────
-  "บ้าน Contemporary ดีไซน์สวยงามทันสมัย",
-  "แบบบ้าน Tropical Modern กลางป่าในเมือง",
-  "บ้าน Minimal สไตล์ญี่ปุ่น เรียบ ลงตัว",
-  "บ้านสไตล์ Nordic งบ 4–6 ล้าน",
-  "ออกแบบบ้าน Work From Home ยุคใหม่",
-  // ── ให้ความรู้ / Educate ───────────────────
-  "สร้างบ้านงบ 5 ล้านต้องวางแผนอะไรบ้าง",
-  "ขั้นตอนสร้างบ้านตั้งแต่ต้นจนจบ",
-  "BOQ สำคัญอย่างไรในการสร้างบ้าน",
-  "วิธีเลือกผู้รับเหมาสร้างบ้านที่ดี",
-  "วิธีเลือกที่ดินสร้างบ้านให้คุ้มค่าที่สุด",
-  "ความเสี่ยงที่พบบ่อยเมื่อจ้างสร้างบ้าน",
-  "งบสร้างบ้านบานปลายเกิดจากอะไร",
+  // ── ซื้อ/ฝากขายบ้าน (Brokerage & Listing) ──
+  "ฝากขายบ้านกับ Finnhouses ขายไวได้ราคาดี",
+  "วิธีตั้งราคาบ้านให้ขายออกไว",
+  "เอกสารที่ต้องเตรียมก่อนขายบ้าน",
+  "ซื้อบ้านมือสองต้องเช็คอะไรบ้าง",
+  "ขั้นตอนโอนกรรมสิทธิ์บ้าน ต้องเตรียมอะไรบ้าง",
+  "จะซื้อหรือขายบ้านตอนนี้ดีไหม",
+  "เลือกทำเลอย่างไรให้บ้านขายง่าย",
+  "ทำไมบ้านหลังนี้ถึงยังขายไม่ออก",
+  "ขายบ้านเก่า ย้ายบ้านใหม่ ต้องวางแผนอย่างไร",
+  // ── ที่ปรึกษา/ตรวจสอบงานก่อสร้าง (Inspection & Consulting) ──
+  "ทำไมต้องตรวจบ้านก่อนรับมอบ",
+  "5 จุดที่ต้องเช็คก่อนรับมอบบ้านจากผู้รับเหมา",
+  "จ้างผู้ตรวจบ้านอิสระ คุ้มค่าอย่างไร",
+  "งานก่อสร้างไม่ได้มาตรฐาน สังเกตได้จากอะไร",
+  "Checklist ตรวจบ้านก่อนโอนกรรมสิทธิ์",
+  "ตรวจโครงสร้างบ้านต้องดูจุดไหนบ้าง",
+  "จ้างผู้รับเหมาแล้วไม่มั่นใจ ควรทำอย่างไร",
+  "ตรวจงานระหว่างก่อสร้าง vs ตรวจตอนรับมอบ ต่างกันอย่างไร",
+  "ป้องกันงบบานปลายด้วยการตรวจสอบก่อนจ่ายเงิน",
+  "รายงานตรวจบ้าน — สิ่งที่ควรได้จากผู้ตรวจมืออาชีพ",
   // ── 3T: Transfer (Process & Transparency) ─
-  "เราส่งมอบงานอย่างไร — ทุกเฟสมี Checklist",
-  "ลูกค้าไม่ต้องเดา — Weekly Update ทุกสัปดาห์",
-  "BOQ โปร่งใส ราคาที่เห็นคือราคาจริง ไม่มีบวกซ้อน",
-  "สร้างบ้านกับ Finnhouses — รู้ทุกขั้นตอนตั้งแต่วันแรก",
-  // ── 3T: Trust (Credibility & Portfolio) ───
-  "ผลงานจริง บ้านจริง — Portfolio Finnhouses",
-  "ทีมช่างมืออาชีพที่ทำงานตรงเวลา",
+  "เราตรวจสอบและส่งมอบงานอย่างไร — ทุกจุดมี Checklist",
+  "ลูกค้าไม่ต้องเดา — อัปเดตความคืบหน้าให้ทุกขั้นตอน",
+  "ค่าบริการโปร่งใส ไม่มีบวกซ้อน",
+  // ── 3T: Trust (Credibility & Track Record) ───
+  "เคสจริง ทรัพย์จริง — ผลงาน Finnhouses",
+  "ทีมมืออาชีพที่ทำงานตรงเวลา",
   "รีวิวจากลูกค้าจริง — เสียงที่เราภูมิใจที่สุด",
   "ทำไมลูกค้าถึงไว้วางใจ Finnhouses",
-  // ── 3T: Take Care (Relationship & After-Sales) ─
-  "ลูกค้าคือเพื่อน — เราไม่หายหน้าหลังส่งมอบ",
-  "หลังสร้างบ้านเสร็จ เราดูแลคุณต่อเนื่อง",
-  "บ้านของคุณ ชีวิตของคุณ — เราสร้างให้ตอบจริงๆ",
+  // ── 3T: Take Care (Relationship & After-Service) ─
+  "ลูกค้าคือเพื่อน — เราไม่หายหน้าหลังปิดงาน",
+  "หลังปิดการขาย/ส่งรายงานตรวจ เราดูแลคุณต่อเนื่อง",
+  "บ้านของคุณ ชีวิตของคุณ — เราช่วยให้ตอบโจทย์จริงๆ",
   // ── Life Moments (ดึงใจ) ──────────────────────
   "บ้านหลังแรก — เริ่มต้นชีวิตใหม่ด้วยกัน",
-  "เก็บเงินมา 10 ปี เพื่อสร้างบ้านในฝัน",
-  "สร้างบ้านให้พ่อแม่อยู่สบายตอนแก่",
+  "เก็บเงินมาหลายปี เพื่อซื้อบ้านในฝัน",
+  "ซื้อบ้านให้พ่อแม่อยู่สบายตอนแก่",
   "ตอบแทนบุญคุณพ่อแม่ด้วยบ้านหลังใหม่",
   "บ้านที่ลูกจะจำไปตลอด",
-  "สร้างรังให้ครอบครัวก่อนลูกโต",
-  "บ้านคือรากของชีวิต — สร้างให้มั่นคง",
-];
-
-const STYLES = [
-  { value: "contemporary",    label: "Contemporary",    emoji: "🏙️" },
-  { value: "nordic",          label: "Nordic",          emoji: "❄️" },
-  { value: "modern_tropical", label: "Modern Tropical", emoji: "🌿" },
-  { value: "minimal",         label: "Minimal",         emoji: "⬜" },
-  { value: "luxury",          label: "Luxury",          emoji: "✨" },
+  "หาบ้านให้ครอบครัวก่อนลูกโต",
+  "บ้านคือรากของชีวิต — เลือกให้มั่นคง",
 ];
 
 const TONES = [
@@ -100,7 +97,7 @@ const TONES = [
     emoji: "😊",
     color: "#f59e0b",
     desc: "อบอุ่น เหมือนเพื่อนแนะนำ",
-    instruction: "เขียนแบบเพื่อนคุยกัน อบอุ่น เป็นกันเอง — เล่าเรื่องราวที่คนสร้างบ้านเข้าใจได้ทันที เชื่อมกับความรู้สึกหรือประสบการณ์จริงที่เขาอาจมีอยู่แล้ว ภาษาพูดธรรมชาติ เหมือนเพื่อนที่ผ่านเรื่องนี้มาแล้วแนะนำให้อย่างจริงใจ",
+    instruction: "เขียนแบบเพื่อนคุยกัน อบอุ่น เป็นกันเอง — เล่าเรื่องราวที่คนกำลังซื้อ-ขายบ้าน หรือกำลังตรวจสอบบ้านเข้าใจได้ทันที เชื่อมกับความรู้สึกหรือประสบการณ์จริงที่เขาอาจมีอยู่แล้ว ภาษาพูดธรรมชาติ เหมือนเพื่อนที่ผ่านเรื่องนี้มาแล้วแนะนำให้อย่างจริงใจ",
   },
   {
     value: "professional",
@@ -132,7 +129,7 @@ const TONES = [
     emoji: "💛",
     color: "#fbbf24",
     desc: "เล่าจากชีวิต กระทบอารมณ์",
-    instruction: "เขียนจากมุมชีวิตจริงของคนที่กำลังสร้างบ้าน — เริ่มจากช่วงเวลา ความรู้สึก หรือความฝันที่ buyer เข้าใจได้ทันที แล้วค่อย connect กับว่า Finnhouses เป็นคำตอบนั้นได้อย่างไร ภาษาอ่อนโยน ใกล้ชิด ให้คนอ่านแล้วรู้สึกว่า 'นี่คือเรื่องของฉัน'",
+    instruction: "เขียนจากมุมชีวิตจริงของคนที่กำลังตัดสินใจเรื่องบ้าน — ซื้อ ขาย หรือตรวจรับ — เริ่มจากช่วงเวลา ความรู้สึก หรือความฝันที่ buyer เข้าใจได้ทันที แล้วค่อย connect กับว่า Finnhouses เป็นคำตอบนั้นได้อย่างไร ภาษาอ่อนโยน ใกล้ชิด ให้คนอ่านแล้วรู้สึกว่า 'นี่คือเรื่องของฉัน'",
   },
   {
     value: "3t_story",
@@ -161,39 +158,27 @@ const POST_TYPES = [
 // ── Intelligence Framework Constants ─────────────────────────────────────────
 const BUYER_SEGMENTS = [
   {
-    value: "build_handsoff",
-    label: "สร้างบ้าน Hands-off",
-    emoji: "🏗️",
-    fear: "ผู้รับเหมาทิ้งงาน",
-    need: "ความเชื่อใจ + ทำทุกอย่างให้",
-    key_message: "บอกสิ่งที่อยากได้ เราจัดการให้ครบ",
-    framed: [
-      "สร้างบ้านไม่ต้องยุ่งยาก บอกเราแค่ว่าอยากได้อะไร เราดูแลตั้งแต่ออกแบบถึงส่งมอบ",
-      "ทุกขั้นตอนมี Weekly Update — คุณแค่ approve เราทำให้",
-    ],
-  },
-  {
-    value: "build_handson",
-    label: "สร้างบ้าน Hands-on",
-    emoji: "🔨",
-    fear: "ได้ไม่ตรงที่ต้องการ",
-    need: "ความใส่ใจส่วนตัว + ปรึกษาได้ทุกขั้น",
-    key_message: "คุณเลือก เราแนะนำ — อยู่ตรงนี้ทุกขั้นตอน",
-    framed: [
-      "อยากเลือกกระเบื้องเอง วางผังเอง เลือกโคมไฟเอง? เราพร้อมคุยทุกรายละเอียด",
-      "เพิ่มช่องใส่สบู่ก็ได้ เพิ่มไฟส่องก็ได้ — แจ้งค่าใช้จ่ายเพิ่มให้ชัดทันที",
-    ],
-  },
-  {
     value: "resale",
-    label: "บ้านมือสอง / Listing",
+    label: "ซื้อ/ฝากขายบ้าน",
     emoji: "🏠",
-    fear: "เดินทางไกล / ไม่ปลอดภัย",
-    need: "ชีวิตประจำวันที่ดีขึ้น + ปลอดภัย",
+    fear: "ขายไม่ออก/โดนกดราคา หรือเดินทางไกล/ไม่ปลอดภัย",
+    need: "ขายได้ราคาดี รวดเร็ว หรือชีวิตประจำวันที่ดีขึ้น",
     key_message: "บ้านที่ดีคือบ้านที่ตอบชีวิตของคุณได้จริง",
     framed: [
       "เช้าส่งลูกโรงเรียน ตรงไปทำงาน เย็นกลับบ้านทัน — ชีวิตที่ไม่ต้องเสียเวลา",
-      "กะบ่ายออกดึก ถนนกว้าง ไฟสว่าง ภรรยาและลูกกลับบ้านปลอดภัย",
+      "ฝากขายกับเรา ทีมช่วยตั้งราคา ถ่ายภาพ และหาผู้ซื้อจริงให้ ไม่ต้องรอเดา",
+    ],
+  },
+  {
+    value: "inspection",
+    label: "ที่ปรึกษา/ตรวจสอบงานก่อสร้าง",
+    emoji: "🔍",
+    fear: "โดนผู้รับเหมาโกง หรืองานไม่ได้มาตรฐาน แต่ไม่รู้จะเช็คยังไง",
+    need: "ผู้เชี่ยวชาญช่วยตรวจสอบและยืนยันก่อนจ่ายเงิน/รับมอบ",
+    key_message: "ให้มืออาชีพช่วยตรวจก่อนเซ็นรับ ไม่ต้องเดาเอง",
+    framed: [
+      "ก่อนโอนเงินงวดสุดท้าย ให้เราช่วยตรวจก่อน — เจอปัญหาทันจุด ไม่ต้องแก้ทีหลัง",
+      "ไม่มีความรู้เรื่องก่อสร้างก็ไม่ต้องกังวล เรามี Checklist ตรวจให้ครบทุกจุด",
     ],
   },
 ];
@@ -201,7 +186,7 @@ const BUYER_SEGMENTS = [
 const AWARENESS_LEVELS = [
   { value: "unaware",        label: "Unaware",        desc: "ยังไม่รู้ว่ากำลังมองหาบ้าน",        hook: "เปิดด้วย context ชีวิตทั่วไปที่เขาเข้าใจได้" },
   { value: "problem_aware",  label: "Problem Aware",  desc: "รู้ว่าอยากได้บ้าน ยังไม่รู้จะเริ่มอย่างไร", hook: "โชว์ว่าเข้าใจปัญหา แล้วบอกทางออก" },
-  { value: "solution_aware", label: "Solution Aware", desc: "กำลังเปรียบเทียบผู้รับเหมา",           hook: "แสดง differentiation ที่ชัดเจน" },
+  { value: "solution_aware", label: "Solution Aware", desc: "กำลังเปรียบเทียบตัวเลือก/นายหน้าอยู่",   hook: "แสดง differentiation ที่ชัดเจน" },
   { value: "most_aware",     label: "Most Aware",     desc: "พร้อมตัดสินใจ รอแค่ยืนยัน",           hook: "CTA ตรงๆ + social proof" },
 ];
 
@@ -251,15 +236,15 @@ async function callClaude(system: string, prompt: string, model = "claude-haiku-
 }
 
 // Step 1: Generate focused image concept via Claude (mirrors n8n's image_style_base step)
-// Claude creates a 2-sentence concept specific to keyword+style → sharper, less token waste
-async function generateImageConcept(keyword: string, styleLabel: string): Promise<string> {
+// Claude creates a 2-sentence concept specific to the keyword → sharper, less token waste
+async function generateImageConcept(keyword: string): Promise<string> {
   try {
     const res = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        system: "You are an architectural visualization director for Finnhouses, a luxury home builder in Thailand. Write a focused 2-sentence image concept for an architectural pencil sketch. Under 45 words. English only. Be specific and visual — describe what this house looks like and the mood.",
-        prompt: `House style: ${styleLabel}\nContent topic: "${keyword}"\n\nWrite exactly 2 sentences:\n1. Specific architectural character of this ${styleLabel} house (roof form, key material, hero element)\n2. How the scene or mood connects to "${keyword}"`,
+        system: "You are a real estate marketing visual director for Finnhouses, a property brokerage and home-inspection consultancy in Thailand. Write a focused 2-sentence image concept for a realistic marketing photo. Under 45 words. English only. Be specific and visual.",
+        prompt: `Content topic: "${keyword}"\n\nWrite exactly 2 sentences:\n1. A specific, realistic real-estate scene (a house exterior/interior being viewed, listed, or inspected — no fabricated architectural claims)\n2. How the scene or mood connects to "${keyword}"`,
         maxTokens: 75,
       }),
     });
@@ -268,19 +253,17 @@ async function generateImageConcept(keyword: string, styleLabel: string): Promis
   } catch { return ""; }
 }
 
-// Step 2: Send concept + style to image API — server auto-fallbacks OpenAI→Gemini on any error
-async function generateImage(topic: string, style: string): Promise<string | null> {
-  const styleLabel = STYLES.find(s => s.value === style)?.label ?? style;
-
+// Step 2: Send concept to image API — server auto-fallbacks OpenAI→Gemini on any error
+async function generateImage(topic: string): Promise<string | null> {
   // Generate focused concept first (same pattern as n8n image_style_base node)
-  const concept = await generateImageConcept(topic, styleLabel);
+  const concept = await generateImageConcept(topic);
   console.log("[Image] concept:", concept);
 
   try {
     const res = await fetch("/api/image", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ topic, style, concept, model: "openai" }),
+      body: JSON.stringify({ topic, style: "realistic", concept, model: "openai" }),
     });
     const data = await res.json();
     if (data.ok && data.url) return data.url;
@@ -318,7 +301,6 @@ function Tag({ label, color }: { label: string; color: string }) {
 function KeywordTab({ onSave, starredRefs }: { onSave: (item: ContentItem) => void; starredRefs: ContentItem[] }) {
   const [keyword, setKeyword]   = useState(KEYWORDS[0]);
   const [custom, setCustom]     = useState("");
-  const [style, setStyle]       = useState("contemporary");
   const [tone, setTone]         = useState("casual");
   const [type, setType]         = useState("fb_post");
   const [loading, setLoading]   = useState(false);
@@ -330,7 +312,7 @@ function KeywordTab({ onSave, starredRefs }: { onSave: (item: ContentItem) => vo
   const [posting, setPosting]       = useState(false);
   const [postResult, setPostResult] = useState<"ok"|"error"|null>(null);
   // Positioned mode state
-  const [buyerSeg, setBuyerSeg]   = useState("build_handsoff");
+  const [buyerSeg, setBuyerSeg]   = useState("resale");
   const [awareness, setAwareness] = useState("problem_aware");
   const [timing, setTiming]       = useState("none");
 
@@ -361,7 +343,6 @@ function KeywordTab({ onSave, starredRefs }: { onSave: (item: ContentItem) => vo
 
   async function generate() {
     setLoading(true); setResult(""); setImageUrl("");
-    const styleLabel = STYLES.find(s => s.value === style)?.label ?? style;
     const typeLabel  = POST_TYPES.find(t => t.value === type)?.label ?? type;
     const is3T          = tone === "3t_story";
     const isHeartfelt   = tone === "heartfelt";
@@ -370,8 +351,8 @@ function KeywordTab({ onSave, starredRefs }: { onSave: (item: ContentItem) => vo
     const selectedAw    = AWARENESS_LEVELS.find(a => a.value === awareness) ?? AWARENESS_LEVELS[1];
     const selectedTiming = TIMING_SIGNALS.find(t => t.value === timing) ?? TIMING_SIGNALS[0];
     const isLifeMoment = [
-      "บ้านหลังแรก", "เก็บเงินมา", "สร้างบ้านให้พ่อแม่",
-      "ตอบแทนบุญคุณ", "บ้านที่ลูก", "สร้างรัง", "บ้านคือราก",
+      "บ้านหลังแรก", "เก็บเงินมา", "ซื้อบ้านให้พ่อแม่",
+      "ตอบแทนบุญคุณ", "บ้านที่ลูก", "หาบ้านให้ครอบครัว", "บ้านคือราก",
     ].some(kw => finalKeyword.includes(kw));
 
     // Taste Library: ใช้เฉพาะ reference ที่ tag ตรงกลุ่มลูกค้าที่เลือกอยู่ก่อน
@@ -379,7 +360,7 @@ function KeywordTab({ onSave, starredRefs }: { onSave: (item: ContentItem) => vo
     const segMatchedRefs = starredRefs.filter(r => r.segment === buyerSeg);
     const refsToUse = segMatchedRefs.length > 0 ? segMatchedRefs : starredRefs;
 
-    const system = `คุณเป็น copywriter ภาษาไทยของแบรนด์ ${BRAND} บริษัทรับสร้างบ้านคุณภาพสูงในไทย
+    const system = `คุณเป็น copywriter ภาษาไทยของแบรนด์ ${BRAND} นายหน้าอสังหาริมทรัพย์และที่ปรึกษาตรวจสอบงานก่อสร้างในไทย
 งานของคุณคือเขียน Facebook Post ภาษาไทยที่คนไทยอ่านแล้วรู้สึก "เป็นธรรมชาติ" ไม่ใช่แปลจากภาษาอื่น
 
 โทนการเขียนที่ต้องใช้: ${selectedTone.label} (${selectedTone.desc})
@@ -404,17 +385,17 @@ ${selectedTiming.value !== "none" ? `Timing Signal: ${selectedTiming.label} — 
 ${is3T ? `
 ── 3T Story Guidelines (สำคัญมาก) ──
 เลือก 1 มุมจาก 3T ที่ตรงกับ keyword มากที่สุดแล้วเล่าให้เห็นภาพ:
-🔁 Transfer → โชว์ขั้นตอนที่ชัดเจน เช่น "ก่อนเทพื้น เราเช็ค 12 จุด..." สร้างความมั่นใจว่าลูกค้าไม่ต้องเดา
-⭐ Trust → เล่าจากหลักฐานจริง เช่น รีวิวลูกค้า, ผลงานจริง, ราคาที่โปร่งใส อย่า over-promise
-❤️ Take Care → เล่าเรื่องความสัมพันธ์ เช่น "หลังส่งมอบบ้าน 6 เดือน..." แสดงว่าเราดูแลต่อเนื่องจริง
-Hook ต้องมาจากประสบการณ์ที่คนสร้างบ้านเข้าใจได้ทันที` : ""}
+🔁 Transfer → โชว์ขั้นตอนที่ชัดเจน เช่น "ก่อนปิดดีล เราเช็ค 12 จุด..." สร้างความมั่นใจว่าลูกค้าไม่ต้องเดา
+⭐ Trust → เล่าจากหลักฐานจริง เช่น รีวิวลูกค้า, เคสจริง, ค่าบริการที่โปร่งใส อย่า over-promise
+❤️ Take Care → เล่าเรื่องความสัมพันธ์ เช่น "หลังปิดงาน 6 เดือน..." แสดงว่าเราดูแลต่อเนื่องจริง
+Hook ต้องมาจากประสบการณ์ที่คนกำลังซื้อ-ขายบ้าน หรือกำลังตรวจสอบบ้านเข้าใจได้ทันที` : ""}
 ${isHeartfelt ? `
 ── Heartfelt Guidelines (สำคัญมาก) ──
 เปิดด้วย scene หรือช่วงเวลาจริงในชีวิต — ไม่ใช่คำถาม แต่เป็นภาพที่อ่านแล้วพยักหน้า เช่น:
   "ตอนนั่งดูบ้านเก่าที่บ้านแม่ ก็คิดขึ้นมาเองว่า..."
   "วันที่ลูกวิ่งเข้ามาถามว่า 'บ้านใหม่จะเสร็จเมื่อไหร่' ..."
 จากนั้นค่อย connect กับ keyword — อย่า rush ไปหา feature ทันที ให้ผู้อ่านรู้สึกก่อนว่า "นี่คือเรื่องของฉัน"
-ปิดด้วย brand philosophy ที่อบอุ่น "ถ้าลูกค้าคือเพื่อน เราจะสร้างบ้านที่ตอบชีวิตของแต่ละคน"` : ""}
+ปิดด้วย brand philosophy ที่อบอุ่น "ถ้าลูกค้าคือเพื่อน เราจะช่วยให้เขาตัดสินใจเรื่องบ้านได้อย่างมั่นใจที่สุด"` : ""}
 
 ${refsToUse.length > 0 ? `
 ── ตัวอย่าง Reference ที่ "ใช่" สำหรับ Finnhouses ──
@@ -434,7 +415,7 @@ ${refsToUse.slice(0, 2).map((r, i) => `[${i + 1}]${r.note ? ` — "${r.note}"` :
 ${is3T ? `✅ 3T angle คือแกนหลัก — เลือก 1 มุม (Transfer/Trust/Take Care) แล้วเล่าให้ลึกและน่าเชื่อถือ`
   : isHeartfelt ? `✅ Emotion-first — ทำให้คนรู้สึกก่อน จึงค่อยบอกว่า Finnhouses คือคำตอบ`
   : isPositioned ? `✅ Positioned — เขียนตรงกลุ่ม ${selectedSeg.emoji}${selectedSeg.label} เท่านั้น ทุกประโยคต้องตอบ fear หรือ need ของกลุ่มนี้`
-  : `✅ สไตล์บ้าน ${styleLabel} คือแกนหลัก — ทุก bullet ต้องสะท้อนลักษณะเด่นของ ${styleLabel} เท่านั้น ห้ามพูดถึงสไตล์อื่น`}
+  : `✅ กลุ่มลูกค้า ${selectedSeg.emoji}${selectedSeg.label} คือแกนหลัก — ทุกประโยคควรเชื่อมกับสิ่งที่เขากลัว ("${selectedSeg.fear}") หรือสิ่งที่เขาต้องการ (${selectedSeg.need})`}
 ✅ ผลลัพธ์ = Facebook Post เท่านั้น ไม่มีส่วนอื่นใดทั้งสิ้น`;
 
     const prompt = isPositioned
@@ -449,7 +430,7 @@ ${selectedTiming.value !== "none" ? `Timing Signal: ${selectedTiming.label}` : "
 บรรทัด 1-2: Hook — ${selectedAw.hook}${selectedTiming.value !== "none" ? ` บวก context "${selectedTiming.label}" ให้เป็นธรรมชาติ` : ""}
 2-3 บรรทัด: ตอบตรงๆ ว่า Finnhouses แก้ปัญหา "${selectedSeg.fear}" ได้อย่างไร — ใช้ message "${selectedSeg.key_message}" เป็นแกน เจาะจง ไม่ลอยๆ
 1 ประโยคปิด: CTA${selectedAw.value === "most_aware" ? ' — "ทักมาปรึกษาเลย 0627946152" (พร้อมตัดสินใจแล้ว)' : ' — "ลองดูผลงานที่ finnhouses.com" (ยังต้องการข้อมูลเพิ่ม)'}
-Hashtag 5-6 อัน: #Finnhouses #สร้างบ้าน + hashtag ที่ตรงกับ ${selectedSeg.label}
+Hashtag 5-6 อัน: #Finnhouses #อสังหาริมทรัพย์ + hashtag ที่ตรงกับ ${selectedSeg.label}
 
 ส่งเฉพาะ Facebook Post เท่านั้น — ไม่มีคำนำ ไม่มีหัวข้อ เริ่มต้นด้วย Hook โดยตรงเลย`
 
@@ -460,10 +441,10 @@ Hashtag 5-6 อัน: #Finnhouses #สร้างบ้าน + hashtag ที
 โทน: 3T Story — ${selectedTone.instruction}
 
 โครงสร้าง 3T Story (เขียนต่อกัน ไม่มี label นำหน้า):
-บรรทัด 1-2: Hook — ประโยคที่คนสร้างบ้านอ่านแล้วพยักหน้า หรือเล่าจาก scene จริงในชีวิต ไม่จำเป็นต้องเป็นคำถาม
+บรรทัด 1-2: Hook — ประโยคที่คนกำลังซื้อ-ขายบ้านหรือกำลังตรวจสอบบ้านอ่านแล้วพยักหน้า หรือเล่าจาก scene จริงในชีวิต ไม่จำเป็นต้องเป็นคำถาม
 3-5 บรรทัด: เล่าเรื่อง 3T จากมุมที่เลือก (Transfer/Trust/Take Care) ให้เห็นภาพว่า Finnhouses ทำอะไร อย่างไร เพื่อลูกค้า — เจาะจง ไม่ลอยๆ รู้สึกได้ถึงความใส่ใจ
 1-2 ประโยคปิด: เชื่อมกลับสู่ปรัชญา "ลูกค้าคือเพื่อน" + CTA ("ลองดูผลงานที่ finnhouses.com" หรือ "ทักมาปรึกษาเลย 0627946152")
-Hashtag 6-8 อัน: #Finnhouses #สร้างบ้าน #3T #Transfer หรือ #Trust หรือ #TakeCare #บ้านกรุงเทพ #ออกแบบบ้าน
+Hashtag 6-8 อัน: #Finnhouses #อสังหาริมทรัพย์ #3T #Transfer หรือ #Trust หรือ #TakeCare #บ้านกรุงเทพ #ตรวจบ้าน
 
 ส่งเฉพาะ Facebook Post เท่านั้น — ไม่มีคำนำ ไม่มีหัวข้อ ไม่มีข้อสังเกต เริ่มต้นด้วย Hook โดยตรงเลย`
 
@@ -474,31 +455,31 @@ Hashtag 6-8 อัน: #Finnhouses #สร้างบ้าน #3T #Transfer �
 โทน: ดึงใจ — emotion-first เล่าจากชีวิตจริง
 
 โครงสร้าง Heartfelt (เขียนต่อกัน ไม่มี label นำหน้า):
-บรรทัด 1-2: เปิดด้วย scene หรือช่วงเวลาในชีวิตที่คนสร้างบ้านรู้จักดี — ภาพหรือความรู้สึกที่อ่านแล้วพยักหน้า ไม่ใช่คำถาม${isLifeMoment ? "\n   (keyword นี้เกี่ยวกับ life moment — เปิดด้วยอารมณ์แบบนั้นโดยตรงเลย)" : ""}
+บรรทัด 1-2: เปิดด้วย scene หรือช่วงเวลาในชีวิตที่คนกำลังซื้อ-ขาย-ตรวจบ้านรู้จักดี — ภาพหรือความรู้สึกที่อ่านแล้วพยักหน้า ไม่ใช่คำถาม${isLifeMoment ? "\n   (keyword นี้เกี่ยวกับ life moment — เปิดด้วยอารมณ์แบบนั้นโดยตรงเลย)" : ""}
 2-3 บรรทัด: สะท้อนความรู้สึก ความฝัน หรือความกังวลที่ buyer อาจมี → แล้วค่อย connect กับว่า Finnhouses เป็น "คำตอบ" นั้นได้อย่างไร — เจาะจง ไม่ over-promise
 1 ประโยคปิด: brand philosophy อ่อนโยน + CTA ที่เชิญชวน ไม่กดดัน (ใช้ "ลองดูผลงานที่ finnhouses.com" หรือ "ทักมาคุยก่อนเลยก็ได้ 0627946152")
-Hashtag 5-6 อัน: #Finnhouses #สร้างบ้าน + hashtag ที่สะท้อน life moment เช่น #บ้านหลังแรก #ครอบครัว #ความฝัน
+Hashtag 5-6 อัน: #Finnhouses #อสังหาริมทรัพย์ + hashtag ที่สะท้อน life moment เช่น #บ้านหลังแรก #ครอบครัว #ความฝัน
 
 ส่งเฉพาะ Facebook Post เท่านั้น — ไม่มีคำนำ ไม่มีหัวข้อ ไม่มีข้อสังเกต เริ่มต้นด้วย scene โดยตรงเลย`
 
       : `เขียน ${typeLabel} ลง Facebook page ของ ${BRAND}
 
 หัวข้อ: "${finalKeyword}"
-สไตล์บ้าน: ${styleLabel}
+กลุ่มลูกค้า: ${selectedSeg.emoji} ${selectedSeg.label}
 โทน: ${selectedTone.label} — ${selectedTone.instruction}
 
 โครงสร้าง (เขียนต่อกัน ไม่มี label นำหน้า):
-บรรทัด 1-2: Hook — เปิดด้วยความรู้สึก scene จากชีวิต หรือคำถามที่โดนใจคนสนใจบ้านสไตล์ ${styleLabel} (ใช้โทน ${selectedTone.label}) ให้คนอ่านแล้วรู้สึกว่า "นี่คือเรื่องของฉัน"
-3-4 บรรทัด emoji: จุดเด่นของบ้านสไตล์ ${styleLabel} ที่เชื่อมกับ "${finalKeyword}" โดยตรง — เล่าให้เห็นภาพ ไม่แค่ list feature
+บรรทัด 1-2: Hook — เปิดด้วยความรู้สึก scene จากชีวิต หรือคำถามที่โดนใจคนที่กำลัง "${selectedSeg.fear}" (ใช้โทน ${selectedTone.label}) ให้คนอ่านแล้วรู้สึกว่า "นี่คือเรื่องของฉัน"
+3-4 บรรทัด emoji: เชื่อมกับ "${finalKeyword}" โดยตรงว่า Finnhouses ช่วยตอบ "${selectedSeg.need}" ได้อย่างไร — เล่าให้เห็นภาพ ไม่แค่ list feature
 1-2 ประโยคปิด: สะท้อนว่า Finnhouses เข้าใจลูกค้าจริงๆ + CTA (ใช้ "ลองดูผลงานที่ finnhouses.com" หรือ "ทักมาปรึกษาเลย 0627946152")
-Hashtag 6-8 อัน: ทุกตัวต้องมีความหมายดี เช่น #Finnhouses #บ้าน${styleLabel.replace(/\s+/g, "")} #สร้างบ้าน #ออกแบบบ้าน #บ้านสวย
+Hashtag 6-8 อัน: ทุกตัวต้องมีความหมายดี เช่น #Finnhouses #อสังหาริมทรัพย์ + hashtag ที่ตรงกับ ${selectedSeg.label}
 
 ส่งเฉพาะ Facebook Post เท่านั้น — ไม่มีคำนำ ไม่มีหัวข้อ ไม่มีข้อสังเกต ไม่มีการตรวจสอบท้าย เริ่มต้นด้วย Hook โดยตรงเลย`;
 
     const text = await callClaude(system, prompt).catch(e => `❌ Error: ${e.message}`);
     setResult(text);
     if (genImg && !text.startsWith("❌")) {
-      const img = await generateImage(finalKeyword, style);
+      const img = await generateImage(finalKeyword);
       if (img) setImageUrl(img);
     }
     setLoading(false);
@@ -512,7 +493,7 @@ Hashtag 6-8 อัน: ทุกตัวต้องมีความหมา
   function save() {
     if (!result) return;
     onSave({
-      id: Date.now(), keyword: finalKeyword, style, type,
+      id: Date.now(), keyword: finalKeyword, style: "—", type,
       content: result, imageUrl, date: new Date().toLocaleDateString("th-TH"),
       source: "keyword",
     });
@@ -538,21 +519,6 @@ Hashtag 6-8 อัน: ทุกตัวต้องมีความหมา
             placeholder="กรอก keyword..."
             style={{ ...inputStyle, marginBottom: 0 }}
           />
-        </div>
-
-        {/* Style */}
-        <div>
-          <div style={{ fontSize: 11, color: "#64748b", marginBottom: 6 }}>สไตล์บ้าน</div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-            {STYLES.map(s => (
-              <button key={s.value} onClick={() => setStyle(s.value)} style={{
-                padding: "5px 10px", borderRadius: 8, fontSize: 11, fontWeight: 600, cursor: "pointer",
-                background: style === s.value ? "rgba(34,211,238,.15)" : "rgba(255,255,255,.04)",
-                color: style === s.value ? "#22d3ee" : "#64748b",
-                border: style === s.value ? "1px solid rgba(34,211,238,.3)" : "1px solid rgba(255,255,255,.06)",
-              }}>{s.emoji} {s.label}</button>
-            ))}
-          </div>
         </div>
 
         {/* Tone */}
@@ -680,7 +646,6 @@ Hashtag 6-8 อัน: ทุกตัวต้องมีความหมา
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                   <Tag label={POST_TYPES.find(t => t.value === type)?.label ?? type} color="#818cf8" />
-                  <Tag label={STYLES.find(s => s.value === style)?.label ?? style} color="#22d3ee" />
                   <Tag label={`${selectedTone.emoji} ${selectedTone.label}`} color={selectedTone.color} />
                 </div>
                 <div style={{ display: "flex", gap: 8 }}>
@@ -843,7 +808,7 @@ ${blogText.slice(0, 2000)}
 • CTA: ต้องใช้ข้อความจากตัวอย่างด้านล่างเท่านั้น ห้ามแต่งเอง
   - "ลองดูผลงานที่ finnhouses.com" หรือ "ทักมาปรึกษาเลย 0627946152"
   - ❌ ห้ามใช้: "ลิงก์ใน Bio", "ปรึกษาฟรี", "ติดต่อเราวันนี้" โดยไม่ระบุช่องทาง
-• Hashtag 5-7 อัน รวม #Finnhouses #สร้างบ้าน
+• Hashtag 5-7 อัน รวม #Finnhouses #อสังหาริมทรัพย์
 
 เขียนเนื้อหาตรงๆ ห้ามใส่ label "Hook:" "CTA:" นำหน้า`;
     const text = await callClaude(system, prompt, "claude-sonnet-4-6").catch(e => `❌ Error: ${e.message}`);
@@ -1070,7 +1035,7 @@ function ListingTab({ onSave }: { onSave: (item: ContentItem) => void }) {
       selected.excerpt   ? `รายละเอียด: ${selected.excerpt.slice(0, 300)}` : "",
     ].filter(Boolean).join("\n");
 
-    const system = `คุณเป็น Social Media Editor ของแบรนด์ ${BRAND} (โบรกเกอร์อสังหาริมทรัพย์และบริษัทรับสร้างบ้าน)
+    const system = `คุณเป็น Social Media Editor ของแบรนด์ ${BRAND} (โบรกเกอร์อสังหาริมทรัพย์และที่ปรึกษาตรวจสอบงานก่อสร้าง)
 เขียน ${typeLabel} โปรโมททรัพย์มือสองชิ้นนี้ให้น่าสนใจและขายออกได้จริง
 
 ${BRAND_FACTS}
@@ -1513,13 +1478,13 @@ type FbQueueItem = {
 function genId() { return Math.random().toString(36).slice(2, 10); }
 
 const FB_QUEUE_TEMPLATES = [
-  `🏡 สร้างบ้านในฝันกับ Finnhouses\n\n✅ ออกแบบตามไลฟ์สไตล์คุณ\n✅ งบ 5–15 ล้านบาท ควบคุมได้จริง\n✅ ทีมช่างมืออาชีพ พร้อม BOQ ชัดเจน\n\nลองดูผลงานที่ finnhouses.com หรือทักมาปรึกษาเลย 0627946152\n\n#สร้างบ้าน #Finnhouses #บ้านในฝัน`,
-  `🔨 รีโนเวทบ้านเพื่อขาย ทำกำไรได้จริง!\n\n💰 ซื้อทรัพย์ราคาต่ำ → รีโนเวท → ขายต่อมีกำไร\n📊 เราช่วยประเมินต้นทุนและมาร์จิน\n\nทักมาปรึกษาเลย 0627946152\n\n#รีโนเวทบ้าน #ลงทุนอสังหา #Finnhouses`,
   `🏠 ฝากขายบ้านและที่ดิน กับ Finnhouses\n\n✨ ทีม Marketing ช่วยโปรโมทให้ฟรี\n✨ มีฐานลูกค้าพร้อมซื้อรอคิวอยู่\n📸 ถ่ายภาพและทำ Listing สวยๆ ให้ฟรี!\n\nลองดูผลงานที่ finnhouses.com หรือทักมาปรึกษาเลย 0627946152\n\n#ฝากขายบ้าน #Finnhouses`,
-  `💡 รู้หรือเปล่า? BOQ คืออะไร\n\nBOQ (Bill of Quantities) คือเอกสารที่รวมรายการวัสดุ + ค่าแรง ทุกรายการในการสร้างบ้าน\n\n✅ ป้องกันงบบาน\n✅ เปรียบเทียบผู้รับเหมาได้ถูกต้อง\n\nทักมาปรึกษาเลย 0627946152\n\n#BOQ #สร้างบ้าน #Finnhouses`,
-  `🌟 ทำไมต้องเลือก Finnhouses?\n\n🏗️ ประสบการณ์สร้างบ้านกว่า 50 หลัง\n📐 ออกแบบโดยทีมสถาปนิกมืออาชีพ\n💯 รับประกันงาน 2 ปี\n\nลองดูผลงานที่ finnhouses.com หรือทักมาปรึกษาเลย 0627946152\n\n#Finnhouses #สร้างบ้าน #บ้านคุณภาพ`,
-  `📊 งบ 5 ล้าน สร้างบ้านได้ขนาดไหน?\n\n🏠 พื้นที่ใช้สอย: 120–150 ตร.ม.\n🛏️ 3 ห้องนอน 2 ห้องน้ำ\n🚗 ที่จอดรถ 2 คัน\n\nลองดูผลงานที่ finnhouses.com หรือทักมาปรึกษาเลย 0627946152\n\n#งบสร้างบ้าน #Finnhouses #บ้าน5ล้าน`,
-  `🌅 เช้าวันนี้ขอแชร์บ้านสวยจาก Finnhouses!\n\nทุกหลังออกแบบให้เหมาะกับสภาพอากาศไทย\n🌿 ระบายอากาศดี\n☀️ แสงธรรมชาติเต็มบ้าน\n💧 วัสดุทนทาน ไม่กลัวฝน\n\nลองดูผลงานที่ finnhouses.com หรือทักมาปรึกษาเลย 0627946152\n\n#บ้านสวย #Finnhouses #ออกแบบบ้าน`,
+  `🔍 กำลังจะรับมอบบ้าน แต่ไม่มั่นใจว่างานได้มาตรฐานไหม?\n\n✅ ให้ทีม Finnhouses ช่วยตรวจก่อนเซ็นรับ\n✅ มี Checklist ตรวจครบทุกจุด\n✅ รายงานผลตรงไปตรงมา ไม่มีผลประโยชน์ทับซ้อนกับผู้รับเหมา\n\nทักมาปรึกษาเลย 0627946152\n\n#ตรวจบ้าน #Finnhouses #ผู้ตรวจอิสระ`,
+  `💡 ทำไมควรมีผู้ตรวจบ้านอิสระก่อนโอน?\n\nเพราะคนที่สร้าง/ส่งมอบบ้านให้คุณ ไม่ใช่คนกลางที่จะบอกว่างานไม่ได้มาตรฐาน\n\n✅ ตรวจโครงสร้าง ระบบไฟ ระบบน้ำ ก่อนจ่ายเงินงวดสุดท้าย\n✅ ป้องกันปัญหาที่แก้ยากทีหลัง\n\nทักมาปรึกษาเลย 0627946152\n\n#ตรวจรับบ้าน #Finnhouses`,
+  `🏡 กำลังหาบ้าน แต่ไม่มีเวลาวิ่งดูเอง?\n\nให้ Finnhouses ช่วยคัดทรัพย์ที่ตรงความต้องการ พร้อมพาไปดูจริง\n\nลองดูผลงานที่ finnhouses.com หรือทักมาปรึกษาเลย 0627946152\n\n#ซื้อบ้าน #Finnhouses #บ้านมือสอง`,
+  `🌟 ทำไมต้องเลือก Finnhouses?\n\n🏠 ช่วยซื้อ-ขาย-ฝากขายบ้านอย่างโปร่งใส\n🔍 มีบริการที่ปรึกษาตรวจสอบงานก่อสร้างโดยทีมที่เข้าใจหน้างานจริง\n💬 ปรึกษาได้ตรงๆ ไม่มีการบวกราคาซ้อน\n\nลองดูผลงานที่ finnhouses.com หรือทักมาปรึกษาเลย 0627946152\n\n#Finnhouses #อสังหาริมทรัพย์`,
+  `📋 5 จุดที่ควรเช็คก่อนรับมอบบ้าน\n\n✅ รอยร้าวโครงสร้าง\n✅ ระบบไฟและปลั๊กทุกจุด\n✅ ระบบระบายน้ำ/รั่วซึม\n✅ วัสดุปิดผิวตรงตามที่ตกลง\n✅ เอกสารรับประกันจากผู้รับเหมา\n\nไม่มั่นใจว่าเช็คเองครบไหม ให้เราช่วยตรวจ — ทักมาปรึกษาเลย 0627946152\n\n#ตรวจบ้าน #Finnhouses`,
+  `🌅 เช้าวันนี้ขอแชร์เคสจริงจากทีม Finnhouses\n\nไม่ว่าจะกำลังตัดสินใจซื้อ ขาย หรือกำลังจะรับมอบบ้าน — เรื่องบ้านเป็นการตัดสินใจใหญ่ที่ไม่ควรเดาเอง\n\nลองดูผลงานที่ finnhouses.com หรือทักมาปรึกษาเลย 0627946152\n\n#Finnhouses #บ้าน`,
 ];
 
 // ── FB Queue Tab Component ─────────────────────────────────────────────────────
