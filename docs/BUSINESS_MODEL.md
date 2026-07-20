@@ -26,6 +26,24 @@
 6. Renovation Intelligence
 7. AI Automation Workflow
 
+### Platform Structure — 2 Pillars (Archi's mental model, ยืนยัน 2026-07-20 session 26 ต่อ)
+
+Archi แบ่ง product/tool ของแพลตฟอร์มออกเป็น 2 กลุ่มใหญ่ตามการใช้งานจริง — นี่คือกรอบคิดหลักที่ควรใช้อ้างอิงเวลาจัดหมวดหมู่ feature ใหม่ๆ:
+
+**1. การตลาดและขาย (Marketing & Sales)** — เครื่องมือหาลูกค้า/ปิดดีล/สร้าง content
+- AI Content Studio (FB Content Studio, Blog Runner, Listing generator, Market Intel tab)
+- CRM (Lead pipeline)
+- OS Dashboard (ภาพรวม)
+- สนับสนุน: Unit 2 (โบรกเกอร์) โดยตรง + การตลาดฝั่งขายของ Unit 3 (Fix & Flip)
+
+**2. การบริหารงานก่อสร้าง (Construction Management)** — เครื่องมือวิเคราะห์/ควบคุมงานหน้างาน
+- Land Analyzer (วิเคราะห์ที่ดิน — ใช้ตอนประเมินซื้อทรัพย์เข้า Fix & Flip)
+- Budget Tool (คำนวณงบสร้างบ้าน/รีโนเวท)
+- QC (LINE OA → GPT-4o Vision — ตรวจงานก่อสร้าง)
+- สนับสนุน: Unit 3 (Fix & Flip) ฝั่งปฏิบัติการ + Unit 4 (ที่ปรึกษา/ตรวจสอบ) โดยตรง (QC คือ product implementation ของ Unit 4)
+
+> หมายเหตุ (ยืนยันจาก Archi): 7 Intelligence Modules ด้านบน**ไม่ได้แยกคนละ pillar** แต่**เชื่อมโยงข้อมูลซึ่งกันและกันทั้งหมด** เพื่อใช้เป็นกลยุทธ์ในการบริหารภาพรวม — เช่น Market Intelligence ป้อนทั้ง AI Content Studio (ฝั่งขาย) และ Land Analyzer (ฝั่งประเมินซื้อที่ดิน), Construction Intelligence จาก QC ป้อนกลับเข้า Renovation Intelligence ที่ใช้ตัดสินใจ Fix & Flip ครั้งถัดไป, Buyer Intelligence จากฝั่งขายป้อนกลับเข้า Property Intelligence ที่ใช้ประเมินทรัพย์ใหม่ — ทั้ง 2 pillar (การตลาดและขาย / การบริหารงานก่อสร้าง) ดึงและป้อนข้อมูลเข้า loop เดียวกันตลอดเวลา ไม่ใช่ silo แยกขาดจากกัน
+
 ---
 
 ## Business Units
