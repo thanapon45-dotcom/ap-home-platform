@@ -175,3 +175,25 @@
 **ยังไม่ได้ทำ**: Business Unit 3 (Fix & Flip) ใน `BUSINESS_MODEL.md` ยังไม่ยืนยันสถานะ — ต้องถาม Archi ก่อนแก้ Intelligence Loop diagram หรืออ้างอิงในเอกสารอื่นต่อ
 
 **Related**: ADR-009 (ship พร้อมกันในวันเดียวกัน), `docs/issues-log.md` ISSUE-015
+
+---
+
+## ADR-011 — Business Unit 3 (Fix & Flip) ยืนยัน active + สัดส่วนธุรกิจจริง 3 หน่วย
+**Date**: 2026-07-20 (session 26, ต่อ)
+**Status**: Documented ✅ (code — AI Content Studio ยังไม่ได้ทำ ดู "ยังไม่ได้ทำ" ด้านล่าง)
+
+**Context**: ADR-010 ทิ้งคำถามค้างไว้ว่า Business Unit 3 (Fix & Flip / รีโนเวทเพื่อขาย) ยังทำอยู่จริงหรือไม่ เพราะไม่ได้ถูกพูดถึงตรงๆ ตอน Archi ยืนยัน "ลูกค้าผมมีแค่ 2 กลุ่ม" (ตอนนั้นหมายถึงกลุ่มลูกค้าปลายทาง ไม่ใช่หน่วยธุรกิจภายใน) วันนี้ Archi ยืนยันตรงๆ ว่า Unit 3 ยังทำอยู่จริง และให้สัดส่วนธุรกิจจริงทั้ง 3 หน่วย: **Develop/Fix & Flip 60% · ที่ปรึกษา/ตรวจสอบงานก่อสร้าง (Unit 4) 30% · โบรกเกอร์ (Unit 2) 10%**
+
+ระหว่างถามยืนยัน มีความเสี่ยงสับสนที่ต้อง clarify ก่อนแก้เอกสาร: คำว่า "Develop" ที่ Archi ใช้ อาจหมายถึง Fix & Flip (Unit 3) หรือกลับไปหมายถึงรับสร้างบ้านใหม่ (Unit 1 ที่ discontinued ไปแล้วใน ADR-010) — ถามยืนยันผ่าน AskUserQuestion แล้วได้คำตอบชัดเจนว่า **"Develop" = Fix & Flip (Unit 3 เดิม)** ไม่ใช่ Unit 1 — Unit 1 ยังคง discontinued เหมือนเดิม ไม่มีการ revert
+
+**Decision**: อัปเดต `docs/BUSINESS_MODEL.md`:
+- Unit 3 (Fix & Flip): ลบ flag "สถานะยังไม่ยืนยัน" ออก ระบุชัดว่าเป็น**หน่วยธุรกิจหลัก 60%** พร้อมหมายเหตุกันสับสนว่าไม่ใช่ Unit 1 (รับเหมาสร้างบ้านใหม่ — ยัง discontinued)
+- Unit 2 (โบรกเกอร์): ระบุสัดส่วน 10%
+- Unit 4 (ที่ปรึกษา/ตรวจสอบ): ระบุสัดส่วน 30%
+- Intelligence Loop diagram note: อัปเดตว่า Unit 3 confirmed แล้ว แต่ diagram เองยังไม่ได้ redesign ให้ตรงกับ 3 หน่วยจริง (ทิ้งไว้เป็น follow-up)
+
+**Files**: `docs/BUSINESS_MODEL.md`
+
+**ยังไม่ได้ทำ**: AI Content Studio (`components/AIContent.tsx`) ยังมีแค่ 2 buyer segment (โบรกเกอร์ + ที่ปรึกษา) ไม่มี segment/keyword set สำหรับ Fix & Flip เลย ทั้งที่ตอนนี้ยืนยันแล้วว่าเป็น **60% ของธุรกิจ — สัดส่วนใหญ่ที่สุด** เป็นช่องว่างที่ควรถาม Archi ต่อว่าต้องการให้ content engine ครอบคลุม Fix & Flip ด้วยหรือไม่ (เช่น content เชิญชวนนักลงทุน, อัปเดตความคืบหน้ารีโนเวท ฯลฯ) — ยังไม่ได้ทำเพราะเป็นงานขนาดใหญ่เทียบเท่า ADR-010 ควรถามขอบเขตก่อนเริ่ม
+
+**Related**: ADR-010
