@@ -227,6 +227,7 @@ type ContentItem = {
   source: "keyword" | "blog";
   starred?: boolean;   // ⭐ เก็บเป็น Reference
   note?: string;       // "ทำไมถึงใช่?"
+  segment?: string;    // กลุ่มลูกค้าที่ reference นี้ใช้ได้ดี (BUYER_SEGMENTS.value) — ว่าง = ใช้ได้ทั่วไป
 };
 
 type FbState = {
@@ -373,6 +374,11 @@ function KeywordTab({ onSave, starredRefs }: { onSave: (item: ContentItem) => vo
       "ตอบแทนบุญคุณ", "บ้านที่ลูก", "สร้างรัง", "บ้านคือราก",
     ].some(kw => finalKeyword.includes(kw));
 
+    // Taste Library: ใช้เฉพาะ reference ที่ tag ตรงกลุ่มลูกค้าที่เลือกอยู่ก่อน
+    // ถ้ายังไม่มีตัวไหน tag ตรงกลุ่มนี้เลย ค่อย fallback ไปใช้ทั้งหมด (เหมือนพฤติกรรมเดิม)
+    const segMatchedRefs = starredRefs.filter(r => r.segment === buyerSeg);
+    const refsToUse = segMatchedRefs.length > 0 ? segMatchedRefs : starredRefs;
+
     const system = `คุณเป็น copywriter ภาษาไทยของแบรนด์ ${BRAND} บริษัทรับสร้างบ้านคุณภาพสูงในไทย
 งานของคุณคือเขียน Facebook Post ภาษาไทยที่คนไทยอ่านแล้วรู้สึก "เป็นธรรมชาติ" ไม่ใช่แปลจากภาษาอื่น
 
@@ -410,10 +416,10 @@ ${isHeartfelt ? `
 จากนั้นค่อย connect กับ keyword — อย่า rush ไปหา feature ทันที ให้ผู้อ่านรู้สึกก่อนว่า "นี่คือเรื่องของฉัน"
 ปิดด้วย brand philosophy ที่อบอุ่น "ถ้าลูกค้าคือเพื่อน เราจะสร้างบ้านที่ตอบชีวิตของแต่ละคน"` : ""}
 
-${starredRefs.length > 0 ? `
+${refsToUse.length > 0 ? `
 ── ตัวอย่าง Reference ที่ "ใช่" สำหรับ Finnhouses ──
 เรียนรู้ tone, pattern และความรู้สึกจากตัวอย่างเหล่านี้ — ห้ามคัดลอกคำต่อคำ แต่ให้ output มีคุณภาพในระดับเดียวกัน:
-${starredRefs.slice(0, 2).map((r, i) => `[${i + 1}]${r.note ? ` — "${r.note}"` : ""}\n${r.content}`).join("\n\n")}
+${refsToUse.slice(0, 2).map((r, i) => `[${i + 1}]${r.note ? ` — "${r.note}"` : ""}\n${r.content}`).join("\n\n")}
 ` : ""}
 กฎภาษาที่เข้มงวด:
 ❌ ห้ามใช้สรรพนาม "ชั้น" "ผม" "ฉัน" — เขียนในนามแบรนด์ ไม่ใช่ตัวบุคคล
@@ -589,33 +595,38 @@ Hashtag 6-8 อัน: ทุกตัวต้องมีความหมา
           </div>
         </div>
 
-        {/* Positioned Mode: Buyer Segment + Awareness + Timing */}
+        {/* Buyer Segment — always visible, ใช้ได้กับทุกโทน (ไม่ผูกกับ Positioned อย่างเดียวแล้ว) */}
+        <div style={{ borderTop: "1px solid rgba(232,121,249,.15)", paddingTop: 12 }}>
+          <div style={{ fontSize: 11, color: "#e879f9", fontWeight: 700, marginBottom: 8, letterSpacing: ".08em" }}>🎯 กลุ่มลูกค้าเป้าหมาย</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            {BUYER_SEGMENTS.map(s => (
+              <button key={s.value} onClick={() => setBuyerSeg(s.value)} style={{
+                display: "flex", alignItems: "center", gap: 8,
+                padding: "7px 10px", borderRadius: 9, fontSize: 11, fontWeight: 600, cursor: "pointer", textAlign: "left" as const,
+                background: buyerSeg === s.value ? "rgba(232,121,249,.12)" : "rgba(255,255,255,.03)",
+                color: buyerSeg === s.value ? "#e879f9" : "#64748b",
+                border: buyerSeg === s.value ? "1px solid rgba(232,121,249,.35)" : "1px solid rgba(255,255,255,.06)",
+              }}>
+                <span style={{ fontSize: 14, flexShrink: 0 }}>{s.emoji}</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 700 }}>{s.label}</div>
+                  <div style={{ fontSize: 10, opacity: 0.65, marginTop: 1 }}>กลัว: {s.fear}</div>
+                </div>
+              </button>
+            ))}
+          </div>
+          <div style={{ fontSize: 10, color: "#475569", marginTop: 6 }}>
+            {tone === "positioned"
+              ? "ใช้กำหนด fear/need/message ในโทน Positioned โดยตรง"
+              : "ใช้กรอง Reference จาก Taste Library ให้ตรงกลุ่มนี้เท่านั้น"}
+          </div>
+        </div>
+
+        {/* Positioned Mode: Awareness + Timing */}
         {tone === "positioned" && (
           <>
             <div style={{ borderTop: "1px solid rgba(232,121,249,.15)", paddingTop: 12 }}>
               <div style={{ fontSize: 11, color: "#e879f9", fontWeight: 700, marginBottom: 8, letterSpacing: ".08em" }}>🎯 POSITIONED MODE</div>
-
-              {/* Buyer Segment */}
-              <div style={{ marginBottom: 10 }}>
-                <div style={{ fontSize: 11, color: "#64748b", marginBottom: 5 }}>กลุ่มลูกค้าเป้าหมาย</div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  {BUYER_SEGMENTS.map(s => (
-                    <button key={s.value} onClick={() => setBuyerSeg(s.value)} style={{
-                      display: "flex", alignItems: "center", gap: 8,
-                      padding: "7px 10px", borderRadius: 9, fontSize: 11, fontWeight: 600, cursor: "pointer", textAlign: "left" as const,
-                      background: buyerSeg === s.value ? "rgba(232,121,249,.12)" : "rgba(255,255,255,.03)",
-                      color: buyerSeg === s.value ? "#e879f9" : "#64748b",
-                      border: buyerSeg === s.value ? "1px solid rgba(232,121,249,.35)" : "1px solid rgba(255,255,255,.06)",
-                    }}>
-                      <span style={{ fontSize: 14, flexShrink: 0 }}>{s.emoji}</span>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontWeight: 700 }}>{s.label}</div>
-                        <div style={{ fontSize: 10, opacity: 0.65, marginTop: 1 }}>กลัว: {s.fear}</div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
 
               {/* Awareness Level */}
               <div style={{ marginBottom: 10 }}>
@@ -1272,11 +1283,12 @@ ${details}
 function HistoryTab({ saved, onDelete, onStar }: {
   saved: ContentItem[];
   onDelete: (id: number) => void;
-  onStar: (id: number, starred: boolean, note?: string) => void;
+  onStar: (id: number, starred: boolean, note?: string, segment?: string) => void;
 }) {
   const [fb, setFb] = useState<FbState>({ status: "unknown", queue: 0, drafts: 0, published: 0, lastUpdate: null });
   const [starringId, setStarringId] = useState<number | null>(null);
   const [starNote, setStarNote]     = useState("");
+  const [starSeg, setStarSeg]       = useState("");
 
   const poll = useCallback(async () => {
     try {
@@ -1351,6 +1363,9 @@ function HistoryTab({ saved, onDelete, onStar }: {
                     {item.starred && <span style={{ fontSize: 11 }}>⭐</span>}
                     <Tag label={item.source === "blog" ? "Blog→FB" : "Keyword"} color={item.source === "blog" ? "#a78bfa" : "#22d3ee"} />
                     <Tag label={POST_TYPES.find(t => t.value === item.type)?.label ?? item.type} color="#818cf8" />
+                    {item.starred && item.segment && (
+                      <Tag label={BUYER_SEGMENTS.find(s => s.value === item.segment)?.label ?? item.segment} color="#e879f9" />
+                    )}
                     <span style={{ fontSize: 11, color: "#334155" }}>{item.date}</span>
                   </div>
                   <div style={{ display: "flex", gap: 6 }}>
@@ -1363,6 +1378,7 @@ function HistoryTab({ saved, onDelete, onStar }: {
                         } else {
                           setStarringId(item.id);
                           setStarNote("");
+                          setStarSeg("");
                         }
                       }}
                       title={item.starred ? "ยกเลิก Reference" : "เก็บเป็น Reference"}
@@ -1400,14 +1416,38 @@ function HistoryTab({ saved, onDelete, onStar }: {
                       onChange={e => setStarNote(e.target.value)}
                       placeholder="เช่น 'hook โดนเพราะเริ่มจากความกลัว ไม่ใช่ feature' (ไม่ใส่ก็ได้)"
                       onKeyDown={e => {
-                        if (e.key === "Enter") { onStar(item.id, true, starNote || undefined); setStarringId(null); }
+                        if (e.key === "Enter") { onStar(item.id, true, starNote || undefined, starSeg || undefined); setStarringId(null); }
                         if (e.key === "Escape") setStarringId(null);
                       }}
                       style={{ ...inputStyle, marginBottom: 8, fontSize: 11 }}
                     />
+                    <div style={{ fontSize: 10, color: "#fbbf24", opacity: 0.8, marginBottom: 4 }}>ใช้ได้ดีกับกลุ่มลูกค้าไหน? (ไม่เลือกก็ได้ = ใช้ได้ทั่วไป)</div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 8 }}>
+                      <button
+                        onClick={() => setStarSeg("")}
+                        style={{
+                          padding: "3px 9px", borderRadius: 7, fontSize: 10, fontWeight: 600, cursor: "pointer",
+                          background: starSeg === "" ? "rgba(251,191,36,.15)" : "rgba(255,255,255,.04)",
+                          color: starSeg === "" ? "#fbbf24" : "#64748b",
+                          border: starSeg === "" ? "1px solid rgba(251,191,36,.35)" : "1px solid rgba(255,255,255,.06)",
+                        }}
+                      >ทั่วไป</button>
+                      {BUYER_SEGMENTS.map(s => (
+                        <button
+                          key={s.value}
+                          onClick={() => setStarSeg(s.value)}
+                          style={{
+                            padding: "3px 9px", borderRadius: 7, fontSize: 10, fontWeight: 600, cursor: "pointer",
+                            background: starSeg === s.value ? "rgba(251,191,36,.15)" : "rgba(255,255,255,.04)",
+                            color: starSeg === s.value ? "#fbbf24" : "#64748b",
+                            border: starSeg === s.value ? "1px solid rgba(251,191,36,.35)" : "1px solid rgba(255,255,255,.06)",
+                          }}
+                        >{s.emoji} {s.label}</button>
+                      ))}
+                    </div>
                     <div style={{ display: "flex", gap: 6 }}>
                       <button
-                        onClick={() => { onStar(item.id, true, starNote || undefined); setStarringId(null); }}
+                        onClick={() => { onStar(item.id, true, starNote || undefined, starSeg || undefined); setStarringId(null); }}
                         style={{ ...btnStyle("#fbbf24"), fontSize: 11, padding: "5px 12px" }}
                       >⭐ บันทึก Reference</button>
                       <button
@@ -1887,9 +1927,9 @@ export default function AIContent() {
       return next;
     });
   }
-  function handleStar(id: number, starred: boolean, note?: string) {
+  function handleStar(id: number, starred: boolean, note?: string, segment?: string) {
     setSaved(prev => {
-      const next = prev.map(i => i.id === id ? { ...i, starred, note: note ?? i.note } : i);
+      const next = prev.map(i => i.id === id ? { ...i, starred, note: note ?? i.note, segment: starred ? (segment ?? i.segment) : i.segment } : i);
       persistSaved(next);
       return next;
     });
