@@ -167,6 +167,30 @@ Workflow ใหม่ `Finnhouses — Market Intelligence Collector v2 (ADR-005)
 
 ---
 
+## Session 26 (Jul 20, 2026) — AI Content Studio: segment decoupling + full business rebrand
+
+**1. Buyer Segment decoupled from "Positioned" tone + Taste Library segment tagging**
+- ปัญหาเดิม: `BUYER_SEGMENTS` selector ใน `components/AIContent.tsx` ใช้ได้แค่ตอนเลือกโทน "Positioned" เท่านั้น และ Taste Library (⭐ starred references) inject ตัวอย่าง 2 อันแรกจาก global list เข้า prompt เสมอ ไม่กรองตามกลุ่มลูกค้า
+- แก้: ย้าย segment selector ออกมาเป็น section แยกที่โชว์ตลอด (ใช้ร่วมกับทุกโทนได้), เพิ่ม `segment` field ใน `ContentItem`, เพิ่ม segment-tag ตอน star ใน `HistoryTab`, filter `starredRefs` ด้วย segment ที่เลือกอยู่ก่อน inject เข้า prompt (fallback ไป global ถ้ายังไม่มีตัวไหน tag ตรงกลุ่ม)
+- ต่อมา Archi ขอ reorder เพิ่ม — ย้าย section "กลุ่มลูกค้าเป้าหมาย" ขึ้นเป็นอันดับแรกสุด เหนือ Keyword
+- ดู `docs/decisions.md` ADR-009
+
+**2. Business model correction — เลิกอ้างอิง "รับสร้างบ้าน" ทั้งหมด**
+- Archi ยืนยันตรงๆ ระหว่างคุยเรื่อง keyword ว่า **ไม่ทำธุรกิจรับเหมาก่อสร้าง** — ลูกค้าจริงมีแค่ 2 กลุ่ม: ซื้อ/ฝากขายบ้าน + ที่ปรึกษา/inspector งานก่อสร้าง
+- รีแบรนด์ `components/AIContent.tsx` ทั้งไฟล์: `BRAND_FACTS`, `KEYWORDS` (แทนที่ทั้งชุด), `BUYER_SEGMENTS` (3→2), ลบ `STYLES` selector ทิ้งทั้งหมด (house design style ไม่เกี่ยวกับธุรกิจแล้ว), เขียน system prompt ทุกจุดใหม่ (`KeywordTab`/`BlogConvertTab`/`ListingTab`) + `FB_QUEUE_TEMPLATES` (manual queue templates ที่โพสต์ตรงเข้า FB ได้ — เจอ fabricated claims เก่าที่ขัดกฎ "ห้ามปั้นตัวเลข" อยู่แล้วด้วย เช่น "ประสบการณ์สร้างบ้านกว่า 50 หลัง")
+- อัปเดต `docs/BUSINESS_MODEL.md` — mark Business Unit 1 (รับสร้างบ้าน) เป็น **DISCONTINUED** (ยังไม่ยืนยันสถานะ Unit 3 Fix & Flip — ต้องถาม Archi ต่อ)
+- ดู `docs/decisions.md` ADR-010
+
+**3. Deploy gotcha ที่เจอระหว่างทาง — Vercel "Redeploy" ปุ่มใน dashboard rebuild commit เก่า**
+- Push แล้ว "ยังเหมือนเดิม" — เช็คผ่าน Vercel MCP เจอว่า production ยัง pin commit เก่าอยู่ แม้ GitHub มี commit ใหม่แล้วและกด "Redeploy" ไปแล้วก็ตาม เพราะปุ่มนั้น rebuild commit ของ deployment ที่กดจากเมนูเสมอ ไม่ใช่ pull commit ล่าสุด
+- Fix: `git commit --allow-empty` + push เพื่อ force trigger webhook ใหม่
+- ดู `docs/issues-log.md` ISSUE-015
+
+**Commits**: `e1d73cc` (segment decouple), `d53de6f` (rebrand), `0dc0c42` (reorder), `27387fb` (empty commit trigger redeploy)
+**Verify**: ✅ `npx tsc --noEmit` ผ่านทุกรอบ, ✅ ทดสอบจริงบน production — Archi ยืนยัน "ทดสอบแล้ว" พร้อม screenshot output ที่ไม่มีภาษา home-building ปนแล้ว
+
+---
+
 ## Blog run — สถานะล่าสุด (Jul 5)
 - run ค้างของวันที่ 07-05 ถูกแก้แล้ว (`blog.status:"completed"` ยืนยันแล้ว) — queue ปัจจุบันมี 07-05 ถึง 07-09 (5 รายการ, ไม่มี 07-03/07-04 เพราะเผยแพร่แล้วไม่ requeue ซ้ำ)
 - ถ้าเจอ stuck อีก ("running" ค้างนาน + Telegram Health Alert แจ้งซ้ำ): เช็คก่อนว่า item ไหนค้างจริง (ดู `content_queue` เทียบกับ `lastSuccessfulKeyword` — ระวัง ISSUE-009 ทำให้ item เก่าที่เผยแพร่แล้วยังโชว์ `running` ปนอยู่) แล้ว reset เฉพาะ item ที่ค้างจริงด้วย `POST /action/blog/queue/clear` + `/action/blog/queue/build` ใหม่โดยไม่เอา item ที่เผยแพร่แล้วกลับเข้าไป
