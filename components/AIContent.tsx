@@ -476,7 +476,7 @@ Hashtag 6-8 อัน: ทุกตัวต้องมีความหมา
 
 ส่งเฉพาะ Facebook Post เท่านั้น — ไม่มีคำนำ ไม่มีหัวข้อ ไม่มีข้อสังเกต ไม่มีการตรวจสอบท้าย เริ่มต้นด้วย Hook โดยตรงเลย`;
 
-    const text = await callClaude(system, prompt).catch(e => `❌ Error: ${e.message}`);
+    const text = await callClaude(system, prompt, "claude-sonnet-4-6").catch(e => `❌ Error: ${e.message}`);
     setResult(text);
     if (genImg && !text.startsWith("❌")) {
       const img = await generateImage(finalKeyword);
