@@ -507,8 +507,35 @@ Hashtag 6-8 อัน: ทุกตัวต้องมีความหมา
       <Card style={{ width: 300, flexShrink: 0, display: "flex", flexDirection: "column", gap: 16 }}>
         <div style={{ fontSize: 12, fontWeight: 700, color: "#22d3ee", letterSpacing: ".1em" }}>⚙️ SETTINGS</div>
 
-        {/* Keyword */}
+        {/* Buyer Segment — always visible, ใช้ได้กับทุกโทน (ไม่ผูกกับ Positioned อย่างเดียวแล้ว) */}
         <div>
+          <div style={{ fontSize: 11, color: "#e879f9", fontWeight: 700, marginBottom: 8, letterSpacing: ".08em" }}>🎯 กลุ่มลูกค้าเป้าหมาย</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            {BUYER_SEGMENTS.map(s => (
+              <button key={s.value} onClick={() => setBuyerSeg(s.value)} style={{
+                display: "flex", alignItems: "center", gap: 8,
+                padding: "7px 10px", borderRadius: 9, fontSize: 11, fontWeight: 600, cursor: "pointer", textAlign: "left" as const,
+                background: buyerSeg === s.value ? "rgba(232,121,249,.12)" : "rgba(255,255,255,.03)",
+                color: buyerSeg === s.value ? "#e879f9" : "#64748b",
+                border: buyerSeg === s.value ? "1px solid rgba(232,121,249,.35)" : "1px solid rgba(255,255,255,.06)",
+              }}>
+                <span style={{ fontSize: 14, flexShrink: 0 }}>{s.emoji}</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 700 }}>{s.label}</div>
+                  <div style={{ fontSize: 10, opacity: 0.65, marginTop: 1 }}>กลัว: {s.fear}</div>
+                </div>
+              </button>
+            ))}
+          </div>
+          <div style={{ fontSize: 10, color: "#475569", marginTop: 6 }}>
+            {tone === "positioned"
+              ? "ใช้กำหนด fear/need/message ในโทน Positioned โดยตรง"
+              : "ใช้กรอง Reference จาก Taste Library ให้ตรงกลุ่มนี้เท่านั้น"}
+          </div>
+        </div>
+
+        {/* Keyword */}
+        <div style={{ borderTop: "1px solid rgba(255,255,255,.06)", paddingTop: 12 }}>
           <div style={{ fontSize: 11, color: "#64748b", marginBottom: 6 }}>KEYWORD / หัวข้อ</div>
           <select value={keyword} onChange={e => setKeyword(e.target.value)} style={selectStyle}>
             {KEYWORDS.map(k => <option key={k} value={k}>{k}</option>)}
@@ -558,33 +585,6 @@ Hashtag 6-8 อัน: ทุกตัวต้องมีความหมา
                 textAlign: "center",
               }}>{t.emoji}<br />{t.label}</button>
             ))}
-          </div>
-        </div>
-
-        {/* Buyer Segment — always visible, ใช้ได้กับทุกโทน (ไม่ผูกกับ Positioned อย่างเดียวแล้ว) */}
-        <div style={{ borderTop: "1px solid rgba(232,121,249,.15)", paddingTop: 12 }}>
-          <div style={{ fontSize: 11, color: "#e879f9", fontWeight: 700, marginBottom: 8, letterSpacing: ".08em" }}>🎯 กลุ่มลูกค้าเป้าหมาย</div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            {BUYER_SEGMENTS.map(s => (
-              <button key={s.value} onClick={() => setBuyerSeg(s.value)} style={{
-                display: "flex", alignItems: "center", gap: 8,
-                padding: "7px 10px", borderRadius: 9, fontSize: 11, fontWeight: 600, cursor: "pointer", textAlign: "left" as const,
-                background: buyerSeg === s.value ? "rgba(232,121,249,.12)" : "rgba(255,255,255,.03)",
-                color: buyerSeg === s.value ? "#e879f9" : "#64748b",
-                border: buyerSeg === s.value ? "1px solid rgba(232,121,249,.35)" : "1px solid rgba(255,255,255,.06)",
-              }}>
-                <span style={{ fontSize: 14, flexShrink: 0 }}>{s.emoji}</span>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: 700 }}>{s.label}</div>
-                  <div style={{ fontSize: 10, opacity: 0.65, marginTop: 1 }}>กลัว: {s.fear}</div>
-                </div>
-              </button>
-            ))}
-          </div>
-          <div style={{ fontSize: 10, color: "#475569", marginTop: 6 }}>
-            {tone === "positioned"
-              ? "ใช้กำหนด fear/need/message ในโทน Positioned โดยตรง"
-              : "ใช้กรอง Reference จาก Taste Library ให้ตรงกลุ่มนี้เท่านั้น"}
           </div>
         </div>
 
