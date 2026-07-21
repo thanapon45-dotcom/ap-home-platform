@@ -197,3 +197,42 @@
 **ยังไม่ได้ทำ**: AI Content Studio (`components/AIContent.tsx`) ยังมีแค่ 2 buyer segment (โบรกเกอร์ + ที่ปรึกษา) ไม่มี segment/keyword set สำหรับ Fix & Flip เลย ทั้งที่ตอนนี้ยืนยันแล้วว่าเป็น **60% ของธุรกิจ — สัดส่วนใหญ่ที่สุด** เป็นช่องว่างที่ควรถาม Archi ต่อว่าต้องการให้ content engine ครอบคลุม Fix & Flip ด้วยหรือไม่ (เช่น content เชิญชวนนักลงทุน, อัปเดตความคืบหน้ารีโนเวท ฯลฯ) — ยังไม่ได้ทำเพราะเป็นงานขนาดใหญ่เทียบเท่า ADR-010 ควรถามขอบเขตก่อนเริ่ม
 
 **Related**: ADR-010
+
+---
+
+## ADR-012 — แก้ AI Content Studio ผลิตภาษาไทยเพี้ยน/ตัดกลางคำ (2 root cause ซ้อนกัน)
+**Date**: 2026-07-20 (session 27)
+**Status**: Implemented ✅
+
+**Context**: Archi ส่ง FB post ที่ generate จาก AI Content Studio (KeywordTab, โทน 3T/ที่ปรึกษาตรวจสอบ) มาให้ตรวจ พบปัญหาภาษา 2 แบบปนกัน: hashtag สุดท้ายตัดกลางคำ (`#ความมั่นใ`) และคำเพี้ยนกลางประโยค (`ถามผู้รับเหมาก็ไม่วัใจ` — ที่ถูกคือ "วางใจ") พร้อม hook ที่ผสมภาษาของกลุ่มลูกค้าคนละกลุ่มเข้าด้วยกัน
+
+**วิเคราะห์แยก 2 สาเหตุ** (ตำแหน่งคำที่ผิดชี้สาเหตุคนละแบบ — ท้ายข้อความ = truncation, กลางประโยค = model quality ไม่ใช่ truncation เพราะ truncation ตัดได้แค่ท้ายสุดของ generation):
+1. **maxTokens ต่ำเกินไป**: `callClaude()` helper ส่ง `maxTokens: 800` fixed แต่เนื้อหา FB post ที่ต้องการ (~220 คำภาษาไทย + hashtag 6-8 อัน) ใช้ output token มากกว่านั้นมาก เพราะภาษาไทย tokenize หนักกว่าอังกฤษหลายเท่า → โดนตัดกลางประโยค/hashtag เมื่อเนื้อหายาว (`route.ts` เองก็ cap ไว้ที่ 2000 อยู่แล้ว แปลว่า client เคย request ต่ำกว่า cap มาตลอด)
+2. **Model ไม่สม่ำเสมอ**: `KeywordTab.generate()` (จุด generate FB post หลักที่ใช้บ่อยที่สุด) เรียก `callClaude(system, prompt)` โดยไม่ระบุ `model` → หลุดไปใช้ default `claude-haiku-4-5-20251001` ทั้งที่ `BlogConvertTab`/`ListingTab` ระบุ `"claude-sonnet-4-6"` ชัดเจนอยู่แล้ว ตรงกับคอมเมนต์ในโค้ด `route.ts` เองว่า "pass claude-sonnet-4-6 for higher quality Thai writing" — Haiku ภายใต้ system prompt ที่ซับซ้อนหนาแน่น (positioned/3T/heartfelt conditional blocks ต่อกันยาว) ผลิตคำเพี้ยน/ตัดพยางค์ได้แม้ไม่ชนขีดจำกัด token เลย
+
+**Decision**: แก้ `components/AIContent.tsx` 2 จุด — (1) `callClaude()` default `maxTokens` 800→2000 ให้ตรงกับ cap ของ route.ts (2) `KeywordTab.generate()` เรียก `callClaude(system, prompt, "claude-sonnet-4-6")` ให้ตรงกับอีก 2 tab ที่ใช้ Sonnet อยู่แล้ว — ตอนนี้ทั้ง 3 จุด generate เนื้อหาไทย user-facing ใช้ Sonnet ตรงกันหมด
+
+**Files**: `components/AIContent.tsx`
+
+**Verify**: ✅ `npx tsc --noEmit` ผ่านสะอาด, ✅ deploy ยืนยันผ่าน Vercel MCP (`list_deployments` เทียบ commit ตรงกับที่ push), ✅ Archi ทดสอบ regenerate จริงบน production — hashtag ครบ ประโยคจบสมบูรณ์ ไม่มีคำเพี้ยนอีก
+
+**กฎใหม่**: เนื้อหาภาษาไทยที่จะโพสต์จริง (user-facing) ต้องใช้ Sonnet เป็นค่าเริ่มต้นเสมอ ไม่ใช่ Haiku — Haiku เก็บไว้ใช้กับงานที่ไม่ใช่ผู้ใช้ปลายทางเห็นโดยตรง (เช่น `generateImageConcept()` ที่เป็นแค่ prompt ภาษาอังกฤษสั้นๆ ส่งต่อให้ image API) ก่อนเพิ่ม `generate()` function ใหม่ใดๆ ที่เรียก `callClaude()` ต้องเช็ค default model ให้ตรงตามนี้เสมอ อย่าปล่อยให้ "ลืมใส่ model argument" กลายเป็น production bug ซ้ำอีก
+
+**Related**: ADR-010 (โค้ดเดียวกันที่เพิ่งรีแบรนด์), `docs/issues-log.md` ISSUE-016
+
+---
+
+## ADR-013 — เพิ่ม "Platform Structure — 2 Pillars" ใน BUSINESS_MODEL.md ตามกรอบคิดของ Archi
+**Date**: 2026-07-20 (session 27)
+**Status**: Documented ✅
+
+**Context**: Archi อธิบายว่ามองแพลตฟอร์มแบ่งเป็น 2 ส่วนใหญ่ตามการใช้งานจริง: (1) การตลาดและขาย (2) การบริหารงานก่อสร้าง — พร้อมยกตัวอย่าง tool ที่อยู่ในกลุ่ม 2 คือ Land Analyzer, Budget Tool, QC — `BUSINESS_MODEL.md` เดิมมีแค่ list "7 Intelligence Modules" แบบเรียบๆ ไม่มีกรอบคิดนี้บันทึกไว้เลย
+
+**Decision**: เพิ่ม section "Platform Structure — 2 Pillars" ใต้ "Core Platform: AP-Home Platform OS":
+- **การตลาดและขาย**: AI Content Studio, CRM, OS Dashboard — สนับสนุน Unit 2 (โบรกเกอร์) + ฝั่งขายของ Unit 3 (Fix & Flip)
+- **การบริหารงานก่อสร้าง**: Land Analyzer, Budget Tool, QC — สนับสนุนฝั่งปฏิบัติการของ Unit 3 + Unit 4 (ที่ปรึกษา/ตรวจสอบ) โดยตรง (QC คือ product implementation ของ Unit 4)
+- ตามด้วย follow-up clarification จาก Archi: **7 Intelligence Modules ไม่ได้แยกคนละ pillar** แต่เชื่อมโยงข้อมูลซึ่งกันและกันทั้งหมดเพื่อใช้เป็นกลยุทธ์ในการบริหารภาพรวม (เช่น Construction Intelligence จาก QC ป้อนกลับเข้า Renovation Intelligence ที่ใช้ตัดสินใจ Fix & Flip ครั้งถัดไป) — ทั้ง 2 pillar ดึง/ป้อนข้อมูลเข้า loop เดียวกันตลอด ไม่ใช่ silo
+
+**Files**: `docs/BUSINESS_MODEL.md`
+
+**Related**: ADR-011 (สัดส่วนธุรกิจ 3 หน่วยที่ 2 pillar นี้ map ไปหา)

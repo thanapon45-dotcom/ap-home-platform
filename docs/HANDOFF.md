@@ -191,6 +191,34 @@ Workflow ใหม่ `Finnhouses — Market Intelligence Collector v2 (ADR-005)
 
 ---
 
+## Session 27 (Jul 20, 2026, ต่อ) — แก้ภาษาไทยเพี้ยนใน AI Content Studio + ยืนยันสัดส่วนธุรกิจ + Platform Structure
+
+**1. AI Content Studio ผลิตภาษาไทยเพี้ยน/ตัดกลางคำ — 2 root cause ซ้อนกัน**
+- Archi ส่ง FB post ที่ generate มาให้ตรวจ พบ hashtag สุดท้ายตัดกลางคำ (`#ความมั่นใ`) และคำเพี้ยนกลางประโยค (`วัใจ` แทน "วางใจ")
+- วิเคราะห์แยก 2 สาเหตุจากตำแหน่งคำผิด: (1) `callClaude()` ส่ง `maxTokens: 800` fixed ต่ำเกินไปสำหรับเนื้อหาไทย ~220 คำ + hashtag 6-8 อัน → ตัดท้ายข้อความ (2) `KeywordTab.generate()` เรียก `callClaude()` โดยไม่ระบุ model → หลุดไปใช้ default Haiku แทน Sonnet ที่อีก 2 tab (`BlogConvertTab`/`ListingTab`) ใช้อยู่แล้ว
+- แก้: `maxTokens` 800→2000 (commit `264ac72`), เปลี่ยนเป็น `"claude-sonnet-4-6"` (commit `c4a9f07`) — ทั้ง 3 จุด generate เนื้อหาไทยตอนนี้ใช้ Sonnet ตรงกันหมด
+- ดู `docs/decisions.md` ADR-012, `docs/issues-log.md` ISSUE-016, `CLAUDE.md` Known Bugs #13
+
+**2. Business Unit 3 (Fix & Flip) ยืนยัน active + สัดส่วนธุรกิจจริง 3 หน่วย**
+- Archi ยืนยันสัดส่วนธุรกิจจริง: **Develop/Fix & Flip 60% · ที่ปรึกษา/ตรวจสอบ (Unit 4) 30% · โบรกเกอร์ (Unit 2) 10%**
+- Clarify ก่อนแก้เอกสาร (AskUserQuestion): คำว่า "Develop" ที่ Archi ใช้ = Fix & Flip (Unit 3 เดิม) **ไม่ใช่** การกลับไปทำ Unit 1 (รับสร้างบ้านใหม่) ที่ discontinued ไปแล้วใน ADR-010 — ยืนยันชัดว่าไม่มีการ revert
+- อัปเดต `docs/BUSINESS_MODEL.md`: Unit 3 ลบ flag "ยังไม่ยืนยัน" ระบุเป็นหน่วยธุรกิจหลัก 60%, Unit 2/Unit 4 ระบุสัดส่วน 10%/30%
+- ดู `docs/decisions.md` ADR-011
+
+**3. Platform Structure — 2 Pillars (กรอบคิดของ Archi)**
+- Archi อธิบายว่าแพลตฟอร์มแบ่งเป็น 2 ส่วน: การตลาดและขาย (AI Content Studio, CRM, OS Dashboard) กับ การบริหารงานก่อสร้าง (Land Analyzer, Budget Tool, QC)
+- เพิ่ม section นี้ใน `docs/BUSINESS_MODEL.md` พร้อม note ตามที่ Archi ยืนยันเพิ่มว่า **7 Intelligence Modules ไม่ได้แยกคนละ pillar แต่เชื่อมโยงข้อมูลกันทั้งหมดเพื่อใช้เป็นกลยุทธ์บริหารภาพรวม** (เช่น Construction Intelligence จาก QC ป้อนกลับเข้า Renovation Intelligence ที่ใช้ตัดสินใจ Fix & Flip ครั้งถัดไป)
+- ดู `docs/decisions.md` ADR-013
+
+**4. Deprioritized items — confirm จาก Archi**
+- ล็อกหน้า `/crm`/`/land-analyzer`: ไม่ต้องทำตอนนี้ ผู้ใช้หลักมีคนเดียว ยอมรับความเสี่ยง
+- Hub v2 cutover/archive decision: ไม่รีบ
+
+**Commits**: `264ac72` (maxTokens fix), `c4a9f07`/`ef54b3d`/`2105201` (model fix + docs sync)
+**Verify**: ✅ `npx tsc --noEmit` ผ่านทุกรอบ, ✅ deploy ยืนยันผ่าน Vercel MCP (`list_deployments` เทียบ commit), ✅ Archi ทดสอบ regenerate จริงบน production ยืนยันไม่มีคำเพี้ยนอีก
+
+---
+
 ## Blog run — สถานะล่าสุด (Jul 5)
 - run ค้างของวันที่ 07-05 ถูกแก้แล้ว (`blog.status:"completed"` ยืนยันแล้ว) — queue ปัจจุบันมี 07-05 ถึง 07-09 (5 รายการ, ไม่มี 07-03/07-04 เพราะเผยแพร่แล้วไม่ requeue ซ้ำ)
 - ถ้าเจอ stuck อีก ("running" ค้างนาน + Telegram Health Alert แจ้งซ้ำ): เช็คก่อนว่า item ไหนค้างจริง (ดู `content_queue` เทียบกับ `lastSuccessfulKeyword` — ระวัง ISSUE-009 ทำให้ item เก่าที่เผยแพร่แล้วยังโชว์ `running` ปนอยู่) แล้ว reset เฉพาะ item ที่ค้างจริงด้วย `POST /action/blog/queue/clear` + `/action/blog/queue/build` ใหม่โดยไม่เอา item ที่เผยแพร่แล้วกลับเข้าไป
