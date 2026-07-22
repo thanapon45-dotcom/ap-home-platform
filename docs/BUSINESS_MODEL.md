@@ -99,6 +99,8 @@ Archi แบ่ง product/tool ของแพลตฟอร์มออกเ
 
 **เป้าหมาย:** สร้าง Inventory ที่บริษัทเป็นเจ้าของเอง
 
+> **Tooling (เพิ่ม 2026-07-22)**: ก่อนหน้านี้ Unit 3 ไม่มีเครื่องมือ dedicated ติดตามดีล (Land Analyzer/Budget Tool เป็นแค่ calculator ครั้งเดียว ไม่มี pipeline state) — สร้างโมดูล **"Fix & Flip Deals"** (`/deals` ใน AP-Home Platform OS) แล้ว: Kanban board 4 stage (ประเมิน → รีโนเวท → ประกาศขาย → ปิดดีล) พร้อม summary metrics (เงินทุนที่ใช้อยู่, ROI เฉลี่ยดีลที่ปิดแล้ว) ต่อยอดจากตาราง Supabase `reno_deals` ที่มีอยู่แล้ว ดู `docs/decisions.md` ADR-014
+
 ---
 
 ### 4. ที่ปรึกษาและตรวจสอบงานก่อสร้าง — **สัดส่วนธุรกิจ 30%** (ยืนยัน 2026-07-20)

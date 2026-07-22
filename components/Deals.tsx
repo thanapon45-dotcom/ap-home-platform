@@ -1,0 +1,270 @@
+"use client";
+import { useState, useCallback, useEffect, useMemo } from "react";
+// Fix & Flip Deals — deal pipeline tracker for Business Unit 3 (60% of revenue).
+// Built on the pre-existing but previously unused `reno_deals` Supabase table.
+// CRUD goes through /api/deals/* (service_role server-side) — see ISSUE-013
+// pattern: RLS enabled with zero policies, no direct client-side Supabase calls.
+// See docs/decisions.md for the ADR covering this module.
+
+const fmt = (n: number | null | undefined) =>
+  n == null || isNaN(n) ? "—" : new Intl.NumberFormat("th-TH", { maximumFractionDigits: 0 }).format(n);
+
+type Stage = "evaluating" | "renovating" | "listed" | "closed";
+
+type Deal = {
+  id: string;
+  name: string | null;
+  property_address: string | null;
+  stage: Stage;
+  purchase_price: number | null;
+  reno_budget: number | null;
+  reno_cost: number | null;
+  list_price: number | null;
+  sale_price: number | null;
+  roi_pct: number | null;
+  days_to_sell: number | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string | null;
+};
+
+const STAGES: { key: Stage; label: string; color: string; bg: string }[] = [
+  { key: "evaluating", label: "กำลังประเมิน", color: "#f59e0b", bg: "rgba(245,158,11,.08)" },
+  { key: "renovating", label: "กำลังรีโนเวท", color: "#6366f1", bg: "rgba(99,102,241,.08)" },
+  { key: "listed",     label: "ประกาศขาย",   color: "#22d3ee", bg: "rgba(34,211,238,.08)" },
+  { key: "closed",     label: "ปิดดีลแล้ว",   color: "#10b981", bg: "rgba(16,185,129,.08)" },
+];
+
+const inputStyle: React.CSSProperties = {
+  background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.1)",
+  borderRadius: 10, padding: "9px 12px", color: "#f1f5f9", fontSize: 14, width: "100%", outline: "none",
+};
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+      <label style={{ fontSize: 12, color: "#94a3b8", fontWeight: 500 }}>{label}</label>
+      {children}
+    </div>
+  );
+}
+
+const emptyForm = {
+  name: "", property_address: "", purchase_price: "", reno_budget: "", list_price: "", notes: "",
+};
+
+export default function Deals() {
+  const [deals, setDeals] = useState<Deal[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState(emptyForm);
+  const [saving, setSaving] = useState(false);
+  const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
+
+  const msg = (m: string, ok = true) => { setToast({ msg: m, ok }); setTimeout(() => setToast(null), 3000); };
+
+  const loadDeals = useCallback(async () => {
+    setLoading(true);
+    const res = await fetch("/api/deals");
+    const json = await res.json();
+    if (json.ok !== false) setDeals((json.data ?? []) as Deal[]);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { loadDeals(); }, [loadDeals]);
+
+  const byStage = useMemo(() => {
+    const map: Record<Stage, Deal[]> = { evaluating: [], renovating: [], listed: [], closed: [] };
+    for (const d of deals) (map[d.stage] ?? map.evaluating).push(d);
+    return map;
+  }, [deals]);
+
+  const metrics = useMemo(() => {
+    const active = deals.filter(d => d.stage !== "closed");
+    const closed = deals.filter(d => d.stage === "closed");
+    const capitalDeployed = active.reduce((s, d) => s + (Number(d.purchase_price) || 0) + (Number(d.reno_cost ?? d.reno_budget) || 0), 0);
+    const avgRoi = closed.length ? closed.reduce((s, d) => s + (Number(d.roi_pct) || 0), 0) / closed.length : 0;
+    return { activeCount: active.length, closedCount: closed.length, capitalDeployed, avgRoi };
+  }, [deals]);
+
+  const createDeal = async () => {
+    if (!form.name.trim()) { msg("กรุณาใส่ชื่อดีล", false); return; }
+    setSaving(true);
+    const res = await fetch("/api/deals", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: form.name.trim(),
+        property_address: form.property_address || null,
+        purchase_price: form.purchase_price ? Number(form.purchase_price) : null,
+        reno_budget: form.reno_budget ? Number(form.reno_budget) : null,
+        list_price: form.list_price ? Number(form.list_price) : null,
+        notes: form.notes || null,
+        stage: "evaluating",
+      }),
+    });
+    const json = await res.json();
+    setSaving(false);
+    if (!res.ok || json.ok === false) { msg("บันทึกไม่สำเร็จ: " + (json.error ?? `HTTP ${res.status}`), false); return; }
+    msg("เพิ่มดีลสำเร็จ ✓");
+    setForm(emptyForm);
+    setShowForm(false);
+    loadDeals();
+  };
+
+  const moveStage = async (deal: Deal, dir: 1 | -1) => {
+    const idx = STAGES.findIndex(s => s.key === deal.stage);
+    const next = STAGES[idx + dir];
+    if (!next) return;
+    const res = await fetch(`/api/deals/${deal.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ stage: next.key, updated_at: new Date().toISOString() }),
+    });
+    const json = await res.json();
+    if (!res.ok || json.ok === false) { msg("ย้ายสถานะไม่สำเร็จ: " + (json.error ?? `HTTP ${res.status}`), false); return; }
+    loadDeals();
+  };
+
+  const removeDeal = async (id: string) => {
+    const res = await fetch(`/api/deals/${id}`, { method: "DELETE" });
+    const json = await res.json();
+    if (!res.ok || json.ok === false) { msg("ลบไม่สำเร็จ: " + (json.error ?? `HTTP ${res.status}`), false); return; }
+    msg("ลบดีลแล้ว");
+    loadDeals();
+  };
+
+  return (
+    <div style={{ padding: 24, display: "flex", flexDirection: "column", gap: 20, maxWidth: 1400 }}>
+      {/* Header */}
+      <div style={{ background: "rgba(15,20,40,.85)", border: "1px solid rgba(255,255,255,.07)", borderRadius: 20, padding: "24px 28px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+          <div>
+            <div style={{ fontSize: 10, letterSpacing: ".25em", textTransform: "uppercase", color: "#10b981", fontWeight: 700 }}>🏗️ FIX &amp; FLIP DEALS</div>
+            <h1 style={{ fontSize: 24, fontWeight: 800, color: "#f1f5f9", margin: "6px 0 0", fontFamily: "'DM Serif Display',serif" }}>Deal Pipeline</h1>
+            <p style={{ margin: "4px 0 0", color: "#64748b", fontSize: 13 }}>ติดตามดีล renovation-for-resale ตั้งแต่ประเมินจนถึงปิดการขาย</p>
+          </div>
+          <button onClick={() => setShowForm(s => !s)} style={{
+            background: "rgba(16,185,129,.15)", border: "1px solid rgba(16,185,129,.3)", borderRadius: 12,
+            padding: "10px 18px", color: "#10b981", fontSize: 13, fontWeight: 700, cursor: "pointer",
+          }}>
+            {showForm ? "✕ ปิดฟอร์ม" : "+ เพิ่มดีลใหม่"}
+          </button>
+        </div>
+
+        {/* Summary metrics */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginTop: 20 }}>
+          {[
+            { label: "ดีลที่กำลังดำเนินการ", value: `${metrics.activeCount}`, color: "#6366f1" },
+            { label: "ดีลที่ปิดแล้ว", value: `${metrics.closedCount}`, color: "#10b981" },
+            { label: "เงินทุนที่ใช้อยู่ (active)", value: `฿${fmt(metrics.capitalDeployed)}`, color: "#f59e0b" },
+            { label: "ROI เฉลี่ย (ดีลที่ปิดแล้ว)", value: metrics.closedCount ? `${metrics.avgRoi.toFixed(1)}%` : "—", color: "#22d3ee" },
+          ].map(m => (
+            <div key={m.label} style={{ background: "rgba(255,255,255,.02)", border: "1px solid rgba(255,255,255,.05)", borderRadius: 14, padding: "14px 16px" }}>
+              <div style={{ fontSize: 11, color: "#64748b", textTransform: "uppercase", letterSpacing: ".08em" }}>{m.label}</div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: m.color, marginTop: 4 }}>{m.value}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* New deal form */}
+      {showForm && (
+        <div style={{ background: "rgba(15,20,40,.85)", border: "1px solid rgba(255,255,255,.07)", borderRadius: 20, padding: 24, display: "flex", flexDirection: "column", gap: 14 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "#10b981", textTransform: "uppercase", letterSpacing: ".12em" }}>เพิ่มดีลใหม่</div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <Field label="ชื่อดีล *">
+              <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} style={inputStyle} placeholder="เช่น บ้านซอยลาดพร้าว 42" />
+            </Field>
+            <Field label="ที่อยู่ทรัพย์">
+              <input value={form.property_address} onChange={e => setForm(f => ({ ...f, property_address: e.target.value }))} style={inputStyle} />
+            </Field>
+            <Field label="ราคาซื้อ (บาท)">
+              <input type="number" value={form.purchase_price} onChange={e => setForm(f => ({ ...f, purchase_price: e.target.value }))} style={inputStyle} />
+            </Field>
+            <Field label="งบรีโนเวท (บาท)">
+              <input type="number" value={form.reno_budget} onChange={e => setForm(f => ({ ...f, reno_budget: e.target.value }))} style={inputStyle} />
+            </Field>
+            <Field label="ราคาประกาศขาย (บาท)">
+              <input type="number" value={form.list_price} onChange={e => setForm(f => ({ ...f, list_price: e.target.value }))} style={inputStyle} />
+            </Field>
+          </div>
+          <Field label="หมายเหตุ">
+            <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} style={{ ...inputStyle, minHeight: 60, resize: "vertical", fontFamily: "inherit" }} />
+          </Field>
+          <button onClick={createDeal} disabled={saving} style={{
+            alignSelf: "flex-start", background: "rgba(16,185,129,.15)", border: "1px solid rgba(16,185,129,.3)",
+            borderRadius: 10, padding: "9px 20px", color: "#10b981", fontSize: 13, fontWeight: 700, cursor: "pointer",
+          }}>
+            {saving ? "กำลังบันทึก..." : "💾 บันทึกดีล"}
+          </button>
+        </div>
+      )}
+
+      {toast && (
+        <div style={{ padding: "10px 14px", borderRadius: 10, background: toast.ok ? "rgba(16,185,129,.1)" : "rgba(244,63,94,.1)", border: `1px solid ${toast.ok ? "rgba(16,185,129,.3)" : "rgba(244,63,94,.3)"}`, fontSize: 13, color: toast.ok ? "#10b981" : "#f43f5e" }}>
+          {toast.msg}
+        </div>
+      )}
+
+      {/* Kanban board */}
+      {loading ? (
+        <div style={{ color: "#64748b", fontSize: 13, padding: 20 }}>กำลังโหลด...</div>
+      ) : (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16 }}>
+          {STAGES.map((stage, stageIdx) => (
+            <div key={stage.key} style={{ background: "rgba(15,20,40,.6)", border: "1px solid rgba(255,255,255,.06)", borderRadius: 16, padding: 14, display: "flex", flexDirection: "column", gap: 10, minHeight: 200 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: stage.color, textTransform: "uppercase", letterSpacing: ".08em" }}>{stage.label}</div>
+                <div style={{ fontSize: 11, color: "#475569", background: "rgba(255,255,255,.04)", borderRadius: 8, padding: "2px 8px" }}>{byStage[stage.key].length}</div>
+              </div>
+
+              {byStage[stage.key].length === 0 ? (
+                <div style={{ color: "#334155", fontSize: 12, padding: "20px 0", textAlign: "center" }}>ไม่มีดีล</div>
+              ) : byStage[stage.key].map(d => {
+                const budget = Number(d.reno_budget) || 0;
+                const spent = Number(d.reno_cost) || 0;
+                const pct = budget > 0 ? Math.min(100, (spent / budget) * 100) : 0;
+                return (
+                  <div key={d.id} style={{ background: stage.bg, border: `1px solid ${stage.color}33`, borderRadius: 12, padding: 12, display: "flex", flexDirection: "column", gap: 6 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "#f1f5f9" }}>{d.name || "(ไม่มีชื่อ)"}</div>
+                    {d.property_address && <div style={{ fontSize: 11, color: "#64748b" }}>{d.property_address}</div>}
+
+                    {d.purchase_price != null && (
+                      <div style={{ fontSize: 11, color: "#94a3b8" }}>ซื้อ: ฿{fmt(d.purchase_price)}</div>
+                    )}
+
+                    {budget > 0 && (
+                      <div>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#64748b", marginBottom: 3 }}>
+                          <span>งบรีโนเวท</span><span>฿{fmt(spent)} / ฿{fmt(budget)}</span>
+                        </div>
+                        <div style={{ height: 5, borderRadius: 4, background: "rgba(255,255,255,.06)", overflow: "hidden" }}>
+                          <div style={{ height: "100%", width: `${pct}%`, background: pct > 100 ? "#f43f5e" : stage.color, borderRadius: 4 }} />
+                        </div>
+                      </div>
+                    )}
+
+                    {d.stage === "closed" && d.roi_pct != null && (
+                      <div style={{ fontSize: 13, fontWeight: 800, color: Number(d.roi_pct) >= 20 ? "#10b981" : "#f59e0b" }}>ROI {Number(d.roi_pct).toFixed(1)}%</div>
+                    )}
+
+                    <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
+                      {stageIdx > 0 && (
+                        <button onClick={() => moveStage(d, -1)} title="ย้อนกลับ" style={{ flex: 1, background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.08)", borderRadius: 8, padding: "5px 0", color: "#94a3b8", fontSize: 11, cursor: "pointer" }}>◀</button>
+                      )}
+                      {stageIdx < STAGES.length - 1 && (
+                        <button onClick={() => moveStage(d, 1)} title="ไปขั้นถัดไป" style={{ flex: 1, background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.08)", borderRadius: 8, padding: "5px 0", color: "#94a3b8", fontSize: 11, cursor: "pointer" }}>▶</button>
+                      )}
+                      <button onClick={() => removeDeal(d.id)} title="ลบ" style={{ background: "rgba(244,63,94,.08)", border: "1px solid rgba(244,63,94,.2)", borderRadius: 8, padding: "5px 8px", color: "#f43f5e", fontSize: 11, cursor: "pointer" }}>🗑</button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

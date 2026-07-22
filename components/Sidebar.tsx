@@ -9,6 +9,7 @@ const NAV = [
   { href: "/marketing",     icon: "📰", label: "Blog Runner",   desc: "n8n → finnhouses.com" },
   { href: "/land-analyzer", icon: "🗺️", label: "Land Analyzer", desc: "วิเคราะห์ที่ดิน" },
   { href: "/budget",        icon: "💰", label: "Budget Tool",   desc: "คำนวณงบสร้างบ้าน" },
+  { href: "/deals",         icon: "🏗️", label: "Fix & Flip Deals", desc: "Deal pipeline" },
   { href: "/market-intel", icon: "🧠", label: "Market Intel",  desc: "สะสม market memory" },
 ];
 
