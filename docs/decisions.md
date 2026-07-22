@@ -261,3 +261,23 @@
 **ยังไม่ได้ทำ**: ยังไม่ผูก `lead_id` เข้ากับ CRM UI จริง (คอลัมน์มีแล้วแต่ฟอร์มยังไม่มีตัวเลือกเชื่อม lead) — เป็น follow-up ทีหลังถ้า Archi ต้องการ link ดีลกับ lead ต้นทาง
 
 **Related**: ADR-011 (ระบุ Unit 3 = 60% แต่ไม่มีเครื่องมือ), ADR-008/ISSUE-013 (RLS lockdown pattern ที่ใช้ซ้ำ)
+
+---
+
+## ADR-015 — QC Line Accuracy Dashboard (Phase 1): infra พร้อมใช้ แม้ข้อมูลยังไม่พอสรุป
+**Date**: 2026-07-22 (session 28 ต่อ)
+**Status**: Implemented ✅
+
+**Context**: บทสนทนา reflective กับ Archi เรื่องความกังวลว่า "ระบบทำงานได้" กับ "ระบบพิสูจน์ตัวเองว่าทำงานถูก" เป็นคนละเรื่องกัน — ยกตัวอย่าง QC Line ที่ AI ตรวจ QC ผ่าน LINE แต่ไม่มีที่ไหนสรุปว่า AI ตรวจถูกกี่ % จริง ต้องเป็น Archi เองที่คอยเช็คทุกครั้ง ถามต่อ "แล้วไงต่อหล่ะทีนี้" เสนอแผน 3 phase (QC accuracy dashboard / auto-publish quality gate / Fix & Flip ROI actual-vs-estimated) — Archi เลือก Phase 1 ก่อน
+
+ระหว่างสำรวจข้อมูลจริงก่อนสร้าง พบว่า `qc_inspections` มีแค่ 20 แถวทั้งหมด (มาจาก test batch สัปดาห์เดียว 2026-06-26 ถึง 2026-07-02 เท่านั้น ไม่มีงานตรวจ QC เข้ามาอีกเลยหลังจากนั้น) และมีแค่ 1 แถวที่ผู้ตรวจกดปุ่ม "✅/❌" ยืนยันผล (`human_feedback`) — แจ้ง Archi ตรงๆ ก่อนลงมือสร้าง แทนที่จะสร้าง dashboard ที่โชว์ 100% จาก n=1 อย่างเงียบๆ ซึ่งจะเป็นตัวอย่างของปัญหาเดียวกันที่ Archi เพิ่งกังวลไว้ (ระบบดูเหมือนทำงานถูก แต่ที่จริงพิสูจน์ตัวเองไม่ได้) Archi ยืนยันว่าช่วงนี้ไม่มีงานก่อสร้างที่ต้องตรวจจริง (ปัจจัยธุรกิจตามฤดูกาล ไม่ใช่ระบบพัง) และเลือกให้สร้าง dashboard เป็น infra รอไว้เลย
+
+**Decision**: สร้าง `/api/qc/accuracy` (server-side, `SUPABASE_SERVICE_KEY`) คำนวณสถิติจาก `qc_inspections.human_feedback` พร้อม **RELIABILITY_THRESHOLD = 10** แถวที่มี feedback ก่อนจะยอมโชว์ % ความแม่นยำเป็นตัวเลขหลัก — ถ้าต่ำกว่านี้ (ซึ่งเป็นสถานะปัจจุบัน 1/20) UI จะโชว์การ์ดสีเหลือง "ยังไม่มีข้อมูลพอสรุป" พร้อมตัวเลขจริง (20 ตรวจ, 1 ยืนยัน) แทนเปอร์เซ็นต์ที่เข้าใจผิดได้ ต่อ tab ใหม่ "🔍 QC Accuracy" ใน `DashboardOS.tsx` (`components/QcAccuracy.tsx`) พร้อม breakdown by severity, feed รายการล่าสุด, และ warning แยกต่างหากถ้า feedback-adoption rate ต่ำ (ปัญหาคนละเรื่องกับ volume — แม้ QC volume กลับมาเยอะ ถ้าไม่มีใครกดปุ่มยืนยัน dashboard นี้ก็ยังสรุปอะไรไม่ได้อยู่ดี)
+
+**Files**: `app/api/qc/accuracy/route.ts`, `components/QcAccuracy.tsx`, `components/DashboardOS.tsx` (เพิ่ม tab)
+
+**Verify**: ✅ `npx tsc --noEmit` ผ่านสะอาด ✅ `get_advisors` (security) ไม่มี WARN/ERROR ใหม่ — ไม่ได้แก้ schema/RLS ของ `qc_inspections` เลย (อ่านผ่าน service_role อย่างเดียว ตรงกับ pattern ที่ ADR-008/013 ล็อกไว้ตั้งแต่ session 23 อยู่แล้ว)
+
+**ยังไม่ได้ทำ**: Phase 2 (auto-publish quality gate) และ Phase 3 (Fix & Flip Deal ROI actual-vs-estimated) — รอ Archi ตัดสินใจลำดับความสำคัญต่อ ไม่เริ่มเองโดยไม่ถาม
+
+**Related**: `CLAUDE.md` Pending Tasks, ADR-014 (Deals module ที่สร้างก่อนหน้าในวันเดียวกัน)

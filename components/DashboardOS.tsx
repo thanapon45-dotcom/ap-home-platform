@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 // removed because RLS on `leads` is now locked down. See docs/issues-log.md ISSUE-013.
 import PropertyReview from "@/components/PropertyReview";
 import OperationalDashboard from "@/components/OperationalDashboard";
+import QcAccuracy from "@/components/QcAccuracy";
 
 const HUB = process.env.NEXT_PUBLIC_HUB_URL ?? "https://ap-home-platform-production.up.railway.app";
 const POLL_MS = 10_000;
@@ -374,7 +375,7 @@ export default function DashboardOS() {
   const { data, live, lastSync } = useLiveData();
   const leadCounts = useLeadCounts();
   const [clock, setClock] = useState<Date | null>(null);
-  const [activeTab, setActiveTab] = useState<"overview" | "properties" | "intel" | "ops">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "properties" | "intel" | "ops" | "qc">("overview");
   useEffect(() => {
     setClock(new Date());
     const t = setInterval(() => setClock(new Date()), 1000);
@@ -420,6 +421,9 @@ export default function DashboardOS() {
         <button style={TAB_STYLE(activeTab === "ops")} onClick={() => setActiveTab("ops")}>
           📊 Ops
         </button>
+        <button style={TAB_STYLE(activeTab === "qc")} onClick={() => setActiveTab("qc")}>
+          🔍 QC Accuracy
+        </button>
       </div>
 
       {/* PROPERTIES TAB */}
@@ -430,6 +434,9 @@ export default function DashboardOS() {
 
       {/* OPS TAB */}
       {activeTab === "ops" && <OperationalDashboard />}
+
+      {/* QC ACCURACY TAB */}
+      {activeTab === "qc" && <QcAccuracy />}
 
       {/* OVERVIEW TAB */}
       {activeTab === "overview" && <>
