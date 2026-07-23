@@ -12,7 +12,15 @@ import QualityGateAccuracy from "@/components/QualityGateAccuracy";
 import { CalibrationTab } from "@/components/MarketIntel";
 import { resolveBusinessUnit } from "@/lib/businessUnit";
 
-const HUB = process.env.NEXT_PUBLIC_HUB_URL ?? "https://ap-home-platform-production.up.railway.app";
+// NOTE (session 30, Jul 23): useLiveData() used to fetch(`${NEXT_PUBLIC_HUB_URL}/api/state`)
+// straight from the browser — no x-hub-token attached, so Hub v1's global auth middleware
+// (server.cjs, requires x-hub-token on every route except /health*) rejected it with 401
+// on every single poll. Not a data leak (401 means zero real Hub data ever reached the
+// browser this way) but a real functional bug: `live` was always false and the FB/Blog
+// Engine cards silently kept showing hardcoded MOCK numbers forever since setData() never
+// ran on error. Fixed by reusing the existing /api/blog/state route (already a working,
+// server-side Hub v1 proxy with the secret attached — used by Marketing.tsx) instead of
+// hitting Railway directly. See CLAUDE.md security rule: never call Hub URL from client-side.
 const POLL_MS = 10_000;
 
 const MOCK = {
@@ -72,9 +80,11 @@ function useLiveData() {
 
   const fetch_ = useCallback(async () => {
     try {
-      const r = await fetch(`${HUB}/api/state`, { signal: AbortSignal.timeout(3000) });
+      const r = await fetch("/api/blog/state", { signal: AbortSignal.timeout(3000) });
       if (!r.ok) throw new Error();
-      setData(await r.json()); setLive(true); setSync(new Date());
+      const json = await r.json();
+      if (json?.error) throw new Error(json.error); // proxy returns 200 + {error} on Hub failure
+      setData(json); setLive(true); setSync(new Date());
     } catch { setLive(false); }
   }, []);
 
