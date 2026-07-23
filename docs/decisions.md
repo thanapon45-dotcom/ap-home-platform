@@ -362,3 +362,5 @@ Migrate ข้อมูลจริงใน `leads` ผ่าน SQL ตรง:
 **Verify**: ✅ `npx tsc --noEmit` ผ่านสะอาด ✅ grep ทั้ง repo ยืนยันไม่มี `business_unit` เขียนค่า `"build"` เหลืออยู่ที่ไหนอีกแล้ว ✅ Supabase migrate 3 แถว test data สำเร็จ ยืนยันด้วย query ซ้ำ
 
 **Related**: ADR-010/012 (business model correction รอบแรกที่ตกหล่นจุดนี้ไป), ADR-011 (สัดส่วนรายได้จริง 3 หน่วย), ADR-014/017 (Deals module ที่ใช้ pattern เดียวกัน)
+
+**Update (Archi ตัดสินใจ, วันเดียวกัน)**: ให้ปิด `/budget` แทนที่จะเขียนใหม่หรือปล่อยไว้ — แทนที่เนื้อหาทั้งหน้า (calculator + lead form) ด้วยข้อความปิดให้บริการสั้นๆ ที่ระบุ 3 บริการจริงที่ยังทำอยู่ (reno/consult/list) แทน ไม่ลบไฟล์/route ทิ้งเพื่อไม่ให้ลิงก์เก่า/โฆษณาเก่าที่อาจยังชี้มาเจอ raw 404 — ตัด nav entry ออกจาก `components/Sidebar.tsx` ด้วยเพื่อไม่ให้พนักงานส่งลิงก์นี้ต่อ **Files**: `app/budget/page.tsx` (rewrite ทั้งไฟล์), `components/Sidebar.tsx` (ตัด nav entry) **Verify**: ✅ `npx tsc --noEmit` ผ่านสะอาด

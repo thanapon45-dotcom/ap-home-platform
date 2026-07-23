@@ -1,185 +1,28 @@
 "use client";
 export const dynamic = "force-dynamic";
-import { useState } from "react";
-// NOTE (session 25, Jul 16 2026): lead insert moved server-side to /api/leads
-// (public form — still open by design, just no longer via direct anon-key Supabase write).
-// See docs/issues-log.md ISSUE-013.
-
-const fmt = (n: number) => new Intl.NumberFormat("th-TH").format(Math.round(n));
-const PRICE_PER_SQM = 18000;
-
-const inputStyle: React.CSSProperties = {
-  background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.1)",
-  borderRadius: 10, padding: "10px 14px", color: "#f1f5f9", fontSize: 14,
-  width: "100%", outline: "none", fontFamily: "inherit",
-};
+// CLOSED (session 29, Jul 23 2026, ADR-018 follow-up): this page used to be a public
+// "cost to build a new home" calculator + lead form for Unit 1 (รับสร้างบ้านใหม่), which
+// was discontinued per ADR-010/012. Archi confirmed to close it rather than repurpose it.
+// Kept as a graceful notice (not a raw 404) in case old links/ads still point here.
+// Sidebar nav entry for this page was also removed — see components/Sidebar.tsx.
 
 export default function BudgetPage() {
-  const [area, setArea]       = useState("");
-  const [name, setName]       = useState("");
-  const [phone, setPhone]     = useState("");
-  const [location, setLocation] = useState("");
-  const [intent, setIntent]   = useState("build");
-  const [urgency, setUrgency] = useState("warm");
-  const [saving, setSaving]   = useState(false);
-  const [done, setDone]       = useState(false);
-  const [step, setStep]       = useState<1 | 2>(1);
-
-  const budget = area ? Number(area) * PRICE_PER_SQM : null;
-
-  const submit = async () => {
-    if (!name || !phone || !area) return;
-    setSaving(true);
-    const months = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
-    const d = new Date();
-    const budgetLabel = `${(budget! / 1_000_000).toFixed(1)}M`;
-    await fetch("/api/leads", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name,
-        phone,
-        area:          Number(area),
-        budget:        budgetLabel,
-        stage:         "new",
-        source:        "Budget Tool",
-        // "build" (สนใจสร้างบ้านใหม่) ไม่มีหน่วยธุรกิจภายในรองรับแล้วตั้งแต่ Unit 1 discontinued
-        // (ADR-010/012) — fallback ไป "reno" (Fix & Flip) แทนที่จะเขียนค่า "build" ที่เลิกใช้แล้วลง DB
-        business_unit: intent === "renovate" ? "reno" : intent === "buy" ? "list" : "reno",
-        style:         "Modern Minimal",
-        score:         urgency === "hot" ? 85 : urgency === "warm" ? 70 : 55,
-        intent,
-        urgency,
-        location,
-        outcome:       "pending",
-        notes:         `พื้นที่ ${area} ตร.ม.${location ? ` | โซน: ${location}` : ""}`,
-        lead_date:     `${d.getDate()} ${months[d.getMonth()]}`,
-      }),
-    });
-    await fetch("/api/telegram", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, phone, area, budget }),
-    });
-    setSaving(false); setDone(true);
-  };
-
   return (
-    <div style={{ padding: 24, maxWidth: 640, display: "flex", flexDirection: "column", gap: 20 }}>
-      {/* Header */}
-      <div className="animate-fadeUp" style={{ background: "rgba(15,20,40,.85)", border: "1px solid rgba(255,255,255,.07)", borderRadius: 20, padding: "24px 28px" }}>
-        <div style={{ fontSize: 10, letterSpacing: ".25em", textTransform: "uppercase", color: "#10b981", fontWeight: 700 }}>💰 BUDGET TOOL</div>
-        <h1 style={{ fontSize: 24, fontWeight: 800, color: "#f1f5f9", margin: "6px 0 0", fontFamily: "'DM Serif Display',serif" }}>คำนวณงบสร้างบ้าน</h1>
-        <p style={{ margin: "4px 0 0", color: "#64748b", fontSize: 13 }}>ใส่พื้นที่ใช้สอยที่ต้องการ — ระบบจะประมาณงบสร้างบ้านให้ทันที</p>
-      </div>
-
-      {done ? (
-        <div style={{ background: "rgba(16,185,129,.08)", border: "1px solid rgba(16,185,129,.25)", borderRadius: 20, padding: 40, textAlign: "center" }}>
-          <div style={{ fontSize: 56 }}>✅</div>
-          <div style={{ fontSize: 20, fontWeight: 700, color: "#10b981", marginTop: 12 }}>ส่งข้อมูลสำเร็จ!</div>
-          <div style={{ fontSize: 14, color: "#64748b", marginTop: 8 }}>ทีมงาน Finnhouses จะติดต่อกลับภายใน 24 ชั่วโมง</div>
-          <button onClick={() => { setDone(false); setName(""); setPhone(""); setArea(""); setLocation(""); setIntent("build"); setUrgency("warm"); setStep(1); }}
-            style={{ marginTop: 20, padding: "10px 24px", borderRadius: 12, background: "rgba(16,185,129,.15)", border: "1px solid rgba(16,185,129,.3)", color: "#10b981", fontSize: 14, cursor: "pointer" }}>
-            คำนวณใหม่
-          </button>
-        </div>
-      ) : (
-        <>
-          {/* Calculator */}
-          <div style={{ background: "rgba(15,20,40,.85)", border: "1px solid rgba(255,255,255,.07)", borderRadius: 20, padding: 28, display: "flex", flexDirection: "column", gap: 16 }}>
-            <div>
-              <label style={{ fontSize: 13, color: "#94a3b8", fontWeight: 500, display: "block", marginBottom: 8 }}>
-                พื้นที่ใช้สอยที่ต้องการ (ตร.ม.)
-              </label>
-              <input type="number" value={area} onChange={e => setArea(e.target.value)} placeholder="เช่น 120"
-                style={{ ...inputStyle, fontSize: 20, padding: "14px 16px" }} />
-            </div>
-
-            {budget && (
-              <div style={{ background: "rgba(16,185,129,.08)", border: "1px solid rgba(16,185,129,.2)", borderRadius: 16, padding: "20px 24px", textAlign: "center" }}>
-                <div style={{ fontSize: 11, color: "#64748b", textTransform: "uppercase", letterSpacing: ".15em" }}>งบประมาณโดยประมาณ</div>
-                <div style={{ fontSize: 40, fontWeight: 800, color: "#10b981", marginTop: 6 }}>{fmt(budget)}</div>
-                <div style={{ fontSize: 13, color: "#475569", marginTop: 4 }}>บาท ({fmt(PRICE_PER_SQM)} บาท/ตร.ม.)</div>
-              </div>
-            )}
-
-            {budget && step === 1 && (
-              <button onClick={() => setStep(2)} style={{ padding: 14, borderRadius: 14, fontSize: 15, fontWeight: 700, cursor: "pointer", background: "linear-gradient(135deg,#10b981,#059669)", border: "none", color: "#fff" }}>
-                รับคำปรึกษาฟรี →
-              </button>
-            )}
-          </div>
-
-          {/* Lead form */}
-          {step === 2 && budget && (
-            <div className="animate-fadeUp" style={{ background: "rgba(15,20,40,.85)", border: "1px solid rgba(255,255,255,.07)", borderRadius: 20, padding: 28, display: "flex", flexDirection: "column", gap: 14 }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: "#f1f5f9" }}>ข้อมูลสำหรับติดต่อกลับ</div>
-              <div>
-                <label style={{ fontSize: 12, color: "#94a3b8", display: "block", marginBottom: 6 }}>ชื่อ-นามสกุล</label>
-                <input value={name} onChange={e => setName(e.target.value)} placeholder="คุณสมชาย ใจดี" style={inputStyle} />
-              </div>
-              <div>
-                <label style={{ fontSize: 12, color: "#94a3b8", display: "block", marginBottom: 6 }}>เบอร์โทรศัพท์</label>
-                <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="08x-xxx-xxxx" style={inputStyle} />
-              </div>
-              <div>
-                <label style={{ fontSize: 12, color: "#94a3b8", display: "block", marginBottom: 6 }}>พื้นที่ที่สนใจสร้าง</label>
-                <input value={location} onChange={e => setLocation(e.target.value)} placeholder="เช่น ลำลูกกา / รังสิต / นนทบุรี" style={inputStyle} />
-              </div>
-              <div>
-                <label style={{ fontSize: 12, color: "#94a3b8", display: "block", marginBottom: 8 }}>ความต้องการ</label>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 6 }}>
-                  {[{ v: "build", l: "🏗️ สร้างบ้าน" }, { v: "renovate", l: "🔨 รีโนเวท" }, { v: "buy", l: "🏠 ซื้อบ้าน" }].map(opt => (
-                    <button key={opt.v} type="button" onClick={() => setIntent(opt.v)} style={{
-                      padding: "9px 4px", borderRadius: 10, cursor: "pointer", fontSize: 12, fontWeight: 600,
-                      background: intent === opt.v ? "rgba(16,185,129,.15)" : "rgba(255,255,255,.03)",
-                      border: `1.5px solid ${intent === opt.v ? "rgba(16,185,129,.5)" : "rgba(255,255,255,.1)"}`,
-                      color: intent === opt.v ? "#10b981" : "#64748b",
-                    }}>{opt.l}</button>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <label style={{ fontSize: 12, color: "#94a3b8", display: "block", marginBottom: 8 }}>วางแผนเริ่มสร้างภายใน</label>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 6 }}>
-                  {[{ v: "hot", l: "🔥 3 เดือน", c: "#f43f5e" }, { v: "warm", l: "🌡️ 6 เดือน", c: "#f59e0b" }, { v: "cold", l: "🧊 1 ปี+", c: "#22d3ee" }].map(opt => (
-                    <button key={opt.v} type="button" onClick={() => setUrgency(opt.v)} style={{
-                      padding: "9px 4px", borderRadius: 10, cursor: "pointer", fontSize: 12, fontWeight: 600,
-                      background: urgency === opt.v ? `${opt.c}18` : "rgba(255,255,255,.03)",
-                      border: `1.5px solid ${urgency === opt.v ? opt.c + "60" : "rgba(255,255,255,.1)"}`,
-                      color: urgency === opt.v ? opt.c : "#64748b",
-                    }}>{opt.l}</button>
-                  ))}
-                </div>
-              </div>
-              <div style={{ padding: "12px 16px", borderRadius: 12, background: "rgba(245,158,11,.06)", border: "1px solid rgba(245,158,11,.15)", fontSize: 13, color: "#94a3b8" }}>
-                🏠 พื้นที่ <strong style={{ color: "#f1f5f9" }}>{area} ตร.ม.</strong> · งบประมาณ <strong style={{ color: "#10b981" }}>{fmt(budget)} บาท</strong>
-              </div>
-              <button onClick={submit} disabled={!name || !phone || saving} style={{
-                padding: 14, borderRadius: 14, fontSize: 15, fontWeight: 700, cursor: saving ? "default" : "pointer",
-                background: name && phone ? "linear-gradient(135deg,#10b981,#059669)" : "rgba(255,255,255,.05)",
-                border: "none", color: name && phone ? "#fff" : "#475569",
-              }}>
-                {saving ? "กำลังส่ง..." : "✅ ส่งข้อมูล — ขอรับคำปรึกษาฟรี"}
-              </button>
-            </div>
-          )}
-        </>
-      )}
-
-      {/* Info cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
-        {[
-          { icon: "🏠", label: "ขนาดเล็ก", range: "80-100 ตร.ม.", price: "1.4-1.8M" },
-          { icon: "🏡", label: "ขนาดกลาง", range: "120-150 ตร.ม.", price: "2.2-2.7M" },
-          { icon: "🏰", label: "ขนาดใหญ่", range: "200+ ตร.ม.", price: "3.6M+" },
-        ].map(c => (
-          <div key={c.label} style={{ background: "rgba(15,20,40,.85)", border: "1px solid rgba(255,255,255,.06)", borderRadius: 16, padding: "16px", textAlign: "center" }}>
-            <div style={{ fontSize: 28 }}>{c.icon}</div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "#f1f5f9", marginTop: 8 }}>{c.label}</div>
-            <div style={{ fontSize: 12, color: "#64748b", marginTop: 4 }}>{c.range}</div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: "#10b981", marginTop: 6 }}>{c.price}</div>
-          </div>
-        ))}
+    <div style={{ padding: 24, maxWidth: 560, margin: "0 auto", display: "flex", flexDirection: "column", gap: 20 }}>
+      <div style={{ background: "rgba(15,20,40,.85)", border: "1px solid rgba(255,255,255,.07)", borderRadius: 20, padding: "36px 28px", textAlign: "center" }}>
+        <div style={{ fontSize: 40 }}>🙏</div>
+        <h1 style={{ fontSize: 20, fontWeight: 800, color: "#f1f5f9", margin: "16px 0 0", fontFamily: "'DM Serif Display',serif" }}>
+          ขออภัย เครื่องมือนี้ปิดให้บริการแล้ว
+        </h1>
+        <p style={{ margin: "10px 0 0", color: "#94a3b8", fontSize: 14, lineHeight: 1.7 }}>
+          Finnhouses ไม่ได้รับสร้างบ้านใหม่เองแล้ว — ปัจจุบันเราให้บริการ
+          <strong style={{ color: "#f1f5f9" }}> รีโนเวทบ้านเพื่อขาย (Fix &amp; Flip)</strong>,
+          <strong style={{ color: "#f1f5f9" }}> ที่ปรึกษา/ตรวจสอบงานก่อสร้าง</strong>
+          {" "}และ<strong style={{ color: "#f1f5f9" }}> รับฝากขายบ้านและที่ดิน</strong>
+        </p>
+        <p style={{ margin: "16px 0 0", color: "#64748b", fontSize: 13 }}>
+          สนใจบริการด้านบน ทักแชทหรือโทรหาทีมงานได้เลย ทีมงานจะช่วยแนะนำบริการที่ตรงกับความต้องการของคุณ
+        </p>
       </div>
     </div>
   );
