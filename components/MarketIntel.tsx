@@ -381,7 +381,12 @@ type CalData = {
   recent: CalRow[];
 };
 
-function CalibrationTab() {
+// Exported (not just used internally) so DashboardOS.tsx's embedded
+// "🧠 Market Intel" tab can render the same calibration view without
+// duplicating the fetch/feedback logic — see ADR-023 follow-up: Archi was
+// looking for this inside the Dashboard OS shell, not the standalone
+// /market-intel page, so it now needs to exist in both places.
+export function CalibrationTab() {
   const [data, setData] = useState<CalData | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);

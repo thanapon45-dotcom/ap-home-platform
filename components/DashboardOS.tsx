@@ -9,6 +9,7 @@ import OperationalDashboard from "@/components/OperationalDashboard";
 import QcAccuracy from "@/components/QcAccuracy";
 import ContentPerformance from "@/components/ContentPerformance";
 import QualityGateAccuracy from "@/components/QualityGateAccuracy";
+import { CalibrationTab } from "@/components/MarketIntel";
 import { resolveBusinessUnit } from "@/lib/businessUnit";
 
 const HUB = process.env.NEXT_PUBLIC_HUB_URL ?? "https://ap-home-platform-production.up.railway.app";
@@ -218,6 +219,11 @@ const TIMING_LIST = [
 ];
 
 function MarketIntelTab() {
+  // Sub-tab switcher added so the "🎯 Calibration" view (ADR-023) is reachable
+  // from inside the Dashboard OS shell, not just the standalone /market-intel
+  // page — Archi was looking for it here and it didn't exist in this file yet.
+  const [subTab, setSubTab] = useState<"submit" | "calibration">("submit");
+
   const [text, setText]     = useState("");
   const [area, setArea]     = useState("ลาดหลุมแก้ว");
   const [timing, setTiming] = useState("none");
@@ -253,8 +259,27 @@ function MarketIntelTab() {
     borderRadius: 14, padding: "20px 22px",
   };
 
+  const subTabBtn = (key: "submit" | "calibration", label: string) => (
+    <button
+      onClick={() => setSubTab(key)}
+      style={{
+        padding: "6px 14px", borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer",
+        background: subTab === key ? "rgba(232,121,249,.15)" : "rgba(255,255,255,.04)",
+        color: subTab === key ? "#e879f9" : "#64748b",
+        border: subTab === key ? "1px solid rgba(232,121,249,.3)" : "1px solid rgba(255,255,255,.06)",
+      }}
+    >{label}</button>
+  );
+
   return (
-    <div style={{ display: "flex", gap: 20, maxWidth: 900 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: 900 }}>
+      <div style={{ display: "flex", gap: 6 }}>
+        {subTabBtn("submit", "🧠 บันทึกข้อมูลตลาด")}
+        {subTabBtn("calibration", "🎯 Calibration")}
+      </div>
+
+      {subTab === "calibration" ? <CalibrationTab /> : (
+    <div style={{ display: "flex", gap: 20 }}>
       {/* Left: Form */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 14 }}>
 
@@ -376,6 +401,8 @@ function MarketIntelTab() {
             ))}
           </div>
         </div>
+      )}
+    </div>
       )}
     </div>
   );
