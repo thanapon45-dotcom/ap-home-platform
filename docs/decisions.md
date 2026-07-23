@@ -442,4 +442,26 @@ Archi อัปโหลดไฟล์ workflow มาให้ตรวจ →
 
 **ยังไม่ได้ทำ / รอ Archi**: (1) ใส่ service_role key จริงในไฟล์ (11_gate_log) ก่อน import (เหมือนที่ทำกับ (10_ai_quality_gate) ตอน go-live รอบก่อน — จุดนี้ไม่ต้องใส่ key เพราะ workflow เดิมใช้ hub_callback_url ไม่ใช่ Supabase ตรง, แต่ node ใหม่นี้ต้องใส่ service_role key เอง) (2) import เข้า n8n แทนตัวเดิม (10) (3) activate แล้วรอดูรอบถัดไปว่า `quality_gate_log` เริ่มมีแถวจริง (4) เมื่อมีข้อมูลสะสม ≥10 ครั้งที่ Archi กดยืนยันแล้ว ถึงจะเริ่มเห็น % ความแม่นยำจริงในหน้า dashboard
 
+---
+
+## ADR-022 — Land Analyzer → Fix & Flip Deals link (item #3 ของแผน 3 ข้อ)
+**Date**: 2026-07-23 (session 29 ต่อๆๆๆๆๆ)
+**Status**: Done ✅ (ไม่ต้อง import อะไรใน n8n — เป็น Next.js/Supabase ล้วน)
+
+**Context**: item #3 ของแผน 3 ข้อที่ Archi อนุมัติ "ทำทั้ง 3 อันเลย เรียงตามลำดับ" — Land Analyzer คำนวณ ROI ประเมินไว้ตอนวิเคราะห์ที่ดิน (`projects.roi`) แต่ไม่เคยเชื่อมกับ Fix & Flip Deals (`reno_deals`, ADR-014/017) เลย ทั้งที่ Deals module มี actual-vs-estimate UI พร้อมอยู่แล้ว (Phase 3) — แค่ไม่มีตัวเลขประเมินจาก Land Analyzer มาเทียบ มีแต่ reno_budget/list_price ที่กรอกตอนสร้างดีลเอง
+
+**Decision**:
+1. เพิ่มคอลัมน์ `reno_deals.land_project_id uuid references projects(id) on delete set null` (nullable, optional link — ไม่บังคับทุกดีลต้องมาจาก Land Analyzer)
+2. `LandAnalyzer.tsx` — เพิ่มปุ่ม "🔗 สร้างดีล Fix & Flip" ต่อโปรเจคที่บันทึกไว้แต่ละอัน → POST `/api/deals` พร้อม `land_project_id` เชื่อมกลับ, คำนวณ `reno_budget` จาก `plots × area × build_cost` (ไม่เคยถูกเก็บเป็นค่าเดียวมาก่อน มีแต่ input แยก), `purchase_price` จาก `land_price`, `list_price` จาก `market_price` ถ้ามี
+3. `app/api/projects/route.ts` GET — เพิ่ม `?ids=uuid1,uuid2` filter (เดิมคืนแค่ 20 แถวล่าสุด ซึ่งอาจพลาดโปรเจคเก่าที่ถูกเชื่อมไว้) ให้ Deals.tsx query เฉพาะโปรเจคที่ deals อ้างถึงจริง
+4. `Deals.tsx` — โหลด `landProjects` map (project id → roi) เมื่อมี deal ไหนมี `land_project_id`, แสดง badge "🔗 ROI ประเมิน (Land Analyzer) X% (+/-Y จุด)" ต่อการ์ด + เพิ่มคอลัมน์ที่ 3 ในการ์ดสรุป "ความแม่นยำของการประมาณการ" ระดับพอร์ต (ROI จริง vs ประเมินไว้ตอนวิเคราะห์ที่ดิน, n=จำนวนดีลที่ทั้งเชื่อมโปรเจคและมี roi_pct จริงแล้ว) — ใช้ honest-empty-state เดียวกันทั้ง 3 คอลัมน์
+
+**Files**: `app/api/projects/route.ts` (แก้ GET), `components/LandAnalyzer.tsx` (ปุ่มสร้างดีล), `components/Deals.tsx` (fetch + แสดงผล variance)
+
+**Verify**: ✅ Supabase migration เพิ่มคอลัมน์สำเร็จ (ยืนยัน `information_schema.columns`) ✅ `npx tsc --noEmit` ผ่านสะอาด ✅ `get_advisors` (security) ไม่มี WARN/ERROR ใหม่ — เหลือ `rls_enabled_no_policy` (INFO) เดิมทั้งหมด ตาม convention เดียวกับตารางอื่นในโปรเจกต์
+
+**สถานะข้อมูลจริงตอนนี้**: `reno_deals` ยังมีแค่ test deal ของ Archi (ไม่ได้เชื่อม project) → ROI variance การ์ดที่ 3 จะโชว์ "ยังไม่มีข้อมูลพอสรุป" จนกว่า Archi จะเริ่มใช้ปุ่ม "🔗 สร้างดีล Fix & Flip" จริงจากโปรเจคใน Land Analyzer แล้วปิดดีลจริงอย่างน้อย 1 ดีล
+
+**Related**: ADR-014 (Deals module เดิม), ADR-017 (actual-vs-estimate UI ที่ต่อยอดตรงนี้), ISSUE-013 (RLS/service_role pattern ที่ /api/projects ใหม่ยึดตาม)
+
 **Related**: ADR-016 (AI Quality Gate ตัวเดิมที่ยังไม่มี log), ADR-015 (QC Accuracy — ต้นแบบ pattern เดียวกัน), ADR-020 (fail-open Code node pattern + hardcoded-key-in-Code-node เหตุผลเดียวกัน)
