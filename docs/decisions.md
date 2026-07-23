@@ -462,6 +462,30 @@ Archi อัปโหลดไฟล์ workflow มาให้ตรวจ →
 
 **สถานะข้อมูลจริงตอนนี้**: `reno_deals` ยังมีแค่ test deal ของ Archi (ไม่ได้เชื่อม project) → ROI variance การ์ดที่ 3 จะโชว์ "ยังไม่มีข้อมูลพอสรุป" จนกว่า Archi จะเริ่มใช้ปุ่ม "🔗 สร้างดีล Fix & Flip" จริงจากโปรเจคใน Land Analyzer แล้วปิดดีลจริงอย่างน้อย 1 ดีล
 
+---
+
+## ADR-023 — Market Intel confidence calibration (item #3 สุดท้ายของแผน 3 ข้อ)
+**Date**: 2026-07-23 (session 29 ต่อๆๆๆๆๆๆ)
+**Status**: Done ✅ — infra พร้อมใช้, feedback เริ่มจาก 0 (เหมือนทุก Phase ก่อนหน้า)
+
+**Context**: item #3 สุดท้ายของแผน 3 ข้อที่ Archi อนุมัติ "ทำทั้ง 3 อันเลย เรียงตามลำดับ" — `market_insights` (135 แถวจริง, ไม่ใช่ตารางว่างแบบ quality_gate_log) มี AI ให้คะแนน `confidence` 1-5 ดาวต่อ insight ทุกอัน แต่**ไม่เคยมีใครยืนยันย้อนหลังว่าคะแนนนั้นแม่นจริงไหม** — คำถามที่ตอบไม่ได้เลยตอนนี้: insight ที่ AI ให้ 5 ดาว แม่นกว่า insight ที่ให้ 3 ดาวจริงหรือเปล่า (นี่คือความหมายของคำว่า "calibration" — ไม่ใช่แค่ accuracy เฉยๆ)
+
+**Decision**:
+1. เพิ่มคอลัมน์ `market_insights.human_feedback text check (in ('accurate','inaccurate'))` + `human_feedback_at timestamptz`
+2. `app/api/market-intel/feedback/route.ts` (PATCH ใหม่) — เหมือน Quality Gate: `market_insights` ไม่มีช่องทางยืนยันอื่นเลย (ไม่มี LINE bot คู่กันเหมือน QC) ฉะนั้น dashboard ต้องเป็นช่องทางยืนยันเดียว
+3. `app/api/market-intel/calibration/route.ts` (GET ใหม่) — honest low-data-state pattern เดียวกันทุกจุดก่อนหน้า (`RELIABILITY_THRESHOLD=10`) — จุดต่างจาก QC/Gate: เพิ่ม breakdown `by_confidence` (group by 1-5 ดาว, accuracy % แยกแต่ละระดับ) ซึ่งเป็นตัวชี้วัดที่ตอบคำถาม "calibration" จริงๆ ไม่ใช่แค่ accuracy รวม
+4. `components/MarketIntel.tsx` — เพิ่ม tab ใหม่ "🎯 Calibration" (`CalibrationTab`) ในหน้า `/market-intel` เดิม (คนละไฟล์กับ `MarketIntelTab` ที่ฝังอยู่ใน `DashboardOS.tsx` — สองอันนี้แยกกันคนละ component มาตั้งแต่แรก ไม่ใช่บั๊ก) — มีปุ่ม "✅ ตรง / ❌ ไม่ตรง" ต่อ insight ในรายการล่าสุด
+
+**Files**: `app/api/market-intel/feedback/route.ts` (ใหม่), `app/api/market-intel/calibration/route.ts` (ใหม่), `components/MarketIntel.tsx` (เพิ่ม tab)
+
+**Verify**: ✅ Supabase migration เพิ่ม 2 คอลัมน์สำเร็จ (ยืนยัน `information_schema.columns`) ✅ `npx tsc --noEmit` ผ่านสะอาด ✅ `get_advisors` (security) ไม่มี WARN/ERROR ใหม่
+
+**สถานะข้อมูลจริงตอนนี้**: `market_insights` มี 135 แถวจริงอยู่แล้ว (ต่างจาก quality_gate_log/reno_deals.land_project_id ที่เริ่มจาก 0) แต่ `human_feedback` เป็น NULL ทุกแถวเพราะปุ่มยืนยันเพิ่งมีวันนี้ — หน้า Calibration จะโชว์ "ยังไม่มีข้อมูลพอสรุป" จนกว่า Archi จะเริ่มกดยืนยันสะสม ≥10 ครั้ง ถึงตอนนั้นจะเริ่มเห็นว่า AI ให้คะแนนความมั่นใจแม่นจริงไหม
+
+**สรุปแผน 3 ข้อ "ระบบพิสูจน์ตัวเองว่าทำงานถูก" ครบแล้วทั้ง 3 ข้อ**: #1 WF1 AI Quality Gate feedback loop (ADR-021, รอ Archi import n8n) · #2 Land Analyzer → Deals link (ADR-022, ใช้งานได้ทันที) · #3 Market Intel confidence calibration (ADR-023, ใช้งานได้ทันที) — ทั้ง 3 ใช้ honest low-data-state pattern เดียวกันทั้งหมด (ADR-015 เป็นต้นแบบ)
+
+**Related**: ADR-015 (QC Accuracy — ต้นแบบ pattern), ADR-021 (Quality Gate feedback — pattern เดียวกันสำหรับตารางที่ไม่มีช่องทางยืนยันอื่น)
+
 **Related**: ADR-014 (Deals module เดิม), ADR-017 (actual-vs-estimate UI ที่ต่อยอดตรงนี้), ISSUE-013 (RLS/service_role pattern ที่ /api/projects ใหม่ยึดตาม)
 
 **Related**: ADR-016 (AI Quality Gate ตัวเดิมที่ยังไม่มี log), ADR-015 (QC Accuracy — ต้นแบบ pattern เดียวกัน), ADR-020 (fail-open Code node pattern + hardcoded-key-in-Code-node เหตุผลเดียวกัน)

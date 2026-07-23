@@ -363,6 +363,148 @@ function InsightsTab() {
   );
 }
 
+// ── Calibration Tab ───────────────────────────────────────────────────────────
+// Item #3 of the "system proves itself correct" follow-up plan (ADR-023,
+// session 29). Checks whether the AI's own 1-5 confidence score is actually
+// calibrated — do 5-star insights hold up more often than 3-star ones? —
+// using human_feedback set right here (market_insights has no separate
+// review channel of its own, same situation as the WF1 Quality Gate).
+type CalRow = {
+  id: number; created_at: string; area: string | null; insight: string | null;
+  category: string | null; confidence: number; human_feedback: string | null;
+};
+type CalData = {
+  total_insights: number; with_feedback: number; accurate: number; inaccurate: number;
+  accuracy_pct: number | null; feedback_adoption_pct: number; reliable: boolean; threshold: number;
+  by_confidence: { confidence: number; total: number; withFeedback: number; accurate: number; inaccurate: number; accuracy_pct: number | null }[];
+  window: { first: string; last: string } | null;
+  recent: CalRow[];
+};
+
+function CalibrationTab() {
+  const [data, setData] = useState<CalData | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState<number | null>(null);
+
+  const load = useCallback(async () => {
+    try {
+      const r = await fetch("/api/market-intel/calibration");
+      const j = await r.json();
+      if (j.ok) setData(j.data); else setErr(j.error ?? "โหลดข้อมูลไม่สำเร็จ");
+    } catch {
+      setErr("เชื่อมต่อ Supabase ไม่ได้");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  async function submitFeedback(id: number, feedback: "accurate" | "inaccurate") {
+    setSubmitting(id);
+    try {
+      const r = await fetch("/api/market-intel/feedback", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, feedback }),
+      });
+      const j = await r.json();
+      if (j.ok) await load();
+    } finally {
+      setSubmitting(null);
+    }
+  }
+
+  if (loading) return <div style={{ color: "#64748b", fontSize: 13, padding: 20 }}>⏳ กำลังโหลด...</div>;
+  if (err || !data) return <div style={{ color: "#f87171", padding: 20, fontSize: 13 }}>❌ {err ?? "ไม่พบข้อมูล"}</div>;
+
+  const belowThreshold = !data.reliable;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <div style={{ ...card }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: "#e879f9", marginBottom: 6 }}>🎯 ความแม่นยำของ AI confidence score</div>
+        <div style={{ fontSize: 12, color: "#64748b", lineHeight: 1.6 }}>
+          AI ให้คะแนนความมั่นใจ 1-5 ดาวต่อ insight แต่ละอัน — กดปุ่ม &quot;✅ ตรง / ❌ ไม่ตรง&quot; ด้านล่างเพื่อยืนยันภายหลังว่า insight นั้นตรงจริงไหม
+          จะได้รู้ว่า 5 ดาว แม่นกว่า 3 ดาวจริงหรือเปล่า
+        </div>
+      </div>
+
+      {belowThreshold ? (
+        <div style={{ ...card, border: "1px solid rgba(245,158,11,.3)", background: "rgba(245,158,11,.05)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+            <span style={{ fontSize: 22 }}>⚠️</span>
+            <div style={{ fontSize: 15, fontWeight: 700, color: "#f59e0b" }}>ยังไม่มีข้อมูลพอสรุป</div>
+          </div>
+          <div style={{ fontSize: 13, color: "#cbd5e1", lineHeight: 1.7 }}>
+            มี insight ทั้งหมด <b style={{ color: "#f1f5f9" }}>{data.total_insights}</b> รายการ
+            {data.window && <> ({new Date(data.window.first).toLocaleDateString("th-TH")} – {new Date(data.window.last).toLocaleDateString("th-TH")})</>}
+            {" "}แต่มีแค่ <b style={{ color: "#f1f5f9" }}>{data.with_feedback}</b> รายการที่ยืนยันแล้ว —
+            ต้องมีอย่างน้อย <b style={{ color: "#f1f5f9" }}>{data.threshold}</b> รายการก่อนถึงจะสรุปได้อย่างมีความหมาย
+          </div>
+        </div>
+      ) : (
+        <div style={{ ...card, border: "1px solid rgba(16,185,129,.3)" }}>
+          <div style={{ fontSize: 11, color: "#64748b", textTransform: "uppercase", letterSpacing: ".1em" }}>ความแม่นยำสะสม</div>
+          <div style={{ fontSize: 36, fontWeight: 800, color: "#34d399" }}>{data.accuracy_pct}%</div>
+          <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 4 }}>ตรง {data.accurate} / ไม่ตรง {data.inaccurate} จาก {data.with_feedback} ที่ยืนยันแล้ว</div>
+        </div>
+      )}
+
+      {/* By confidence level — the actual calibration check */}
+      {data.by_confidence.some(c => c.withFeedback > 0) && (
+        <div style={card}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "#6366f1", marginBottom: 10 }}>แยกตามระดับความมั่นใจของ AI</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {data.by_confidence.map(c => (
+              <div key={c.confidence} style={{ display: "flex", justifyContent: "space-between", padding: "8px 12px", borderRadius: 8, background: "rgba(255,255,255,.02)", border: "1px solid rgba(255,255,255,.05)" }}>
+                <span style={{ fontSize: 13 }}>{"⭐".repeat(c.confidence)}</span>
+                <span style={{ fontSize: 12, color: "#64748b" }}>
+                  {c.total} รายการ{c.withFeedback > 0 ? ` · ยืนยันแล้ว ${c.withFeedback} · แม่นยำ ${c.accuracy_pct}%` : " · ยังไม่มีคนยืนยัน"}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Recent — feedback buttons */}
+      <div style={card}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: "#f59e0b", marginBottom: 10 }}>รายการล่าสุด</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {data.recent.map(r => (
+            <div key={r.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "8px 12px", borderRadius: 8, background: "rgba(255,255,255,.02)", border: "1px solid rgba(255,255,255,.05)", flexWrap: "wrap" }}>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ fontSize: 12, color: "#cbd5e1", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {"⭐".repeat(r.confidence)} {r.insight}
+                </div>
+                <div style={{ fontSize: 10, color: "#475569" }}>{r.area} · {CATEGORY_TH[r.category ?? ""] ?? r.category}</div>
+              </div>
+              {r.human_feedback ? (
+                <span style={{ fontSize: 11, fontWeight: 600, color: r.human_feedback === "accurate" ? "#34d399" : "#fb7185" }}>
+                  {r.human_feedback === "accurate" ? "✅ ยืนยันตรง" : "❌ ยืนยันไม่ตรง"}
+                </span>
+              ) : (
+                <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                  <button onClick={() => submitFeedback(r.id, "accurate")} disabled={submitting === r.id}
+                    style={{ fontSize: 11, padding: "4px 9px", borderRadius: 7, border: "1px solid rgba(16,185,129,.3)", background: "rgba(16,185,129,.08)", color: "#34d399", cursor: "pointer" }}>
+                    ✅ ตรง
+                  </button>
+                  <button onClick={() => submitFeedback(r.id, "inaccurate")} disabled={submitting === r.id}
+                    style={{ fontSize: 11, padding: "4px 9px", borderRadius: 7, border: "1px solid rgba(244,63,94,.3)", background: "rgba(244,63,94,.08)", color: "#fb7185", cursor: "pointer" }}>
+                    ❌ ไม่ตรง
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Content Tab ───────────────────────────────────────────────────────────────
 function ContentTab() {
   const [items, setItems] = useState<any[]>([]);
@@ -435,9 +577,10 @@ function ContentTab() {
 
 // ── Main Component ────────────────────────────────────────────────────────────
 const TABS = [
-  { key: "submit",   label: "บันทึกข้อมูลตลาด", icon: "🧠" },
-  { key: "insights", label: "Market Insights",   icon: "🗺️" },
-  { key: "content",  label: "Positioned Content", icon: "✨" },
+  { key: "submit",      label: "บันทึกข้อมูลตลาด", icon: "🧠" },
+  { key: "insights",    label: "Market Insights",   icon: "🗺️" },
+  { key: "content",     label: "Positioned Content", icon: "✨" },
+  { key: "calibration", label: "Calibration",       icon: "🎯" },
 ];
 
 export default function MarketIntel() {
@@ -474,9 +617,10 @@ export default function MarketIntel() {
 
       {/* Content */}
       <div style={{ flex: 1, overflow: "auto" }}>
-        {tab === "submit"   && <SubmitTab />}
-        {tab === "insights" && <InsightsTab />}
-        {tab === "content"  && <ContentTab />}
+        {tab === "submit"      && <SubmitTab />}
+        {tab === "insights"    && <InsightsTab />}
+        {tab === "content"     && <ContentTab />}
+        {tab === "calibration" && <CalibrationTab />}
       </div>
     </div>
   );
