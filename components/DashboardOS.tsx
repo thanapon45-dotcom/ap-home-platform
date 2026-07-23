@@ -8,6 +8,7 @@ import PropertyReview from "@/components/PropertyReview";
 import OperationalDashboard from "@/components/OperationalDashboard";
 import QcAccuracy from "@/components/QcAccuracy";
 import ContentPerformance from "@/components/ContentPerformance";
+import QualityGateAccuracy from "@/components/QualityGateAccuracy";
 import { resolveBusinessUnit } from "@/lib/businessUnit";
 
 const HUB = process.env.NEXT_PUBLIC_HUB_URL ?? "https://ap-home-platform-production.up.railway.app";
@@ -384,7 +385,7 @@ export default function DashboardOS() {
   const { data, live, lastSync } = useLiveData();
   const leadCounts = useLeadCounts();
   const [clock, setClock] = useState<Date | null>(null);
-  const [activeTab, setActiveTab] = useState<"overview" | "properties" | "intel" | "ops" | "qc" | "content">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "properties" | "intel" | "ops" | "qc" | "content" | "gate">("overview");
   useEffect(() => {
     setClock(new Date());
     const t = setInterval(() => setClock(new Date()), 1000);
@@ -436,6 +437,9 @@ export default function DashboardOS() {
         <button style={TAB_STYLE(activeTab === "content")} onClick={() => setActiveTab("content")}>
           📈 Content Performance
         </button>
+        <button style={TAB_STYLE(activeTab === "gate")} onClick={() => setActiveTab("gate")}>
+          🛡️ Quality Gate
+        </button>
       </div>
 
       {/* PROPERTIES TAB */}
@@ -452,6 +456,9 @@ export default function DashboardOS() {
 
       {/* CONTENT PERFORMANCE TAB */}
       {activeTab === "content" && <ContentPerformance />}
+
+      {/* QUALITY GATE ACCURACY TAB */}
+      {activeTab === "gate" && <QualityGateAccuracy />}
 
       {/* OVERVIEW TAB */}
       {activeTab === "overview" && <>
