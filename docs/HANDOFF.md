@@ -4,9 +4,7 @@
 
 ---
 
-## Last Updated: 2026-07-23 (session 30 — data-flow graph verification (ADR-024) + useLiveData Hub-bypass bug found & fixed (ISSUE-017) — ⚠️ โค้ดแก้แล้วแต่ยังไม่ push
-
-> ⚠️ **สิ่งที่ session ถัดไปต้องทำก่อนอื่น**: เช็คว่า Archi push `components/DashboardOS.tsx` แล้วหรือยัง (`git log -1 -- components/DashboardOS.tsx` เทียบกับ `git log origin/main -1 -- components/DashboardOS.tsx`) — ถ้ายังไม่ push ให้เตือน Archi ก่อนทำงานอื่นต่อ เพราะ production ตอนนี้ยังมีบั๊กเดิม (OS Dashboard โชว์ MOCK ค้างตลอด)
+## Last Updated: 2026-07-23 (session 30 — data-flow graph verification (ADR-024) + useLiveData Hub-bypass bug found & fixed (ISSUE-017) — ✅ ปิดครบ push+deploy+graph verify แล้ว
 
 **บริบท**: Archi ขอ data-flow diagram สไตล์ Obsidian Graph view จาก reference screenshot → ทำแบบ static (จาก mind-map เก่า) รอบแรกก่อน แต่พอ Archi ถามตรงๆ "ตรงกันไหมกับระบบที่เราทำ" Claude ตรวจสอบอย่างละเอียดแล้วตอบว่า**ไม่ตรงทั้งหมด** (ไม่มี QC Line เลย, สื่อผิดว่าทุกอย่างผ่าน Hub v1, n8n ยุบเหลือบับเบิลเดียว) → รื้อสร้างใหม่โดยเปิด JSON จริงทั้ง 12 n8n workflow + grep `server.cjs` + query Supabase สด
 
@@ -14,12 +12,9 @@
 
 **บั๊กจริงที่เจอระหว่างตรวจกราฟ (ไม่ใช่แค่ diagram)**: `components/DashboardOS.tsx`'s `useLiveData()` ยิง Hub v1 ตรงจาก browser (`NEXT_PUBLIC_HUB_URL`) ไม่มี `x-hub-token` → โดน 401 ทุกครั้ง (Hub v1 มี auth middleware ครอบทุก route ยกเว้น `/health*`) → ไม่ใช่ data leak แต่เป็น functional bug จริง: การ์ด FB/Blog Engine บนหน้า `/dashboard` โชว์ตัวเลข `MOCK` คงที่ตลอดกาลมาตั้งแต่เขียนโค้ดนี้ครั้งแรก เพราะ error ถูก catch เงียบๆไม่เคย `setData()` ใหม่ — **แก้แล้ว**: เปลี่ยนไปเรียก `/api/blog/state` (proxy ที่มีอยู่แล้ว, ใช้จริงโดย `Marketing.tsx`) แทน — ดู `docs/issues-log.md` ISSUE-017
 
-**Verify**: ✅ `npx tsc --noEmit` ผ่านสะอาด ✅ ตรวจ `baseState()`/`normalizeState()` จริงเทียบ field ที่โค้ดใช้ก่อนแก้ (ไม่มีความเสี่ยง `leads`/`alerts` undefined) — **แต่ยังไม่ได้ทดสอบบน production จริงเลย** เพราะยังไม่ push
+**Verify**: ✅ `npx tsc --noEmit` ผ่านสะอาด ✅ ตรวจ `baseState()`/`normalizeState()` จริงเทียบ field ที่โค้ดใช้ก่อนแก้ (ไม่มีความเสี่ยง `leads`/`alerts` undefined) ✅ Archi push แล้ว (commit `85e964d`) ✅ verify deploy ผ่าน Vercel `list_deployments` ตรง commit จริงเป๊ะ (`dpl_EvzvQdvpDATq14jWsrHKajLeipGJ`, `state:"READY"`, `target:"production"`) ✅ อัปเดตกราฟ (v6) ลบเส้นประแดง "insecure" ออกแล้ว เปลี่ยนเป็น `OS Dashboard → /api/blog/* → Hub v1` ให้ตรงกับโค้ดที่ deploy จริง
 
-**ค้างไว้ (รอ Archi)**:
-1. **Push `components/DashboardOS.tsx`** (คำสั่งอยู่ใน `docs/decisions.md` ADR-024 ท้ายสุด) — สำคัญสุด
-2. หลัง deploy สำเร็จ verify ผ่าน Vercel `list_deployments` (เทียบ commit) + เปิด `/dashboard` จริงดูว่าขึ้น "LIVE" (เขียว) แทน "OFFLINE" (แดง)
-3. อัปเดตกราฟ `finnhouses-graph-view-v2.html` ลบเส้นประแดง "insecure" (`OS Dashboard→Hub v1`) ออก เพราะตอนนี้ path จริงเปลี่ยนไปใช้ hop `/api/blog/*` แล้ว — ยังไม่ได้ทำ ณ ตอนปิด session
+**สถานะ**: ปิดครบทั้ง ADR-024 และ ISSUE-017 — ไม่มีจุดค้างจาก session นี้ (session ถัดไปไม่ต้องทำอะไรต่อเรื่องนี้ เว้นแต่พบปัญหาใหม่)
 
 ---
 

@@ -329,7 +329,7 @@ const HUB = (process.env.HUB_URL ?? "").replace(/\/api\/?$/, "").replace(/\/+$/,
 ## ISSUE-017 — OS Dashboard `useLiveData()` ยิง Hub v1 ตรงจาก browser ไม่ผ่าน proxy → dashboard แสดง MOCK ค้างตลอดกาล
 **Date**: 2026-07-23 (session 30)
 **Severity**: Medium (ไม่ใช่ data leak — แต่ dashboard หลักที่ Archi ใช้ดูสถานะ FB/Blog engine ทุกวัน แสดงตัวเลขปลอมมาตลอดโดยไม่มีใครรู้)
-**Status**: Resolved ✅ — โค้ดแก้แล้ว **แต่ยังไม่ push** ณ ตอนปิด session (ดู CLAUDE.md Pending Tasks)
+**Status**: Resolved ✅ — push แล้ว (commit `85e964d`), verify deploy ผ่าน Vercel `list_deployments` ตรง commit จริง (`dpl_EvzvQdvpDATq14jWsrHKajLeipGJ`, `READY`) — ปิดครบ ไม่มีจุดค้าง
 
 **อาการ**: หน้า `/dashboard` (OS Dashboard, tab Overview) โชว์ป้าย "🔴 OFFLINE — แสดงข้อมูล MOCK" ตลอดเวลา และการ์ด FB/Blog Engine (Queue, Drafts, Published, Failed) โชว์ตัวเลขเดิมซ้ำๆ ไม่เคยขยับเลย (queue 8/12, published 2/3 เป็นต้น) — พบระหว่างงานคนละเรื่อง (กำลังตรวจ data-flow graph ให้ตรงกับโค้ดจริง ดู ADR-024)
 
