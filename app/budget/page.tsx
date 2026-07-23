@@ -43,7 +43,9 @@ export default function BudgetPage() {
         budget:        budgetLabel,
         stage:         "new",
         source:        "Budget Tool",
-        business_unit: intent === "renovate" ? "reno" : intent === "buy" ? "list" : "build",
+        // "build" (สนใจสร้างบ้านใหม่) ไม่มีหน่วยธุรกิจภายในรองรับแล้วตั้งแต่ Unit 1 discontinued
+        // (ADR-010/012) — fallback ไป "reno" (Fix & Flip) แทนที่จะเขียนค่า "build" ที่เลิกใช้แล้วลง DB
+        business_unit: intent === "renovate" ? "reno" : intent === "buy" ? "list" : "reno",
         style:         "Modern Minimal",
         score:         urgency === "hot" ? 85 : urgency === "warm" ? 70 : 55,
         intent,

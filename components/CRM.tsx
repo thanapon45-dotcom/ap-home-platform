@@ -72,7 +72,7 @@ type Lead = {
   id: string;
   name: string; phone: string; budget: string; style: string;
   stage: string; score: number; source: string; lead_date: string; area: number | string | null; notes: string;
-  business_unit: "build" | "reno" | "list";
+  business_unit: "reno" | "list" | "consult";
   intent?: string;
   urgency?: string;
   outcome?: string;
@@ -143,7 +143,7 @@ function SimpleBar({ value, max, color }: { value: number; max: number; color: s
 
 // ─── Add Lead Modal ───────────────────────────────────────────────────────────
 function AddLeadModal({ onClose, onAdd }: { onClose: () => void; onAdd: (lead: Lead) => void }) {
-  const [form, setForm] = useState({ name: "", phone: "", budget: "", style: "Modern Minimal", area: "", source: "Budget Tool", notes: "", stage: "new", business_unit: "build" as "build" | "reno" | "list", intent: "build", urgency: "warm", location: "", outcome: "pending" });
+  const [form, setForm] = useState({ name: "", phone: "", budget: "", style: "Modern Minimal", area: "", source: "Budget Tool", notes: "", stage: "new", business_unit: "reno" as "reno" | "list" | "consult", intent: "build", urgency: "warm", location: "", outcome: "pending" });
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const inputStyle: React.CSSProperties = { width: "100%", padding: "10px 12px", borderRadius: 10, border: "1.5px solid rgba(255,255,255,.15)", fontSize: 13, boxSizing: "border-box" as const, background: "rgba(255,255,255,.05)", color: "#f1f5f9", fontFamily: "inherit" };
@@ -207,9 +207,9 @@ function AddLeadModal({ onClose, onAdd }: { onClose: () => void; onAdd: (lead: L
           <label style={{ fontSize: 12, fontWeight: 700, color: "#94a3b8", display: "block", marginBottom: 5 }}>ธุรกิจ <span style={{ color: "#f43f5e" }}>*</span></label>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 6 }}>
             {([
-              { value: "build", label: "🏗️ รับสร้างบ้าน",       color: "#f59e0b" },
-              { value: "reno",  label: "🔨 รีโนเวท",             color: "#10b981" },
-              { value: "list",  label: "🏠 ฝากขาย",              color: "#6366f1" },
+              { value: "reno",    label: "🔨 รีโนเวท (Fix & Flip)", color: "#10b981" },
+              { value: "consult", label: "🔍 ที่ปรึกษา/ตรวจสอบ",     color: "#f59e0b" },
+              { value: "list",    label: "🏠 ฝากขาย",                color: "#6366f1" },
             ] as const).map(opt => (
               <button key={opt.value} type="button" onClick={() => setForm(f => ({ ...f, business_unit: opt.value }))} style={{
                 padding: "8px 4px", borderRadius: 10, cursor: "pointer", fontSize: 11, fontWeight: 600,
@@ -676,7 +676,7 @@ export default function CRM() {
       const lines = text.trim().split("\n").slice(1);
       const rows = lines.map(line => {
         const cols = line.split(",").map(c => c.replace(/^"|"$/g, "").trim());
-        const bu = cols[10] as "build" | "reno" | "list";
+        const bu = cols[10] as "reno" | "list" | "consult";
         // `area` is a numeric DB column — CSV's "พื้นที่" column is often a district
         // name (text), which fails Postgres numeric validation. Only send it through
         // if it actually parses as a number; otherwise fold it into notes instead of
@@ -689,7 +689,8 @@ export default function CRM() {
           source: cols[5] || "CSV Import", stage: cols[6] || "new",
           score: parseInt(cols[7]) || 60, lead_date: cols[8] || "",
           notes: [cols[9], areaNote].filter(Boolean).join(" | "),
-          business_unit: (["build","reno","list"].includes(bu) ? bu : "build") as "build" | "reno" | "list",
+          // "build" (Unit 1, discontinued) ที่หลงเหลือจาก CSV เก่า fallback ไป "reno" แทน
+          business_unit: (["reno","list","consult"].includes(bu) ? bu : "reno") as "reno" | "list" | "consult",
         };
       }).filter(r => r.name);
 

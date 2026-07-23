@@ -14,7 +14,7 @@ const POLL_MS = 10_000;
 const MOCK = {
   blog:  { status: "Running", queue: 8,  published: 2, failed: 1 },
   fb:    { status: "Active",  queue: 12, drafts: 5,   published: 3 },
-  leads: { total: 0, new: 0, byBusiness: { build: 0, reno: 0, list: 0 } },
+  leads: { total: 0, new: 0, byBusiness: { reno: 0, list: 0, consult: 0 } },
   alerts: [
     { level: "high",   text: "n8n workflow error: image upload needs review" },
     { level: "medium", text: "Facebook content queue nearly full" },
@@ -26,7 +26,7 @@ const MOCK = {
 function useLeadCounts() {
   const [counts, setCounts] = useState({
     total: 0, new: 0, followup: 0, qualified: 0, closed: 0,
-    byBusiness: { build: 0, reno: 0, list: 0 },
+    byBusiness: { reno: 0, list: 0, consult: 0 },
   });
 
   useEffect(() => {
@@ -35,7 +35,10 @@ function useLeadCounts() {
       const json = await res.json();
       const data = (json.ok !== false ? json.data : null) as { stage?: string; business_unit?: string }[] | null;
       if (!data) return;
-      const bu = (l: { business_unit?: string }) => l.business_unit || "build";
+      // Unit 1 (รับสร้างบ้าน / "build") ยุติธุรกิจไปแล้วตาม ADR-010/012 — lead ที่ไม่มี
+      // business_unit ระบุไว้ (เช่น lead เก่าก่อน field นี้จะมี) fallback ไปที่ "reno"
+      // (Fix & Flip, 60% ของรายได้จริงตาม ADR-011) แทนที่จะ fallback ไปหน่วยที่เลิกทำแล้ว
+      const bu = (l: { business_unit?: string }) => l.business_unit || "reno";
       setCounts({
         total:     data.length,
         new:       data.filter(l => l.stage === "new").length,
@@ -43,9 +46,9 @@ function useLeadCounts() {
         qualified: data.filter(l => l.stage === "qualified").length,
         closed:    data.filter(l => l.stage === "closed").length,
         byBusiness: {
-          build: data.filter(l => bu(l) === "build").length,
-          reno:  data.filter(l => bu(l) === "reno").length,
-          list:  data.filter(l => bu(l) === "list").length,
+          reno:    data.filter(l => bu(l) === "reno").length,
+          list:    data.filter(l => bu(l) === "list").length,
+          consult: data.filter(l => bu(l) === "consult").length,
         },
       });
     }
@@ -157,10 +160,13 @@ function EngineCard({ title, subtitle, statusText, metrics, channel, actions, ac
   );
 }
 
+// 3 หน่วยธุรกิจจริงที่ยังทำอยู่ (ยืนยันสัดส่วน session 27, ADR-011):
+// Fix & Flip 60% · ที่ปรึกษา/ตรวจสอบ 30% · โบรกเกอร์ 10%
+// Unit 1 (รับสร้างบ้านใหม่ / "build") discontinued แล้ว — ตัดออกจาก dashboard นี้ (session 29)
 const BIZ_META: Record<string, { title: string; icon: string; color: string; focus: string; tasks: string[] }> = {
-  build: { title: "รับสร้างบ้าน",          icon: "🏗️", color: "#f59e0b", focus: "บ้าน 5–15 ล้านบาท",      tasks: ["ติดตาม lead ด่วน", "สรุป BOQ เบื้องต้น", "นัดคุย 30 นาที"] },
-  reno:  { title: "รีโนเวทบ้านเพื่อขาย",  icon: "🔨", color: "#10b981", focus: "คัดทรัพย์ + ปรับมูลค่า",  tasks: ["ประเมินต้นทุนรีโนเวท", "เช็กมาร์จินขายต่อ", "สรุปทรัพย์น่าสนใจ"] },
-  list:  { title: "รับฝากขายบ้านและที่ดิน", icon: "🏠", color: "#6366f1", focus: "Listing + Buyer Matching", tasks: ["ลงประกาศเพิ่ม", "ติดตาม inquiry", "นัดชมทรัพย์"] },
+  reno:    { title: "รีโนเวทบ้านเพื่อขาย (Fix & Flip)", icon: "🔨", color: "#10b981", focus: "คัดทรัพย์ + ปรับมูลค่า",        tasks: ["ประเมินต้นทุนรีโนเวท", "เช็กมาร์จินขายต่อ", "สรุปทรัพย์น่าสนใจ"] },
+  consult: { title: "ที่ปรึกษา/ตรวจสอบงานก่อสร้าง",   icon: "🔍", color: "#f59e0b", focus: "ตรวจสภาพบ้านก่อนโอน",        tasks: ["นัดวันตรวจ", "สรุปรายงานตรวจสอบ", "ติดตามผลหลังส่งรายงาน"] },
+  list:    { title: "รับฝากขายบ้านและที่ดิน",         icon: "🏠", color: "#6366f1", focus: "Listing + Buyer Matching",   tasks: ["ลงประกาศเพิ่ม", "ติดตาม inquiry", "นัดชมทรัพย์"] },
 };
 
 function BizCard({ id, count }: { id: string; count: number }) {
@@ -528,9 +534,9 @@ export default function DashboardOS() {
 
       {/* BIZ CARDS */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 20 }}>
-        <BizCard id="build" count={leads.byBusiness.build} />
-        <BizCard id="reno"  count={leads.byBusiness.reno}  />
-        <BizCard id="list"  count={leads.byBusiness.list}  />
+        <BizCard id="reno"    count={leads.byBusiness.reno}    />
+        <BizCard id="consult" count={leads.byBusiness.consult} />
+        <BizCard id="list"    count={leads.byBusiness.list}    />
       </div>
 
       {/* ALERTS + CONNECTIONS */}

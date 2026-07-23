@@ -299,6 +299,12 @@ Invoke-RestMethod -Method POST -Uri "https://ap-home-platform-production.up.rail
 - [x] Verify: `npx tsc --noEmit` ผ่านสะอาด
 - [ ] รอ Archi เริ่มใช้งานจริง (สร้างดีล + กรอกตัวเลขจริงอย่างน้อย 1 ดีล) เพื่อดูว่าการ์ด "ความแม่นยำของการประมาณการ" ออกค่าที่สมเหตุสมผลไหม — ตอนนี้ยังเป็น "ยังไม่มีข้อมูลพอสรุป" เพราะ 0 แถว
 
+### CRM/Overview — business_unit ยังผูก Unit 1 ที่เลิกทำแล้ว (ADR-018, session 29 ต่อ) — DONE
+- [x] Archi เจอการ์ด "รับสร้างบ้าน" ใน Overview ยังโชว์ Leads=1 ทั้งที่ Unit 1 เลิกทำไปแล้ว → ตรวจพบ 3 จุด: `CRM.tsx` (type/ฟอร์ม ไม่มีตัวเลือก Unit 4 เลย, default="build"), `DashboardOS.tsx` (fallback lead ที่ไม่มี business_unit ไปกอง "build"), `app/budget/page.tsx` (public lead form เขียน "build" ตรงๆ) — เปลี่ยน enum ทั้งหมดเป็น `"reno"|"list"|"consult"` (ตัด build, เพิ่ม consult=Unit 4) + fallback ทุกจุดเป็น "reno" (60% ของรายได้จริง) แทน
+- [x] Migrate ข้อมูลจริงใน Supabase `leads` (3 แถว ทั้งหมดเป็น test data ไม่ใช่ลูกค้าจริง) → `reno` หมดแล้ว
+- [x] Verify: `npx tsc --noEmit` ผ่านสะอาด, grep ทั้ง repo ไม่มี business_unit="build" เหลือ
+- [ ] **ยังไม่ได้ทำ (ต้องถาม Archi ก่อน)**: `app/budget/page.tsx` ทั้งหน้ายัง premise เป็นเครื่องมือคำนวณ "สร้างบ้านใหม่" (label "พื้นที่ที่สนใจสร้าง", default ตัวเลือก "🏗️ สร้างบ้าน") — ถ้ายังเปิดให้ลูกค้าจริงเข้าถึงอยู่ อาจกำลังดึง lead เข้ามาผิดความคาดหวัง เป็นการตัดสินใจ business/marketing ว่าจะปิด/เขียนใหม่/ปล่อยไว้ ไม่ใช่แค่ field mapping
+
 ### AI Content Studio — แก้ภาษาไทยเพี้ยน + Business Unit 3 confirm สัดส่วน + Platform Structure (ADR-011/012/013, session 27, Jul 20) — DONE
 - [x] Archi ส่ง FB post ที่ generate ผิดปกติมาให้ตรวจ (hashtag ตัดกลางคำ, คำเพี้ยนกลางประโยค) → เจอ 2 root cause ซ้อนกัน: `maxTokens` 800 ต่ำเกินไป + `KeywordTab.generate()` หลุดไปใช้ Haiku default แทน Sonnet → แก้ทั้ง 2 จุดใน `components/AIContent.tsx` → deploy + verify ผ่าน production จริง (regenerate แล้วครบ ไม่มีคำเพี้ยน) — ดู Known Bugs #13, ADR-012, ISSUE-016
 - [x] ยืนยันสัดส่วนธุรกิจจริง 3 หน่วยที่ยังทำอยู่: **Fix & Flip 60% · ที่ปรึกษา/ตรวจสอบ 30% · โบรกเกอร์ 10%** — clarify คำว่า "Develop" ที่ Archi ใช้ = Fix & Flip (Unit 3) ไม่ใช่ Unit 1 ที่ discontinued ไปแล้ว (ถาม confirm ผ่าน AskUserQuestion ก่อนแก้เอกสาร) → sync `docs/BUSINESS_MODEL.md` ทุกจุด — ดู ADR-011
@@ -306,7 +312,9 @@ Invoke-RestMethod -Method POST -Uri "https://ap-home-platform-production.up.rail
 - [x] Security (ล็อกหน้า CRM/Land Analyzer): Archi confirm ไม่ต้องทำตอนนี้ — ผู้ใช้หลักมีคนเดียว ยอมรับความเสี่ยง
 - [x] Hub v2 cutover/archive decision: Archi confirm ไม่รีบ
 
-Last updated: 2026-07-23 (session 29 ต่อ — Phase 3 เสร็จ: เพิ่มความสามารถ "ใส่ต้นทุน/ราคาขายจริง" เข้า `components/Deals.tsx` — คำนวณ ROI จริงอัตโนมัติ + แสดง variance งบ/ราคาต่อการ์ด + การ์ดสรุป "ความแม่นยำของการประมาณการ" ระดับพอร์ตพร้อม honest empty-state (ตรวจพบ `reno_deals` มี 0 แถวจริงก่อนเริ่มงาน แจ้ง Archi ไว้แล้วในเอกสาร) ไม่แตะ API/schema เลย verify ผ่าน tsc สะอาด — ดู ADR-017 — ครบทั้ง 3 phase ตามแผนเดิม (Phase 1 QC Accuracy, Phase 2 WF1 AI Quality Gate LIVE, Phase 3 Deal ROI) แล้ว)
+Last updated: 2026-07-23 (session 29 ต่อๆ — ADR-018: แก้ business_unit enum ที่ยังผูก Unit 1 (รับสร้างบ้าน, เลิกทำแล้ว) เป็น default/fallback อยู่ใน 3 ไฟล์ (`CRM.tsx`, `DashboardOS.tsx`, `app/budget/page.tsx`) — เปลี่ยนเป็น `reno|list|consult` ทั้งหมด, เพิ่มตัวเลือก Unit 4 (ที่ปรึกษา/ตรวจสอบ) ในฟอร์ม CRM ที่ไม่เคยมีมาก่อนเลย, migrate ข้อมูล test 3 แถวใน Supabase, verify tsc สะอาด — ยัง flag ไว้ไม่แตะ: `/budget` page ทั้งหน้ายัง premise เป็นเครื่องมือคำนวณสร้างบ้านใหม่ ต้องถาม Archi ก่อนว่าจะทำยังไงกับหน้านี้)
+
+Last updated (ก่อนหน้า): 2026-07-23 (session 29 ต่อ — Phase 3 เสร็จ: เพิ่มความสามารถ "ใส่ต้นทุน/ราคาขายจริง" เข้า `components/Deals.tsx` — คำนวณ ROI จริงอัตโนมัติ + แสดง variance งบ/ราคาต่อการ์ด + การ์ดสรุป "ความแม่นยำของการประมาณการ" ระดับพอร์ตพร้อม honest empty-state (ตรวจพบ `reno_deals` มี 0 แถวจริงก่อนเริ่มงาน แจ้ง Archi ไว้แล้วในเอกสาร) ไม่แตะ API/schema เลย verify ผ่าน tsc สะอาด — ดู ADR-017 — ครบทั้ง 3 phase ตามแผนเดิม (Phase 1 QC Accuracy, Phase 2 WF1 AI Quality Gate LIVE, Phase 3 Deal ROI) แล้ว)
 
 Last updated (ก่อนหน้า): 2026-07-22 (session 28 ต่อ — สร้าง QC Line Accuracy Dashboard Phase 1 (ADR-015): `/api/qc/accuracy` + `components/QcAccuracy.tsx` + tab ใหม่ใน DashboardOS ต่อยอดจากบทสนทนา reflective เรื่อง "ระบบพิสูจน์ตัวเองว่าทำงานถูก" — ออกแบบให้โชว์สถานะ "ยังไม่มีข้อมูลพอสรุป" อย่างตรงไปตรงมาแทนเปอร์เซ็นต์หลอกจาก n=1 feedback sample ปัจจุบัน verify ผ่าน tsc + get_advisors สะอาด)
 
