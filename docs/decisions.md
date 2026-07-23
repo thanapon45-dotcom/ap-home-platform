@@ -386,3 +386,34 @@ Migrate ข้อมูลจริงใน `leads` ผ่าน SQL ตรง:
 **Verify**: ✅ `npx tsc --noEmit` ผ่านสะอาด ✅ grep ทั้ง repo ไม่มี `business_unit` ผูกกับ `"reno"`/`"build"` เหลือที่ไหนแล้ว ✅ Supabase migrate 3 แถว test data สำเร็จ
 
 **Related**: ADR-018 (รอบแรกที่เจอปัญหา business_unit ผูก Unit 1 ที่เลิกทำ, พบก่อน ADR-019 นี้แค่ไม่กี่นาที), ADR-014/017 (Deals module ที่ Fix & Flip sourced ผ่านจริง), ADR-011 (สัดส่วนรายได้ 3 หน่วย)
+
+---
+
+## ADR-020 — "FB Post Performance Tracker" ไม่เคยเขียนข้อมูลจริงเลยสักครั้ง — root cause: anon key ชน RLS
+**Date**: 2026-07-23 (session 29 ต่อๆๆ — จากคำถามภาพรวม "ระบบพิสูจน์ตัวเองว่าทำงานถูกหรือยัง")
+**Status**: Fixed in workflow file ✅ — **ยังไม่ได้ import/activate ใน n8n จริง** (รอ Archi ใส่ service_role key จริงก่อน)
+
+**Context**: ระหว่างตรวจสอบทีละโมดูลว่า AP-Home OS "พิสูจน์ตัวเองว่าทำงานถูก" ได้แค่ไหน (ต่อจากบทสนทนา reflective ของ Phase 1-3) พบว่า AI Content Studio มี schema พร้อมวัดผลจริงอยู่แล้ว 2 จุด (`content_posts.impressions/engagement/clicks`, ตาราง `post_performance` ทั้งตาราง — comment ในตารางเขียนไว้ชัดว่า "used for AI Content feedback loop") **แต่ทั้ง 13 แถวใน `content_posts` มีค่า impressions/engagement/clicks = 0 ทุกแถวไม่มีข้อยกเว้นเลย และ `post_performance` มี 0 แถว** ทั้งที่มีไฟล์ n8n workflow "FB Post Performance Tracker" อยู่จริง (cron ทุกวันจันทร์ 09:30) และ export ไว้ว่า `active: true`
+
+Archi อัปโหลดไฟล์ workflow มาให้ตรวจ → เจอ root cause ตรงจุด: node "Config" hardcode `SUPABASE_SERVICE_KEY` เป็น key ที่ comment ในโค้ดเองก็บอกตรงๆว่าเป็น **anon key** (decode JWT payload ยืนยัน `"role":"anon"`) — แต่ `content_posts` และ `post_performance` ทั้งคู่เปิด RLS ไว้โดยไม่มี policy ให้ anon เข้าถึงได้เลยสักจุด (`content_posts` ไม่มี policy เลย, `post_performance` มีแค่ policy เดียวคือ `authenticated_read_post_performance` — SELECT สำหรับ `authenticated` เท่านั้น ไม่มี INSERT policy ให้ใครเลยด้วยซ้ำ) — เป็น pattern เดียวกับ ISSUE-013 ที่เจอมาก่อนหน้านี้ในโปรเจกต์ (RLS เปิด + ไม่มี policy = deny ทุกอย่างรวมถึง anon) แค่ครั้งนี้เกิดใน n8n workflow แทนที่จะเป็น Next.js API route
+
+**ผลที่เกิดขึ้นจริง**: ทุกครั้งที่ workflow รัน (ถ้า active จริง) — "Get Posts from Supabase" อ่าน `content_posts` ด้วย anon key ได้ 0 แถวเสมอ (RLS filter เงียบๆ ไม่ throw error) → ทุกอย่างที่ตามมาไหลเข้า "skip path" → ไม่มีการเรียก FB Graph API ที่มีความหมาย ไม่มีการ upsert เข้า `post_performance` เลย
+
+**บั๊กที่ 2 ซ้อนอยู่ (พบระหว่างอ่านโค้ดละเอียด)**: node "Build Telegram Message" อ่านข้อมูลจาก `$('Process & Prepare Upsert').all()` — ซึ่งเป็น node **ก่อนหน้า** node "Upsert to post_performance" ที่เป็นคนเติม field `_upserted`/`_upsert_error` เข้าไป แปลว่าต่อให้แก้ RLS แล้ว ถ้า Supabase write fail ด้วยเหตุผลอื่นในอนาคต (เช่น network, quota) ข้อความ Telegram ก็ยังจะรายงานว่า "บันทึกสำเร็จ" อยู่ดี เพราะมันไม่เคยเห็น field ที่บอกว่า fail เลย — เป็น "ระบบมโนว่าพิสูจน์ตัวเองได้" ในอีกชั้นหนึ่งซ้อนอยู่ในตัวกลไกที่ควรจะรายงานความล้มเหลว
+
+**Decision**: แก้ 2 จุดในไฟล์ (ไม่แตะ node อื่น/wiring เลย):
+1. node "Config" — เปลี่ยนค่า `SUPABASE_SERVICE_KEY` จาก anon key จริงเป็น placeholder `'REPLACE_WITH_REAL_SERVICE_ROLE_KEY__see_Supabase_Dashboard'` พร้อมคอมเมนต์อธิบาย root cause เต็ม — **Archi ต้องเอา service_role key จริงจาก Supabase Dashboard > Project Settings > API มาใส่เองก่อน import** (ไม่เดา/ไม่ใส่ค่าจริงให้ เพราะเป็น secret)
+2. node "Build Telegram Message" — เปลี่ยนให้อ่านจาก `$('Upsert to post_performance').all()` (node ที่ถูกต้อง) แล้วเช็ค `_upserted` จริงก่อนจะนับเป็น "บันทึกสำเร็จ" — แยกรายงาน 3 สถานะชัดเจน: ไม่พบ post เลย / FB API error / DB write error (โชว์ error message ตัวอย่างด้วย) — ไม่ใช่แค่ "สำเร็จ" กับ "error" รวมๆกันเหมือนเดิม
+
+**Files**: `memory/n8n-workflows/FB Post Performance Tracker (5_rls_fix).json` (ไฟล์ใหม่ — ไฟล์เดิม `(4).json` ไม่ถูกแตะ)
+
+**Verify (ทำได้ในรอบนี้)**: ✅ parse JSON ผ่าน python `json.load` ✅ ยืนยัน RLS policies บน `content_posts`/`post_performance` ตรงจาก Supabase ผ่าน `pg_policies` จริง (ไม่ใช่เดา) ✅ ยืนยันว่า Hub v1 (`server.cjs`) เขียน `content_posts` สำเร็จได้จริงเพราะใช้ `SUPABASE_SERVICE_KEY` จาก Railway env var (service_role ตัวจริง) ต่างจาก n8n workflow นี้ที่ hardcode anon key ผิดตัว — ยังไม่ได้ import/activate ใน n8n จริง (รอ Archi ใส่ key จริงก่อน)
+
+**ยังไม่ได้ทำ**: หลัง Archi ใส่ key + import + activate แล้ว ต้อง build UI มาโชว์ผลด้วย เพราะตอนนี้ไม่มีหน้าไหนใน dashboard อ่าน `content_posts.impressions/engagement` หรือ `post_performance` มาแสดงเลยแม้แต่จุดเดียว — ต่อให้ workflow เขียนข้อมูลถูกแล้ว ก็ยังเป็น "เขียนแล้วไม่มีใครเห็น" อยู่ดี (ตามแผนที่คุยไว้ก่อนหน้า ข้อ 1 ของ 5 ข้อ)
+
+**Related**: ISSUE-013 (RLS-enabled-zero-policy pattern เดิม), ADR-015/017 (honest low-data-state pattern ที่จะใช้ตอนสร้าง UI ต่อ)
+
+**Update (session 29 ต่อๆๆๆ) — สร้าง UI ต่อทันที ไม่รอ Archi import workflow ก่อน**: เพิ่ม `app/api/content/performance/route.ts` + `components/ContentPerformance.tsx` + tab ใหม่ "📈 Content Performance" ใน `DashboardOS.tsx` — ตาม honest low-data-state pattern เดียวกับ QC Accuracy/Deal ROI (`RELIABILITY_THRESHOLD=5` โพสต์ที่มีข้อมูลจริงคู่กัน ก่อนจะโชว์ค่าเฉลี่ย reach/engagement) — สำคัญ: route นี้ใช้ `post_performance` เป็น source of truth หลัก ไม่ใช่ `content_posts.impressions/engagement/clicks` เพราะคอลัมน์หลังไม่เคยถูก patch จากที่ไหนเลยหลัง insert ครั้งแรก (ยืนยันจาก grep `services/backend-hub/server.cjs` ไม่มีจุดไหนอัปเดตคอลัมน์พวกนี้เลย) — `content_posts` ใช้แค่ให้ context (topic/keyword/channel) จับคู่กับ `post_performance` ผ่าน `content_post_id` (fallback `fb_post_id`)
+**Files**: `app/api/content/performance/route.ts` (ใหม่), `components/ContentPerformance.tsx` (ใหม่), `components/DashboardOS.tsx` (เพิ่ม tab)
+**Verify**: ✅ `npx tsc --noEmit` ผ่านสะอาด — ไม่แตะ schema/RLS เลย (อ่านผ่าน service_role อย่างเดียว) จึงไม่ต้องรัน `get_advisors` ซ้ำ
+**สถานะข้อมูลจริงตอนนี้**: `post_performance` มี 0 แถว → หน้านี้จะโชว์ "ยังไม่มีข้อมูลพอสรุป" ทันทีที่เปิด จนกว่า Archi จะใส่ service_role key จริง + import + activate workflow (5_rls_fix) แล้วรอ cron รอบถัดไป (จันทร์) เขียนข้อมูลจริงสำเร็จ
