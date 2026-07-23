@@ -4,7 +4,26 @@
 
 ---
 
-## Last Updated: 2026-07-11 (session 23 ต่ออีกรอบ — ISSUE-011/012 resolved, platform critique + Supabase RLS hardening ISSUE-013, session ปิดปกติ)
+## Last Updated: 2026-07-23 (session 30 — data-flow graph verification (ADR-024) + useLiveData Hub-bypass bug found & fixed (ISSUE-017) — ⚠️ โค้ดแก้แล้วแต่ยังไม่ push
+
+> ⚠️ **สิ่งที่ session ถัดไปต้องทำก่อนอื่น**: เช็คว่า Archi push `components/DashboardOS.tsx` แล้วหรือยัง (`git log -1 -- components/DashboardOS.tsx` เทียบกับ `git log origin/main -1 -- components/DashboardOS.tsx`) — ถ้ายังไม่ push ให้เตือน Archi ก่อนทำงานอื่นต่อ เพราะ production ตอนนี้ยังมีบั๊กเดิม (OS Dashboard โชว์ MOCK ค้างตลอด)
+
+**บริบท**: Archi ขอ data-flow diagram สไตล์ Obsidian Graph view จาก reference screenshot → ทำแบบ static (จาก mind-map เก่า) รอบแรกก่อน แต่พอ Archi ถามตรงๆ "ตรงกันไหมกับระบบที่เราทำ" Claude ตรวจสอบอย่างละเอียดแล้วตอบว่า**ไม่ตรงทั้งหมด** (ไม่มี QC Line เลย, สื่อผิดว่าทุกอย่างผ่าน Hub v1, n8n ยุบเหลือบับเบิลเดียว) → รื้อสร้างใหม่โดยเปิด JSON จริงทั้ง 12 n8n workflow + grep `server.cjs` + query Supabase สด
+
+**ผลลัพธ์เป็น deliverable แยก** (ไม่ใช่ repo code): `memory/finnhouses-graph-view-v2.html` — interactive D3 force graph, verify หลายรอบตามที่ Archi ขอ ("อยาก" ให้ตรวจต่อ, "ประเมินก่อน" ก่อนแก้โค้ด) เจอ+แก้เอง 5 จุดที่ผิด (เส้นสมมติ, เส้นขาด, duplicate edge) — รายละเอียดเต็มดู `docs/decisions.md` ADR-024
+
+**บั๊กจริงที่เจอระหว่างตรวจกราฟ (ไม่ใช่แค่ diagram)**: `components/DashboardOS.tsx`'s `useLiveData()` ยิง Hub v1 ตรงจาก browser (`NEXT_PUBLIC_HUB_URL`) ไม่มี `x-hub-token` → โดน 401 ทุกครั้ง (Hub v1 มี auth middleware ครอบทุก route ยกเว้น `/health*`) → ไม่ใช่ data leak แต่เป็น functional bug จริง: การ์ด FB/Blog Engine บนหน้า `/dashboard` โชว์ตัวเลข `MOCK` คงที่ตลอดกาลมาตั้งแต่เขียนโค้ดนี้ครั้งแรก เพราะ error ถูก catch เงียบๆไม่เคย `setData()` ใหม่ — **แก้แล้ว**: เปลี่ยนไปเรียก `/api/blog/state` (proxy ที่มีอยู่แล้ว, ใช้จริงโดย `Marketing.tsx`) แทน — ดู `docs/issues-log.md` ISSUE-017
+
+**Verify**: ✅ `npx tsc --noEmit` ผ่านสะอาด ✅ ตรวจ `baseState()`/`normalizeState()` จริงเทียบ field ที่โค้ดใช้ก่อนแก้ (ไม่มีความเสี่ยง `leads`/`alerts` undefined) — **แต่ยังไม่ได้ทดสอบบน production จริงเลย** เพราะยังไม่ push
+
+**ค้างไว้ (รอ Archi)**:
+1. **Push `components/DashboardOS.tsx`** (คำสั่งอยู่ใน `docs/decisions.md` ADR-024 ท้ายสุด) — สำคัญสุด
+2. หลัง deploy สำเร็จ verify ผ่าน Vercel `list_deployments` (เทียบ commit) + เปิด `/dashboard` จริงดูว่าขึ้น "LIVE" (เขียว) แทน "OFFLINE" (แดง)
+3. อัปเดตกราฟ `finnhouses-graph-view-v2.html` ลบเส้นประแดง "insecure" (`OS Dashboard→Hub v1`) ออก เพราะตอนนี้ path จริงเปลี่ยนไปใช้ hop `/api/blog/*` แล้ว — ยังไม่ได้ทำ ณ ตอนปิด session
+
+---
+
+## Last Updated (เดิม): 2026-07-11 (session 23 ต่ออีกรอบ — ISSUE-011/012 resolved, platform critique + Supabase RLS hardening ISSUE-013, session ปิดปกติ)
 
 ## ✅ RESOLVED — "Post to Facebook" ใน ListingTab (ISSUE-011) + ประเภทบ้านผิด (ISSUE-012)
 

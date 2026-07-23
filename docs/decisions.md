@@ -493,3 +493,29 @@ Archi อัปโหลดไฟล์ workflow มาให้ตรวจ →
 **Related**: ADR-014 (Deals module เดิม), ADR-017 (actual-vs-estimate UI ที่ต่อยอดตรงนี้), ISSUE-013 (RLS/service_role pattern ที่ /api/projects ใหม่ยึดตาม)
 
 **Related**: ADR-016 (AI Quality Gate ตัวเดิมที่ยังไม่มี log), ADR-015 (QC Accuracy — ต้นแบบ pattern เดียวกัน), ADR-020 (fail-open Code node pattern + hardcoded-key-in-Code-node เหตุผลเดียวกัน)
+
+---
+
+## ADR-024 — Data-flow graph verification (Obsidian-style) + useLiveData Hub bypass fix
+**Date**: 2026-07-23 (session 30)
+**Status**: Done ✅ (graph deliverable + code fix) — โค้ดแก้แล้วแต่ **ยังไม่ push** ณ ตอนปิด session นี้
+
+**Context**: Archi ขอให้ทำ data-flow diagram ของทั้ง platform ในสไตล์ Obsidian Graph view (จาก screenshot อ้างอิง) — รอบแรกทำจาก mind-map เก่า ผลออกมา**ไม่ตรงกับระบบจริง**หลายจุด (ไม่มี QC Line เลย, สื่อว่าทุกอย่างผ่าน Hub v1 ทั้งที่ Market Intel/CRM Note Parser bypass ตรงเข้า Supabase, n8n ถูกยุบเหลือบับเบิลเดียวทั้งที่มี 12 workflow จริง) — Claude ยอมรับตรงๆ ว่าไม่ตรง ไม่ใช่ "ใกล้เคียงพอ" แล้วรื้อสร้างใหม่ (v2/v3) โดยเปิด JSON จริงทั้ง 12 n8n workflow + grep `server.cjs` + query Supabase สดเทียบทีละจุด
+
+**สิ่งที่พบและแก้ระหว่างทาง (ไล่ verify มากกว่า 1 รอบ ตามที่ Archi ขอทุกครั้ง)**:
+1. เส้น `market_listings → CRM` เป็นเส้นที่ผมใส่เองแบบไม่ verify — เช็คจริงพบว่า `market_listings` ไม่มีโค้ด live ตัวไหนอ่านเลย มีแต่ `public/dashboard.html` ซึ่งเป็นไฟล์ orphan (grep ทั้ง repo ไม่มีที่ไหน link ถึง) — ลบเส้นทิ้ง
+2. ขาดเส้น `Wake-up → FB Backend` — เปิด JSON จริงพบ node `HTTP Request2 (FB Backend)` ที่ไม่เคยรู้มาก่อน (Wake-up ping ทั้ง Hub v1 และ FB Backend แยกกัน เพราะทั้งคู่ cold-start ได้)
+3. `wf_qc_line 2` ขาดขั้นตอน "ดาวน์โหลดรูปจาก LINE → อัปโหลด Storage" ในคำอธิบาย
+4. **ตามคำขอ "วาด hop /api/* ให้ครบทุกเส้นเพื่อความสม่ำเสมอ"**: เพิ่ม hop node กลุ่มใหม่ (สีฟ้า, `apiroute`) คั่นทุกเส้น Frontend→Data ให้เท่ากับที่ Hub v1 ถูกวาดเป็น hop อยู่แล้ว — verify แต่ละ route.ts จริงทีละไฟล์ (`/api/leads`, `/api/projects`, `/api/deals`, `/api/market-intel`, `/api/market-intel/calibration`, `/api/qc/accuracy`, `/api/content/performance`, `/api/quality-gate/accuracy`, `/api/property/*`) — พบว่า `/api/property/*` เป็นแค่ thin proxy ไป Hub v1 (ไม่แตะ Supabase เอง) ต่างจาก hop อื่นที่เป็น service_role ตรง
+5. รอบแรกของงาน #4 พลาด 2 เส้น (ตรวจพบเมื่อ Archi ถามซ้ำ "ประเมินก่อน"/ให้ตรวจต่อ): `AI Content → FB Backend` ที่จริงผ่าน `/api/fb/publish` ก่อน และ `Blog Runner → Hub v1` ที่จริงผ่าน `/api/blog/*` ก่อน (verify จาก comment ในไฟล์เอง "Use Vercel server-side routes to avoid CORS/browser→Railway issues" + อ่าน route.ts ทั้ง 5 ไฟล์) — ระหว่างแก้เจอ duplicate edge บั๊กในกราฟเอง (`Blog Runner→Hub v1` เส้นตรงเก่ายังหลงเหลืออยู่คนละ block ที่ไม่ได้แตะตอนแก้รอบแรก) แก้แล้ว
+6. **พบบั๊กจริงในโค้ด (ไม่ใช่แค่กราฟ) ระหว่างตรวจข้อ 5**: `DashboardOS.tsx`'s `useLiveData()` (poll ทุก 10 วิ) ยิง `fetch(NEXT_PUBLIC_HUB_URL + "/api/state")` ตรงจาก browser ไม่มี `x-hub-token` — ขัดกับกฎ CLAUDE.md "ห้าม call Railway URL โดยตรงจาก client-side" — ตอนแรกวาดเป็นเส้นประแดง "insecure" ในกราฟ แต่พอ Archi ขอ "ประเมินก่อน" ตรวจลึกกว่านั้นพบว่า**ไม่ใช่ data leak จริง** เพราะ Hub v1 มี middleware เช็ค `x-hub-token` ครอบทุก route (`server.cjs` บรรทัด 578-593) เว้น `/health*` — fetch ที่ไม่มี token จะโดน 401 ทุกครั้ง ไม่มีข้อมูลจริงรั่วออกมาเลย **แต่เป็น functional bug จริง**: เพราะ error ถูก catch เงียบๆแล้ว `setData` ไม่เคยถูกเรียกเมื่อ fail → การ์ด FB/Blog Engine โชว์ตัวเลข `MOCK` คงที่ตลอดกาล (queue 8/12, published 2/3 ฯลฯ) ทั้งที่ป้าย "OFFLINE" ด้านบนบอกตรงๆ อยู่แล้วว่าไม่ live — เสี่ยงให้คนดูแค่การ์ดตัวเลขเข้าใจผิดว่าเป็นข้อมูลจริง
+
+**Decision (โค้ด, ไม่ใช่แค่กราฟ)**: แก้ `useLiveData()` ให้เรียก `/api/blog/state` (proxy ที่มีอยู่แล้ว ใช้งานจริงโดย `Marketing.tsx`, ใส่ `x-hub-token` ฝั่ง server ถูกต้อง) แทนยิง Railway ตรง + เพิ่มเช็ค `json?.error` เพราะ route นี้ตอบ `200 + {error}` เวลา Hub fail แทนที่จะส่ง non-2xx status — ตรวจ shape จริงของ Hub state (`baseState()` ใน `server.cjs`) ก่อนแก้ ยืนยันว่า `blog`/`fb` มีจริงตรงกับที่โค้ดใช้ และ `alerts` มี `?? []` กันไว้แล้ว, `leads` ไม่ได้อ่านจาก state ตัวนี้เลย (มาจาก `useLeadCounts()`/`/api/leads` แยกต่างหาก) — ไม่มีความเสี่ยงพังจาก field ที่ไม่มีจริง
+
+**Files**: `components/DashboardOS.tsx` (แก้ `useLiveData`), กราฟ `finnhouses-graph-view-v2.html` (deliverable แยก ไม่ใช่ repo code — เก็บที่ `memory/finnhouses-graph-view-v2.html`)
+
+**Verify**: ✅ `npx tsc --noEmit` ผ่านสะอาด ✅ อ่าน `baseState()`/`normalizeState()` จริงเทียบ field ที่โค้ด destructure ✅ กราฟ: script เช็ค node/link ทุกเส้นชี้ไปยัง node ที่มีจริง + ไม่มี duplicate edge (เจอและแก้ 1 จุด)
+
+**ยังไม่ได้ทำ / รอ Archi**: **ยังไม่ได้ push โค้ด** — ต้องรัน `git add components/DashboardOS.tsx && git commit -m "..." && git push` จาก PowerShell ก่อน production ถึงจะเปลี่ยนพฤติกรรมจริง (screenshot ที่ Archi ส่งมาระหว่าง session ยังเป็น production เก่า ยังไม่ใช่บั๊กใหม่) — หลัง push แล้วควรเห็นจุดเขียว "LIVE" แทน "OFFLINE" ที่หน้า `/dashboard` ถ้า Hub v1 ตอบปกติ, และควรอัปเดตกราฟลบเส้นประแดง "insecure" ออกเมื่อ deploy สำเร็จแล้ว (ยังไม่ได้ทำ)
+
+**Related**: CLAUDE.md security constraint ("ห้าม call Railway URL โดยตรงจาก client-side"), Known Bug #10/ISSUE-011 (FB Backend URL pattern เดียวกัน — proxy เสมอ ไม่ยิงตรง)
