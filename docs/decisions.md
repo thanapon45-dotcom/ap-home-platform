@@ -281,3 +281,59 @@
 **ยังไม่ได้ทำ**: Phase 2 (auto-publish quality gate) และ Phase 3 (Fix & Flip Deal ROI actual-vs-estimated) — รอ Archi ตัดสินใจลำดับความสำคัญต่อ ไม่เริ่มเองโดยไม่ถาม
 
 **Related**: `CLAUDE.md` Pending Tasks, ADR-014 (Deals module ที่สร้างก่อนหน้าในวันเดียวกัน)
+
+---
+
+## ADR-016 — WF1 AI Quality Gate (Phase 2): เช็คเนื้อหาจริงก่อน publish ไม่ใช่แค่โครงสร้าง
+**Date**: 2026-07-23 (session 29)
+**Status**: Implemented in workflow file ✅ — **ยังไม่ได้ import/active ใน n8n จริง** (รอ Archi import + ทดสอบ)
+
+**Context**: ต่อจาก Phase 1 (QC Accuracy Dashboard, ADR-015) และบทสนทนา reflective เรื่อง "ระบบพิสูจน์ตัวเองว่าทำงานถูก" — ตรวจสอบพบว่า WF1 (Blog auto-publish) มี "Publish Guard + Dedupe History" node อยู่แล้ว แต่เช็คแค่**โครงสร้าง**ล้วนๆ (ความยาว title/slug ≥ ค่าที่กำหนด, มี FAQ schema, ไม่มี `<h1>` ซ้ำ, slug ไม่ซ้ำ ฯลฯ) — **ไม่มีการเช็คเนื้อหาจริงเลยแม้แต่จุดเดียว** ว่าตรงกับโมเดลธุรกิจจริงหรือไม่, มีคำที่ห้ามพูด (เช่น อ้างว่า Finnhouses รับสร้างบ้านเอง — discontinued ตาม ADR-010) หรือไม่, ภาษาไทยเพี้ยน/ตัดกลางคำแบบที่เจอใน ISSUE-016 หรือไม่ — engine publish อัตโนมัติทุกวันโดยไม่มีใครอ่านเนื้อหาก่อนเลย
+
+ถาม Archi ผ่าน AskUserQuestion 2 ข้อก่อนแก้: (1) อยากให้ gate เช็คเรื่องอะไร → เลือก **ทั้งหมด** (brand guardrail + ภาษาไทยสมบูรณ์ + ความถูกต้องเชิงข้อเท็จจริง) (2) ถ้าไม่ผ่านให้ทำอะไร → เลือก **บล็อกอัตโนมัติ + แจ้งเตือน** (เหมือน Publish Guard เดิม ไม่ auto-retry เพื่อกัน infinite loop)
+
+**Decision**: เพิ่ม 4 node ใหม่เข้า WF1 (`Finnhouses WF1 — Article + Publish (10_ai_quality_gate).json`) โดยไม่แก้ node เดิมเลยแม้แต่บรรทัดเดียว (ยกเว้นจุดต่อสาย/reposition คอสเมติก):
+1. **AI Quality Gate** — เรียก `@n8n/n8n-nodes-langchain.openAi` (gpt-4o-mini, credential เดิม `OpenAI account` ที่ WF1/WF2 ใช้อยู่แล้ว) fan-out ขนานจาก "Prepare Post Payload" (สาขาที่ 3 นอกจาก "Check Existing Post by Slug" กับ "Publish Guard + Dedupe History" เดิม) ส่ง title/slug/content เข้าไปให้ตรวจ 3 เงื่อนไข: `brand_guardrail_violation`, `thai_language_incoherent`, `unverifiable_factual_claim` — บังคับ prompt ระบุ business model จริง (นายหน้า + Fix & Flip + ที่ปรึกษาตรวจสอบ ไม่ใช่ผู้รับเหมา) ตอบกลับ JSON ล้วน `{pass, reasons[]}`
+2. **Parse AI Gate Result** (Code) — parse JSON output, **fail-open ถ้า parse error/AI เรียกไม่สำเร็จ** (ไม่บล็อกเพราะ gate เองมีปัญหา infra — ป้องกันไม่ให้ AI API ล่มแล้วบล็อก queue ทั้งหมดเงียบๆ) fail-closed เฉพาะตอนโมเดลตอบ `pass:false` จริงเท่านั้น
+3. **Merge Guards** (n8n Merge, combineByPosition) — รวม output ของ "Publish Guard + Dedupe History" (เดิม) กับ "Parse AI Gate Result" (ใหม่) เข้าด้วยกัน
+4. **Combine Guards** (Code) — รวม `publish_guard_reasons` (structural) + `ai_gate_reasons` (AI) เป็น array เดียว คง field name `publish_guard_ok`/`publish_guard_reasons` เป๊ะตามเดิม — ทำให้ "IF Publish Guard Passed", "Blocked Log", "Notify Hub Blocked" **ไม่ต้องแก้เลยแม้แต่บรรทัดเดียว** เพราะยังอ่าน field เดิมที่ชื่อเดิมอยู่
+
+**สิ่งที่พบระหว่างทาง (ไม่ได้แก้ในรอบนี้ — flag ไว้)**: "Check Existing Post by Slug" (WP dedupe lookup) ไม่มีการต่อสายเข้าที่ไหนเลยใน `connections` graph ของไฟล์ 9_queue_sync_fix ที่ใช้งานจริงตอนนี้ — แปลว่า `duplicate_slug_exists` ใน Publish Guard เดิมน่าจะไม่เคย fire จริง (เพราะ `items[1]` ที่โค้ดอ้างถึงไม่มีทางมีข้อมูลจากสายที่ขาดหายนี้) เป็น latent bug ที่มีมาก่อนรอบนี้ ไม่เกี่ยวกับ Phase 2 — ต้องยืนยันใน n8n canvas จริงก่อนแก้ (ไฟล์ static อ่านได้แค่ระดับนี้)
+
+**Files**: `memory/n8n-workflows/Finnhouses WF1 — Article + Publish (10_ai_quality_gate).json` (ไฟล์ใหม่ — ไฟล์เดิม `(9_queue_sync_fix)` ไม่ถูกแตะ)
+
+**Verify (ทำได้ในรอบนี้)**: ✅ parse JSON ผ่าน python `json.load`, ✅ trace connections graph โปรแกรมได้ยืนยัน: ไม่มี node ชื่อซ้ำ/id ซ้ำ, ทุก connection source/target ชี้ไปยัง node ที่มีจริง, ทุก node reachable จาก Webhook trigger, "Merge Guards" มี input ครบ 2 ทาง (index 0 = structural, index 1 = AI), "IF Publish Guard Passed" ถูกป้อนโดย "Combine Guards" เท่านั้น (ไม่ใช่ตรงจาก Publish Guard เดิมอีกแล้ว)
+
+**Update (ทดสอบจริงใน n8n โดย Archi, วันเดียวกัน)**: Import ไฟล์เข้า n8n สำเร็จ, wiring ตรงตามที่ออกแบบไว้เป๊ะ — ทดสอบผ่าน pinned data + ยิง Webhook Test URL จริง (ไม่ใช้ "Execute step" แยก node เพราะ n8n instance นี้ไม่ render output/error ของการเทสแบบแยก node ให้เห็น — เป็นข้อจำกัดของ n8n UI ไม่ใช่ node พัง, ยืนยันด้วยการเทียบกับ "Message a model1" ที่พิสูจน์แล้วว่าใช้งานได้จริง) พบ **false positive จริง 1 ครั้ง**: prompt draft แรกให้ AI ตีความ "ทีมที่ปรึกษาตรวจสอบงานก่อสร้างของเรา" (ธุรกิจจริง Unit 4) เป็น `brand_guardrail_violation` เพราะ gpt-4o-mini pattern-match คำว่า "งานก่อสร้าง"+"ของเรา" มากเกินไปโดยไม่สนใจ context "ตรวจสอบ"/"ที่ปรึกษา" ที่อยู่ข้างหน้า — แก้โดยเพิ่ม **few-shot examples ที่ยกประโยคจริงมาเทียบตรงๆ** (ตัวอย่าง "ผ่านปกติ" 3 อัน + "ต้อง flag" 4 อัน) แทนการอธิบายเป็นกฎนามธรรมอย่างเดียว — หลังแก้ ทดสอบซ้ำทั้ง fail-case (`ai_gate_pass:false, reasons:["brand_guardrail_violation"]`) และ pass-case เดิมที่เคย false-positive (`ai_gate_pass:true, reasons:[]`) ผ่านทั้งคู่ — prompt เวอร์ชันนี้ sync กลับเข้าไฟล์แล้ว (เดิมไฟล์ที่ deliver ครั้งแรกเป็นแค่ draft ที่ยังไม่ verify)
+
+**Files (sync หลัง verify)**: `memory/n8n-workflows/Finnhouses WF1 — Article + Publish (10_ai_quality_gate).json` อัปเดต prompt เป็นเวอร์ชัน few-shot ที่ verify แล้ว + เคลียร์ `pinData` ทิ้ง (ไฟล์ที่ deliver ต้องไม่มี test dataติดไปด้วย)
+
+**บทเรียนสำคัญ**: โมเดลขนาดเล็ก (gpt-4o-mini) ต้องการ **ตัวอย่างประโยคจริงเทียบชัดๆ** มากกว่าคำอธิบายกฎแบบนามธรรม แม้จะเขียนกฎชัดแล้วในรอบแรกก็ยังพลาดได้ — เวลาตั้ง guardrail ด้วย LLM ควรทดสอบกับ "เนื้อหาดีที่ควรผ่าน" เสมอ ไม่ใช่แค่ทดสอบเคส "เนื้อหาแย่ที่ควรบล็อก" อย่างเดียว เพราะ false positive (บล็อกของดีทิ้ง) อันตรายพอๆ กับ false negative (ปล่อยของแย่ผ่าน) ในระบบ auto-publish
+
+**ยังไม่ได้ทำ**: ยังต้อง unpin data ที่ "Prepare Post Payload" ใน n8n จริง (คนละที่กับไฟล์ — ไฟล์เคลียร์แล้ว แต่ instance ที่ Archi แก้สดๆ อาจยังมี pin ค้างอยู่) + เปิด "Create a post" กลับ + activate workflow (10) + deactivate workflow (9) เดิม ก่อน cron รอบถัดไปจะรัน — ดู CLAUDE.md
+
+**Related**: ADR-015 (Phase 1), ADR-010/ISSUE-016 (business guardrail + Thai quality ที่ gate นี้ป้องกันไม่ให้เกิดซ้ำในระดับ auto-publish), ISSUE-014 (Publish Guard เดิม/Notify Hub Blocked pattern ที่นำมาใช้ซ้ำ)
+
+**Update ท้ายสุด (Archi ยืนยัน, วันเดียวกัน)**: ทำ go-live checklist ครบทั้ง 5 ข้อ — unpin "Prepare Post Payload", เปิด "Create a post" กลับเป็น Active, publish/activate workflow (10_ai_quality_gate), deactivate workflow (9_queue_sync_fix) เดิม → **สถานะ: LIVE ✅ ใน production ตั้งแต่วันนี้** รอดู cron รอบถัดไป (~09:00) ว่าเนื้อหาจริงผ่าน gate ปกติ
+
+---
+
+## ADR-017 — Fix & Flip Deal ROI: Actual-vs-Estimate tracking (Phase 3)
+**Date**: 2026-07-23 (session 29 ต่อ)
+**Status**: Implemented ✅
+
+**Context**: Phase 3 ตามแผน 3 phase เดิม (หลัง Phase 1 QC Accuracy Dashboard และ Phase 2 WF1 AI Quality Gate) — ตรวจสอบ `components/Deals.tsx` (สร้างไว้ก่อนหน้าใน ADR-014) พบว่า **ไม่มีทางกรอกตัวเลขจริงเข้าไปได้เลยแม้แต่จุดเดียว**: ฟอร์มสร้างดีลมีแค่ `purchase_price`/`reno_budget`/`list_price` (ตัวเลขประมาณ) เท่านั้น ส่วน `reno_cost`/`sale_price`/`roi_pct` (ตัวเลขจริง) มีคอลัมน์อยู่ใน schema แล้วแต่ไม่มี UI ไหนเขียนค่าเข้าไปเลย — และตรวจ `reno_deals` ผ่าน Supabase พบว่า **มี 0 แถวจริง** (ยังไม่มีใครใช้งานจริง) เหมือนสถานการณ์ n=1 ของ Phase 1 (QC feedback) ทุกประการ — สร้าง infra รอไว้ก่อนที่ข้อมูลจะเข้าจริงเป็นแนวทางเดียวกัน ไม่ใช่ปัญหา
+
+**Decision**: เพิ่มความสามารถ "ใส่ต้นทุน/ราคาขายจริง" เข้า `components/Deals.tsx` โดยไม่แก้ schema/API เลย (PATCH endpoint เดิมรับ field อะไรก็ได้อยู่แล้ว):
+1. ปุ่ม "✎ ใส่ต้นทุน/ราคาขายจริง" บนการ์ดดีลแต่ละใบ → เปิด mini-form (reno_cost, sale_price) → บันทึกผ่าน `PATCH /api/deals/{id}` เดิม
+2. คำนวณ `roi_pct` อัตโนมัติตอนบันทึก: `((sale_price - purchase_price - reno_cost) / (purchase_price + reno_cost)) * 100` — ไม่ต้องให้ผู้ใช้คำนวณเอง
+3. แสดง variance ต่อการ์ด: งบรีโนเวท vs ต้นทุนจริง (เกิน/ต่ำกว่างบ ฿ + %), ราคาประกาศ vs ราคาขายจริง (สูง/ต่ำกว่า %)
+4. เพิ่มการ์ดสรุประดับพอร์ต "ความแม่นยำของการประมาณการ" ในส่วนหัว — เฉลี่ย cost variance % และ price variance % ข้ามทุกดีลที่มีทั้งค่าประมาณและค่าจริงครบคู่ (`n=` แสดงจำนวนตัวอย่างเสมอ) — **ใช้ honest empty-state pattern เดียวกับ ADR-015**: ถ้ายังไม่มีดีลไหนกรอกครบคู่เลย (ตอนนี้ n=0) แสดงข้อความเตือนสีเหลือง "ยังไม่มีข้อมูลพอสรุป" แทนเปอร์เซ็นต์ที่คำนวณจาก sample ว่างเปล่า
+
+**Files**: `components/Deals.tsx` เท่านั้น (ไม่แตะ `app/api/deals/*`, schema, RLS — PATCH endpoint เดิมรองรับอยู่แล้วเพราะไม่จำกัด field)
+
+**Verify**: ✅ `npx tsc --noEmit` ผ่านสะอาด — ไม่แตะ schema/RLS จึงไม่ต้องรัน `get_advisors` ซ้ำ (ADR-014 ล็อกไว้แล้วว่า `reno_deals` เหลือ policy เดียว `service_role_all`)
+
+**สถานะข้อมูลจริงตอนนี้ (ต้องแจ้ง Archi ตรงๆ)**: `reno_deals` มี **0 แถว** ณ วันที่สร้างฟีเจอร์นี้ — การ์ด "ความแม่นยำของการประมาณการ" จะโชว์สถานะ "ยังไม่มีข้อมูลพอสรุป" ทันทีที่เปิดหน้า จนกว่าจะมีการสร้างดีลจริง + กรอกตัวเลขจริงอย่างน้อย 1 ดีล ครบทั้งคู่ (ประมาณ+จริง) — เป็นพฤติกรรมที่ตั้งใจออกแบบไว้ ไม่ใช่บั๊ก
+
+**Related**: ADR-014 (Deals module เดิม, `reno_deals` schema), ADR-015 (honest low-data-state pattern ต้นแบบ)

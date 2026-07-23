@@ -53,6 +53,24 @@ const emptyForm = {
   name: "", property_address: "", purchase_price: "", reno_budget: "", list_price: "", notes: "",
 };
 
+const emptyActuals = { reno_cost: "", sale_price: "" };
+
+// ROI = (กำไรจริง) / (เงินลงทุนจริงทั้งหมด) * 100
+function computeRoi(purchasePrice: number | null, renoCost: number, salePrice: number): number | null {
+  const invested = (Number(purchasePrice) || 0) + renoCost;
+  if (invested <= 0 || salePrice <= 0) return null;
+  return ((salePrice - invested) / invested) * 100;
+}
+
+function variance(estimate: number | null | undefined, actual: number | null | undefined) {
+  const e = Number(estimate) || 0;
+  const a = Number(actual) || 0;
+  if (!e || !a) return null;
+  const diff = a - e;
+  const pct = (diff / e) * 100;
+  return { diff, pct };
+}
+
 export default function Deals() {
   const [deals, setDeals] = useState<Deal[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,6 +78,9 @@ export default function Deals() {
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
+  const [editingActualsId, setEditingActualsId] = useState<string | null>(null);
+  const [actuals, setActuals] = useState(emptyActuals);
+  const [savingActuals, setSavingActuals] = useState(false);
 
   const msg = (m: string, ok = true) => { setToast({ msg: m, ok }); setTimeout(() => setToast(null), 3000); };
 
@@ -84,7 +105,22 @@ export default function Deals() {
     const closed = deals.filter(d => d.stage === "closed");
     const capitalDeployed = active.reduce((s, d) => s + (Number(d.purchase_price) || 0) + (Number(d.reno_cost ?? d.reno_budget) || 0), 0);
     const avgRoi = closed.length ? closed.reduce((s, d) => s + (Number(d.roi_pct) || 0), 0) / closed.length : 0;
-    return { activeCount: active.length, closedCount: closed.length, capitalDeployed, avgRoi };
+
+    // Actual-vs-estimate accuracy — only counts deals where BOTH estimate and actual exist.
+    const costComparable = deals.filter(d => d.reno_budget != null && d.reno_cost != null);
+    const priceComparable = deals.filter(d => d.list_price != null && d.sale_price != null);
+    const avgCostVariancePct = costComparable.length
+      ? costComparable.reduce((s, d) => s + ((Number(d.reno_cost) - Number(d.reno_budget)) / Number(d.reno_budget)) * 100, 0) / costComparable.length
+      : null;
+    const avgPriceVariancePct = priceComparable.length
+      ? priceComparable.reduce((s, d) => s + ((Number(d.sale_price) - Number(d.list_price)) / Number(d.list_price)) * 100, 0) / priceComparable.length
+      : null;
+
+    return {
+      activeCount: active.length, closedCount: closed.length, capitalDeployed, avgRoi,
+      avgCostVariancePct, avgPriceVariancePct,
+      costComparableCount: costComparable.length, priceComparableCount: priceComparable.length,
+    };
   }, [deals]);
 
   const createDeal = async () => {
@@ -134,6 +170,34 @@ export default function Deals() {
     loadDeals();
   };
 
+  const openActuals = (d: Deal) => {
+    setEditingActualsId(d.id);
+    setActuals({
+      reno_cost: d.reno_cost != null ? String(d.reno_cost) : "",
+      sale_price: d.sale_price != null ? String(d.sale_price) : "",
+    });
+  };
+
+  const saveActuals = async (d: Deal) => {
+    const reno_cost = actuals.reno_cost ? Number(actuals.reno_cost) : null;
+    const sale_price = actuals.sale_price ? Number(actuals.sale_price) : null;
+    const roi_pct = reno_cost != null && sale_price != null
+      ? computeRoi(d.purchase_price, reno_cost, sale_price)
+      : null;
+    setSavingActuals(true);
+    const res = await fetch(`/api/deals/${d.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reno_cost, sale_price, roi_pct, updated_at: new Date().toISOString() }),
+    });
+    const json = await res.json();
+    setSavingActuals(false);
+    if (!res.ok || json.ok === false) { msg("บันทึกตัวเลขจริงไม่สำเร็จ: " + (json.error ?? `HTTP ${res.status}`), false); return; }
+    msg("บันทึกต้นทุน/ราคาขายจริงแล้ว ✓");
+    setEditingActualsId(null);
+    loadDeals();
+  };
+
   return (
     <div style={{ padding: 24, display: "flex", flexDirection: "column", gap: 20, maxWidth: 1400 }}>
       {/* Header */}
@@ -165,6 +229,31 @@ export default function Deals() {
               <div style={{ fontSize: 22, fontWeight: 800, color: m.color, marginTop: 4 }}>{m.value}</div>
             </div>
           ))}
+        </div>
+
+        {/* Estimate accuracy — actual vs estimated, honest low-data state (same pattern as QC Accuracy dashboard) */}
+        <div style={{ marginTop: 12, background: "rgba(255,255,255,.02)", border: "1px solid rgba(255,255,255,.05)", borderRadius: 14, padding: "14px 16px" }}>
+          <div style={{ fontSize: 11, color: "#64748b", textTransform: "uppercase", letterSpacing: ".08em", marginBottom: 8 }}>ความแม่นยำของการประมาณการ (จริง vs ที่ประเมินไว้)</div>
+          {metrics.costComparableCount === 0 && metrics.priceComparableCount === 0 ? (
+            <div style={{ fontSize: 12, color: "#f59e0b", background: "rgba(245,158,11,.08)", border: "1px solid rgba(245,158,11,.2)", borderRadius: 8, padding: "8px 12px" }}>
+              ⚠️ ยังไม่มีข้อมูลพอสรุป — ยังไม่มีดีลไหนกรอกทั้งตัวเลขประเมินและตัวเลขจริงครบคู่ (กดปุ่ม &quot;ใส่ต้นทุน/ราคาขายจริง&quot; ที่การ์ดดีลเพื่อเริ่มเก็บข้อมูล)
+            </div>
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div>
+                <div style={{ fontSize: 10, color: "#64748b" }}>ต้นทุนรีโนเวท เกิน/ต่ำกว่างบเฉลี่ย (n={metrics.costComparableCount})</div>
+                <div style={{ fontSize: 18, fontWeight: 800, color: (metrics.avgCostVariancePct ?? 0) > 0 ? "#f43f5e" : "#10b981" }}>
+                  {metrics.avgCostVariancePct == null ? "—" : `${metrics.avgCostVariancePct > 0 ? "+" : ""}${metrics.avgCostVariancePct.toFixed(1)}%`}
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: 10, color: "#64748b" }}>ราคาขายจริง สูง/ต่ำกว่าประกาศเฉลี่ย (n={metrics.priceComparableCount})</div>
+                <div style={{ fontSize: 18, fontWeight: 800, color: (metrics.avgPriceVariancePct ?? 0) >= 0 ? "#10b981" : "#f43f5e" }}>
+                  {metrics.avgPriceVariancePct == null ? "—" : `${metrics.avgPriceVariancePct > 0 ? "+" : ""}${metrics.avgPriceVariancePct.toFixed(1)}%`}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -225,6 +314,9 @@ export default function Deals() {
                 const budget = Number(d.reno_budget) || 0;
                 const spent = Number(d.reno_cost) || 0;
                 const pct = budget > 0 ? Math.min(100, (spent / budget) * 100) : 0;
+                const costVar = variance(d.reno_budget, d.reno_cost);
+                const priceVar = variance(d.list_price, d.sale_price);
+                const isEditing = editingActualsId === d.id;
                 return (
                   <div key={d.id} style={{ background: stage.bg, border: `1px solid ${stage.color}33`, borderRadius: 12, padding: 12, display: "flex", flexDirection: "column", gap: 6 }}>
                     <div style={{ fontSize: 13, fontWeight: 700, color: "#f1f5f9" }}>{d.name || "(ไม่มีชื่อ)"}</div>
@@ -237,16 +329,53 @@ export default function Deals() {
                     {budget > 0 && (
                       <div>
                         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#64748b", marginBottom: 3 }}>
-                          <span>งบรีโนเวท</span><span>฿{fmt(spent)} / ฿{fmt(budget)}</span>
+                          <span>งบรีโนเวท (ประมาณ vs จริง)</span><span>฿{fmt(spent)} / ฿{fmt(budget)}</span>
                         </div>
                         <div style={{ height: 5, borderRadius: 4, background: "rgba(255,255,255,.06)", overflow: "hidden" }}>
                           <div style={{ height: "100%", width: `${pct}%`, background: pct > 100 ? "#f43f5e" : stage.color, borderRadius: 4 }} />
                         </div>
+                        {costVar && (
+                          <div style={{ fontSize: 10, marginTop: 2, color: costVar.diff > 0 ? "#f43f5e" : "#10b981" }}>
+                            {costVar.diff > 0 ? "เกินงบ" : "ต่ำกว่างบ"} ฿{fmt(Math.abs(costVar.diff))} ({costVar.pct > 0 ? "+" : ""}{costVar.pct.toFixed(1)}%)
+                          </div>
+                        )}
                       </div>
                     )}
 
-                    {d.stage === "closed" && d.roi_pct != null && (
-                      <div style={{ fontSize: 13, fontWeight: 800, color: Number(d.roi_pct) >= 20 ? "#10b981" : "#f59e0b" }}>ROI {Number(d.roi_pct).toFixed(1)}%</div>
+                    {d.list_price != null && d.sale_price != null && (
+                      <div style={{ fontSize: 10, color: "#94a3b8" }}>
+                        ประกาศ ฿{fmt(d.list_price)} → ขายจริง ฿{fmt(d.sale_price)}
+                        {priceVar && (
+                          <span style={{ color: priceVar.diff >= 0 ? "#10b981" : "#f43f5e", marginLeft: 6 }}>
+                            ({priceVar.diff >= 0 ? "+" : ""}{priceVar.pct.toFixed(1)}%)
+                          </span>
+                        )}
+                      </div>
+                    )}
+
+                    {d.roi_pct != null && (
+                      <div style={{ fontSize: 13, fontWeight: 800, color: Number(d.roi_pct) >= 20 ? "#10b981" : "#f59e0b" }}>ROI จริง {Number(d.roi_pct).toFixed(1)}%</div>
+                    )}
+
+                    {isEditing ? (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 6, background: "rgba(0,0,0,.15)", borderRadius: 8, padding: 8, marginTop: 2 }}>
+                        <Field label="ต้นทุนรีโนเวทจริง (บาท)">
+                          <input type="number" value={actuals.reno_cost} onChange={e => setActuals(a => ({ ...a, reno_cost: e.target.value }))} style={{ ...inputStyle, fontSize: 12, padding: "6px 10px" }} />
+                        </Field>
+                        <Field label="ราคาขายจริง (บาท)">
+                          <input type="number" value={actuals.sale_price} onChange={e => setActuals(a => ({ ...a, sale_price: e.target.value }))} style={{ ...inputStyle, fontSize: 12, padding: "6px 10px" }} />
+                        </Field>
+                        <div style={{ display: "flex", gap: 6 }}>
+                          <button onClick={() => saveActuals(d)} disabled={savingActuals} style={{ flex: 1, background: "rgba(16,185,129,.15)", border: "1px solid rgba(16,185,129,.3)", borderRadius: 8, padding: "6px 0", color: "#10b981", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                            {savingActuals ? "กำลังบันทึก..." : "💾 บันทึก"}
+                          </button>
+                          <button onClick={() => setEditingActualsId(null)} style={{ flex: 1, background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.08)", borderRadius: 8, padding: "6px 0", color: "#94a3b8", fontSize: 11, cursor: "pointer" }}>ยกเลิก</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button onClick={() => openActuals(d)} style={{ alignSelf: "flex-start", background: "none", border: "none", color: "#22d3ee", fontSize: 11, cursor: "pointer", padding: 0, textDecoration: "underline" }}>
+                        ✎ ใส่ต้นทุน/ราคาขายจริง
+                      </button>
                     )}
 
                     <div style={{ display: "flex", gap: 6, marginTop: 4 }}>

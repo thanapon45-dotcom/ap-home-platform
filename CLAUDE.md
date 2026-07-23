@@ -269,6 +269,17 @@ Invoke-RestMethod -Method POST -Uri "https://ap-home-platform-production.up.rail
 - [x] ยืนยันสถานะ Business Unit 3 (Fix & Flip) → **DONE (session 26 ต่อ)** — Archi ยืนยัน Unit 3 ยังทำอยู่จริง เป็นหน่วยธุรกิจหลัก สัดส่วนธุรกิจจริงคือ **Develop/Fix & Flip 60% · ที่ปรึกษา/ตรวจสอบ (Unit 4) 30% · โบรกเกอร์ (Unit 2) 10%** — Unit 1 (รับสร้างบ้านใหม่) ยัง discontinued เหมือนเดิม ไม่กระทบ — ดู `docs/BUSINESS_MODEL.md`, `docs/decisions.md` ADR-011
 - [ ] **ใหม่**: AI Content Studio ยังไม่มี buyer segment/keyword สำหรับ Fix & Flip เลย ทั้งที่เป็น 60% ของธุรกิจ — ต้องถาม Archi ว่าต้องการให้ content engine ครอบคลุมด้วยหรือไม่ก่อนเริ่มงาน (ขนาดงานเทียบเท่า ADR-010)
 
+### WF1 AI Quality Gate — Phase 2 (ADR-016, session 29, Jul 23) — LIVE ✅
+- [x] เพิ่ม AI content-quality gate เข้า WF1 (แยกจาก Publish Guard เดิมที่เช็คแค่โครงสร้าง) — เช็ค brand guardrail (ไม่อ้างว่ารับสร้างบ้านเอง), ภาษาไทยสมบูรณ์ไม่เพี้ยน, ไม่มี claim ที่ตรวจสอบไม่ได้ — ไม่ผ่าน = บล็อกอัตโนมัติ + แจ้งเตือน (เหมือน guard เดิม)
+- [x] สร้างไฟล์ใหม่ `memory/n8n-workflows/Finnhouses WF1 — Article + Publish (10_ai_quality_gate).json` — ไฟล์เดิม (9) ไม่ถูกแตะเลย, field `publish_guard_ok`/`publish_guard_reasons` คงชื่อเดิมทุกจุด (IF/Blocked Log/Notify Hub Blocked ไม่ต้องแก้)
+- [x] Verify แบบ static: parse JSON ผ่าน, wiring graph ครบไม่มี node ลอย, ทุกอย่าง reachable จาก Webhook
+- [x] **Import + test-run จริงใน n8n โดย Archi (session 29 ต่อ)** — import สำเร็จ, wiring ตรงตามออกแบบ, ทดสอบผ่าน pinned data + ยิง Webhook Test URL จริง (วิธี "Execute step" แยก node ใช้ไม่ได้ใน n8n instance นี้ — ไม่ render output/error ให้เห็น เป็นข้อจำกัดของ UI ไม่ใช่ node พัง ยืนยันด้วยการเทียบกับ node เดิมที่ทำงานจริง)
+- [x] **พบ + แก้ false positive จริง**: prompt draft แรกตีความ "ทีมที่ปรึกษาตรวจสอบงานก่อสร้างของเรา" (ธุรกิจจริง Unit 4) เป็น `brand_guardrail_violation` เพราะ gpt-4o-mini pattern-match "งานก่อสร้าง"+"ของเรา" มากไป ไม่สนใจ context ตรวจสอบ/ที่ปรึกษา — แก้ด้วยการเพิ่ม few-shot examples (ตัวอย่างประโยคจริง "ผ่าน" 3 อัน + "ต้อง flag" 4 อัน) แทนกฎนามธรรม → ทดสอบซ้ำทั้ง fail-case และ pass-case (เคสที่เคย false-positive) ผ่านทั้งคู่แล้ว — prompt เวอร์ชันนี้ sync กลับเข้าไฟล์แล้ว
+- [x] **Go-live checklist เสร็จแล้ว (Archi, Jul 23)**: unpin "Prepare Post Payload" ออกแล้ว, "Create a post" เปิดกลับเป็น Active แล้ว, workflow (10_ai_quality_gate) กด Publish/Active แล้ว, workflow เดิม (9_queue_sync_fix) Deactivate แล้ว — **AI Quality Gate เป็น production จริงตั้งแต่วันนี้**
+- [ ] รอดู cron รอบถัดไป (เช้าวันถัดไป ~09:00) ว่าบทความออกปกติผ่าน gate ใหม่ ไม่มีอะไรค้าง — เช็ค `hub_state`/content_queue หรือ Telegram notify
+- [ ] พบ latent bug เดิม (ไม่เกี่ยวกับรอบนี้): "Check Existing Post by Slug" ไม่มีสายต่อไปไหนเลยใน connections graph — `duplicate_slug_exists` น่าจะไม่เคย fire จริง ต้องเปิดดู canvas จริงใน n8n ยืนยันก่อนแก้
+- [ ] Monitor รอบแรกๆ หลัง active ว่า AI Quality Gate ไม่ block เนื้อหาที่ดีอยู่แล้วผิดพลาด (false positive อื่นที่ยังไม่เจอ) — ถ้า block บ่อยเกินจริงให้ปรับ prompt เพิ่ม few-shot ต่อ
+
 ### QC Line Accuracy Dashboard — Phase 1 (ADR-015, session 28, Jul 22) — DONE
 - [x] จากบทสนทนา reflective กับ Archi เรื่อง "ระบบทำงานได้" vs "ระบบพิสูจน์ตัวเองว่าทำงานถูก" → เสนอแผน 3 phase, Archi เลือก Phase 1 (QC accuracy dashboard) ก่อน
 - [x] พบว่า `qc_inspections` มีแค่ 20 แถว (test batch สัปดาห์เดียว 26 Jun–2 Jul) และมีแค่ 1 แถวมี `human_feedback` — แจ้ง Archi ก่อนสร้าง แทนสร้าง dashboard ที่โชว์ % จาก n=1 เงียบๆ Archi ยืนยันว่าช่วงนี้ไม่มีงานตรวจ QC จริง (ปัจจัยฤดูกาล) และให้สร้างเป็น infra รอไว้เลย
@@ -282,6 +293,12 @@ Invoke-RestMethod -Method POST -Uri "https://ap-home-platform-production.up.rail
 - [x] Verify: `npx tsc --noEmit` ผ่านสะอาด, `get_advisors` (security) ไม่มี WARN/ERROR ใหม่ — `reno_deals` เหลือ policy เดียว `service_role_all`
 - [ ] ยังไม่ผูก `lead_id` เข้า CRM UI จริง (คอลัมน์มีแล้วแต่ฟอร์มยังไม่มีตัวเลือกเชื่อม lead) — follow-up ถ้า Archi ต้องการ
 
+### Fix & Flip Deal ROI — Phase 3 (ADR-017, session 29, Jul 23) — DONE
+- [x] พบว่า Deals module (ADR-014) ไม่มีทางกรอกตัวเลขจริง (`reno_cost`/`sale_price`/`roi_pct`) เข้าไปได้เลย — คอลัมน์มีแล้วแต่ UI ไม่เคยเขียนค่า และตรวจ Supabase พบ `reno_deals` มี **0 แถวจริง** ตอนเริ่มงาน (เหมือนสถานการณ์ n=1 ของ QC Phase 1 — build infra ไว้ก่อนข้อมูลเข้าจริง ไม่ใช่ปัญหา)
+- [x] เพิ่มใน `components/Deals.tsx`: ปุ่ม "✎ ใส่ต้นทุน/ราคาขายจริง" ต่อการ์ดดีล → คำนวณ `roi_pct` อัตโนมัติ → แสดง variance (งบ vs จริง, ประกาศ vs ขายจริง) ต่อการ์ด + การ์ดสรุป "ความแม่นยำของการประมาณการ" ระดับพอร์ต พร้อม honest empty-state ("ยังไม่มีข้อมูลพอสรุป") ตาม pattern เดียวกับ ADR-015 — ไม่แตะ API/schema/RLS เลย (PATCH endpoint เดิมรองรับอยู่แล้ว)
+- [x] Verify: `npx tsc --noEmit` ผ่านสะอาด
+- [ ] รอ Archi เริ่มใช้งานจริง (สร้างดีล + กรอกตัวเลขจริงอย่างน้อย 1 ดีล) เพื่อดูว่าการ์ด "ความแม่นยำของการประมาณการ" ออกค่าที่สมเหตุสมผลไหม — ตอนนี้ยังเป็น "ยังไม่มีข้อมูลพอสรุป" เพราะ 0 แถว
+
 ### AI Content Studio — แก้ภาษาไทยเพี้ยน + Business Unit 3 confirm สัดส่วน + Platform Structure (ADR-011/012/013, session 27, Jul 20) — DONE
 - [x] Archi ส่ง FB post ที่ generate ผิดปกติมาให้ตรวจ (hashtag ตัดกลางคำ, คำเพี้ยนกลางประโยค) → เจอ 2 root cause ซ้อนกัน: `maxTokens` 800 ต่ำเกินไป + `KeywordTab.generate()` หลุดไปใช้ Haiku default แทน Sonnet → แก้ทั้ง 2 จุดใน `components/AIContent.tsx` → deploy + verify ผ่าน production จริง (regenerate แล้วครบ ไม่มีคำเพี้ยน) — ดู Known Bugs #13, ADR-012, ISSUE-016
 - [x] ยืนยันสัดส่วนธุรกิจจริง 3 หน่วยที่ยังทำอยู่: **Fix & Flip 60% · ที่ปรึกษา/ตรวจสอบ 30% · โบรกเกอร์ 10%** — clarify คำว่า "Develop" ที่ Archi ใช้ = Fix & Flip (Unit 3) ไม่ใช่ Unit 1 ที่ discontinued ไปแล้ว (ถาม confirm ผ่าน AskUserQuestion ก่อนแก้เอกสาร) → sync `docs/BUSINESS_MODEL.md` ทุกจุด — ดู ADR-011
@@ -289,7 +306,9 @@ Invoke-RestMethod -Method POST -Uri "https://ap-home-platform-production.up.rail
 - [x] Security (ล็อกหน้า CRM/Land Analyzer): Archi confirm ไม่ต้องทำตอนนี้ — ผู้ใช้หลักมีคนเดียว ยอมรับความเสี่ยง
 - [x] Hub v2 cutover/archive decision: Archi confirm ไม่รีบ
 
-Last updated: 2026-07-22 (session 28 ต่อ — สร้าง QC Line Accuracy Dashboard Phase 1 (ADR-015): `/api/qc/accuracy` + `components/QcAccuracy.tsx` + tab ใหม่ใน DashboardOS ต่อยอดจากบทสนทนา reflective เรื่อง "ระบบพิสูจน์ตัวเองว่าทำงานถูก" — ออกแบบให้โชว์สถานะ "ยังไม่มีข้อมูลพอสรุป" อย่างตรงไปตรงมาแทนเปอร์เซ็นต์หลอกจาก n=1 feedback sample ปัจจุบัน verify ผ่าน tsc + get_advisors สะอาด)
+Last updated: 2026-07-23 (session 29 ต่อ — Phase 3 เสร็จ: เพิ่มความสามารถ "ใส่ต้นทุน/ราคาขายจริง" เข้า `components/Deals.tsx` — คำนวณ ROI จริงอัตโนมัติ + แสดง variance งบ/ราคาต่อการ์ด + การ์ดสรุป "ความแม่นยำของการประมาณการ" ระดับพอร์ตพร้อม honest empty-state (ตรวจพบ `reno_deals` มี 0 แถวจริงก่อนเริ่มงาน แจ้ง Archi ไว้แล้วในเอกสาร) ไม่แตะ API/schema เลย verify ผ่าน tsc สะอาด — ดู ADR-017 — ครบทั้ง 3 phase ตามแผนเดิม (Phase 1 QC Accuracy, Phase 2 WF1 AI Quality Gate LIVE, Phase 3 Deal ROI) แล้ว)
+
+Last updated (ก่อนหน้า): 2026-07-22 (session 28 ต่อ — สร้าง QC Line Accuracy Dashboard Phase 1 (ADR-015): `/api/qc/accuracy` + `components/QcAccuracy.tsx` + tab ใหม่ใน DashboardOS ต่อยอดจากบทสนทนา reflective เรื่อง "ระบบพิสูจน์ตัวเองว่าทำงานถูก" — ออกแบบให้โชว์สถานะ "ยังไม่มีข้อมูลพอสรุป" อย่างตรงไปตรงมาแทนเปอร์เซ็นต์หลอกจาก n=1 feedback sample ปัจจุบัน verify ผ่าน tsc + get_advisors สะอาด)
 
 Last updated (ก่อนหน้า): 2026-07-22 (session 28 — สร้าง "Fix & Flip Deals" module ใหม่สำหรับ Business Unit 3 (60% ของธุรกิจ) ที่ก่อนหน้านี้ไม่มีเครื่องมือ dedicated ติดตามดีลเลย: Archi ขอ demo ก่อน (Kanban 4 stage) แล้วอนุมัติ "OK ลงมือได้" → ต่อยอดตาราง Supabase `reno_deals` ที่มีอยู่แล้วแต่ไม่เคยถูกใช้งาน (0 rows, ไม่มี reference ในโค้ดมาก่อน) แทนสร้างตารางใหม่ซ้ำ — เพิ่ม pipeline fields ผ่าน migration + DROP policy `anon_read` ที่เปิดโล่งอยู่ก่อนแล้ว (พบระหว่างตรวจ RLS ก่อนใช้งานจริง) สร้าง API routes (`/api/deals`, `/api/deals/[id]`) มิเรอร์ pattern เดียวกับ leads/projects (service_role only), UI component `Deals.tsx` (Kanban board + summary metrics), page route, nav entry — verify ผ่าน tsc + get_advisors สะอาด (ADR-014) — เอกสารที่ sync วันนี้: decisions.md (+ADR-014), BUSINESS_MODEL.md (Unit 3 tooling note), CLAUDE.md (นี้, Known/Pending)
 
