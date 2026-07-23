@@ -364,3 +364,25 @@ Migrate ข้อมูลจริงใน `leads` ผ่าน SQL ตรง:
 **Related**: ADR-010/012 (business model correction รอบแรกที่ตกหล่นจุดนี้ไป), ADR-011 (สัดส่วนรายได้จริง 3 หน่วย), ADR-014/017 (Deals module ที่ใช้ pattern เดียวกัน)
 
 **Update (Archi ตัดสินใจ, วันเดียวกัน)**: ให้ปิด `/budget` แทนที่จะเขียนใหม่หรือปล่อยไว้ — แทนที่เนื้อหาทั้งหน้า (calculator + lead form) ด้วยข้อความปิดให้บริการสั้นๆ ที่ระบุ 3 บริการจริงที่ยังทำอยู่ (reno/consult/list) แทน ไม่ลบไฟล์/route ทิ้งเพื่อไม่ให้ลิงก์เก่า/โฆษณาเก่าที่อาจยังชี้มาเจอ raw 404 — ตัด nav entry ออกจาก `components/Sidebar.tsx` ด้วยเพื่อไม่ให้พนักงานส่งลิงก์นี้ต่อ **Files**: `app/budget/page.tsx` (rewrite ทั้งไฟล์), `components/Sidebar.tsx` (ตัด nav entry) **Verify**: ✅ `npx tsc --noEmit` ผ่านสะอาด
+
+---
+
+## ADR-019 — CRM: ตัด "reno" ออกจาก business_unit ทั้งหมด — lead เข้ามาแค่ 2 หน่วย (consult/list)
+**Date**: 2026-07-23 (session 29 ต่อๆ)
+**Status**: Implemented ✅
+
+**Context**: Archi แจ้งตรงๆ ว่า Module CRM ต้องปรับใหม่ เพราะ lead ที่ดึงเข้ามาจริงมีจากแค่ 2 ธุรกิจ: **ที่ปรึกษา/ตรวจสอบ (consult)** กับ **ฝากขาย (list)** เท่านั้น — Fix & Flip ("reno", 60% ของรายได้ตาม ADR-011) ไม่ได้มาจาก lead form ของ CRM เลย เพราะดีล Fix & Flip sourced ผ่าน Deals module (ADR-014/017) ต่างหาก (เช่น เจอที่ดิน/บ้านเข้าซื้อเอง ไม่ใช่ลูกค้าติดต่อเข้ามา) — ถามยืนยันผ่าน AskUserQuestion 2 รอบ: (1) ตัด reno ออกจาก CRM ทั้งหมดเลย (ไม่ใช่แค่ไม่ default) → Archi ยืนยัน "ตัดออกทั้งหมด" (2) fallback เมื่อไม่มี business_unit ระบุมา → Archi ขอให้ "ใช้ keyword" เดาจากข้อความแทนการ fallback ไปหน่วยตายตัวหน่วยเดียว แล้วให้ Archi พิมพ์ keyword เองแทนที่จะใช้ชุดที่เสนอไป
+
+**Decision**:
+1. เปลี่ยน `business_unit` enum จาก `"reno"|"list"|"consult"` → `"consult"|"list"` ใน `components/CRM.tsx` ทั้ง type, ฟอร์มเพิ่ม Lead (เหลือ 2 ปุ่มเลือก), CSV import
+2. สร้าง `lib/businessUnit.ts` — keyword classifier ใช้ร่วมกันทั้ง CSV import (`CRM.tsx`) และ Overview fallback (`DashboardOS.tsx`) แทนโค้ดซ้ำ 2 จุด: `CONSULT_KEYWORDS` (ตรวจบ้าน, ตรวจสภาพ, ตรวจสอบ, การตรวจสอบ, ที่ปรึกษา, ตรวจงานก่อสร้าง, ตรวจรับบ้าน, ตรวจโครงสร้าง, ตรวจก่อนโอน + inspect/consult ฯลฯ — เริ่มจากตัวอย่างที่ Archi ให้มาโดยตรง), `LIST_KEYWORDS` (ฝากขาย, ขายบ้าน, รายชื่อ, ประกาศขาย, ลงประกาศ, ขายที่ดิน, นายหน้า + listing/broker ฯลฯ — เริ่มจากตัวอย่างที่ Archi ให้มาโดยตรงเช่นกัน) — เทียบกับ `notes`+`source` ของ lead แบบ case-insensitive substring match
+3. `resolveBusinessUnit(explicit, ...fallbackTexts)` — ถ้ามีค่า explicit ที่ถูกต้อง (`"consult"`/`"list"`) ใช้เลย ไม่งั้นเดาจาก keyword ไม่งั้น fallback สุดท้ายเป็น `"list"` (**เป็นการตัดสินใจเดี่ยวของ Claude** เพราะ Archi ไม่ได้ระบุ fallback สุดท้ายไว้ชัดตอนที่ keyword ก็เดาไม่ได้ — เลือก list เพราะมักมีข้อมูลระบุชัดกว่าในทางปฏิบัติ ถ้า Archi เจอ lead ถูกจัดผิดหน่วยบ่อยๆ แจ้งเพื่อปรับได้)
+4. `components/DashboardOS.tsx` — `BIZ_META`/Overview business cards เหลือแค่ consult+list (ตัดการ์ด reno ออก, grid จาก 3 คอลัมน์เป็น 2) — Fix & Flip ยังเป็นธุรกิจหลักอยู่ แค่ไม่มีการ์ดในนี้ ดูที่ `/deals` แทน — คอมเมนต์ในโค้ดชี้ทางไปที่ `/deals` ชัดเจน
+
+**Data migration**: `leads` มี 3 แถว (test data ทั้งหมด ไม่ใช่ลูกค้าจริง — ยืนยันจาก ADR-018) เดิม business_unit="reno" ทั้ง 3 แถว, notes ของทั้ง 3 แถวเป็นเรื่อง Fix & Flip/ที่ดิน (source: Land Analyzer, Reno Estimator, Budget Tool) ไม่ตรง keyword ทั้ง 2 ฝั่งเลย → apply fallback เดียวกับที่ code ใช้ (`"list"`) ผ่าน SQL ตรง ยืนยันหลัง migrate เหลือ `list` ทั้ง 3 แถว
+
+**Files**: `lib/businessUnit.ts` (ใหม่), `components/CRM.tsx`, `components/DashboardOS.tsx`
+
+**Verify**: ✅ `npx tsc --noEmit` ผ่านสะอาด ✅ grep ทั้ง repo ไม่มี `business_unit` ผูกกับ `"reno"`/`"build"` เหลือที่ไหนแล้ว ✅ Supabase migrate 3 แถว test data สำเร็จ
+
+**Related**: ADR-018 (รอบแรกที่เจอปัญหา business_unit ผูก Unit 1 ที่เลิกทำ, พบก่อน ADR-019 นี้แค่ไม่กี่นาที), ADR-014/017 (Deals module ที่ Fix & Flip sourced ผ่านจริง), ADR-011 (สัดส่วนรายได้ 3 หน่วย)

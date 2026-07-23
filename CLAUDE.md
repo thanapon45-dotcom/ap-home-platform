@@ -305,6 +305,12 @@ Invoke-RestMethod -Method POST -Uri "https://ap-home-platform-production.up.rail
 - [x] Verify: `npx tsc --noEmit` ผ่านสะอาด, grep ทั้ง repo ไม่มี business_unit="build" เหลือ
 - [x] **`/budget` page — Archi ตัดสินใจ: ปิด** (วันเดียวกัน) → แทนที่ calculator+lead form ทั้งหมดด้วยข้อความปิดให้บริการสั้นๆ ที่ชี้ไป 3 บริการจริง (reno/consult/list) ไม่ลบไฟล์/route ทิ้ง (กัน raw 404 จากลิงก์เก่า) + ตัด nav entry ออกจาก `Sidebar.tsx` — verify `npx tsc --noEmit` ผ่านสะอาด
 
+### CRM — ตัด "reno" ออกจาก business_unit ทั้งหมด (ADR-019, session 29 ต่อๆ) — DONE
+- [x] Archi แจ้ง: lead เข้า CRM จริงมีแค่ 2 หน่วย (ที่ปรึกษา/ฝากขาย) — Fix & Flip sourced ผ่าน Deals module ต่างหาก ไม่ผ่าน CRM lead form → ตัด `"reno"` ออกจาก `business_unit` enum ทั้งหมด (`CRM.tsx`: type/ฟอร์ม/CSV import, `DashboardOS.tsx`: BIZ_META/Overview cards เหลือ 2 การ์ด)
+- [x] สร้าง `lib/businessUnit.ts` — keyword classifier (`CONSULT_KEYWORDS`/`LIST_KEYWORDS` จาก keyword ที่ Archi พิมพ์เอง) ใช้ตอน business_unit ไม่ระบุมาชัดเจน (CSV import + Overview fallback ของ lead เก่า) แทนการ fallback ไปหน่วยตายตัวหน่วยเดียว — fallback สุดท้ายถ้า keyword ก็เดาไม่ได้เลย = `"list"` (Claude ตัดสินใจเดี่ยว เพราะ Archi ไม่ได้ระบุไว้ชัด — แจ้งได้ถ้าเจอ lead จัดผิดหน่วยบ่อย)
+- [x] Migrate ข้อมูลจริงใน Supabase `leads` (3 แถว test data เดิม business_unit="reno") → "list" ทั้งหมด (ไม่ตรง keyword ทั้ง 2 ฝั่ง เลย fallback)
+- [x] Verify: `npx tsc --noEmit` ผ่านสะอาด, grep ทั้ง repo ไม่มี business_unit="reno"/"build" เหลือ
+
 ### AI Content Studio — แก้ภาษาไทยเพี้ยน + Business Unit 3 confirm สัดส่วน + Platform Structure (ADR-011/012/013, session 27, Jul 20) — DONE
 - [x] Archi ส่ง FB post ที่ generate ผิดปกติมาให้ตรวจ (hashtag ตัดกลางคำ, คำเพี้ยนกลางประโยค) → เจอ 2 root cause ซ้อนกัน: `maxTokens` 800 ต่ำเกินไป + `KeywordTab.generate()` หลุดไปใช้ Haiku default แทน Sonnet → แก้ทั้ง 2 จุดใน `components/AIContent.tsx` → deploy + verify ผ่าน production จริง (regenerate แล้วครบ ไม่มีคำเพี้ยน) — ดู Known Bugs #13, ADR-012, ISSUE-016
 - [x] ยืนยันสัดส่วนธุรกิจจริง 3 หน่วยที่ยังทำอยู่: **Fix & Flip 60% · ที่ปรึกษา/ตรวจสอบ 30% · โบรกเกอร์ 10%** — clarify คำว่า "Develop" ที่ Archi ใช้ = Fix & Flip (Unit 3) ไม่ใช่ Unit 1 ที่ discontinued ไปแล้ว (ถาม confirm ผ่าน AskUserQuestion ก่อนแก้เอกสาร) → sync `docs/BUSINESS_MODEL.md` ทุกจุด — ดู ADR-011

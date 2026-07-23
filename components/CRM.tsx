@@ -1,9 +1,13 @@
 "use client";
 import { useState, useEffect } from "react";
+import { resolveBusinessUnit } from "@/lib/businessUnit";
 // NOTE (session 25, Jul 16 2026): leads CRUD moved server-side to /api/leads/*
 // — direct supabase.from("leads") calls with the public anon key were removed
 // here because RLS on `leads` is now locked down (deny anon entirely).
 // See docs/issues-log.md ISSUE-013.
+// NOTE (session 29 ต่อ, ADR-019): business_unit ตัด "reno" (Fix & Flip) ออกทั้งหมด —
+// Archi ยืนยันว่า lead เข้า CRM มีแค่ 2 หน่วย: consult (ที่ปรึกษา/ตรวจสอบ) กับ list (ฝากขาย)
+// Fix & Flip sourced ผ่าน Deals module (ADR-014/017) แทน ไม่ผ่าน lead form นี้
 
 const BRAND_NAME = "Finnhouses";
 
@@ -72,7 +76,7 @@ type Lead = {
   id: string;
   name: string; phone: string; budget: string; style: string;
   stage: string; score: number; source: string; lead_date: string; area: number | string | null; notes: string;
-  business_unit: "reno" | "list" | "consult";
+  business_unit: "consult" | "list";
   intent?: string;
   urgency?: string;
   outcome?: string;
@@ -143,7 +147,7 @@ function SimpleBar({ value, max, color }: { value: number; max: number; color: s
 
 // ─── Add Lead Modal ───────────────────────────────────────────────────────────
 function AddLeadModal({ onClose, onAdd }: { onClose: () => void; onAdd: (lead: Lead) => void }) {
-  const [form, setForm] = useState({ name: "", phone: "", budget: "", style: "Modern Minimal", area: "", source: "Budget Tool", notes: "", stage: "new", business_unit: "reno" as "reno" | "list" | "consult", intent: "build", urgency: "warm", location: "", outcome: "pending" });
+  const [form, setForm] = useState({ name: "", phone: "", budget: "", style: "Modern Minimal", area: "", source: "Budget Tool", notes: "", stage: "new", business_unit: "consult" as "consult" | "list", intent: "build", urgency: "warm", location: "", outcome: "pending" });
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const inputStyle: React.CSSProperties = { width: "100%", padding: "10px 12px", borderRadius: 10, border: "1.5px solid rgba(255,255,255,.15)", fontSize: 13, boxSizing: "border-box" as const, background: "rgba(255,255,255,.05)", color: "#f1f5f9", fontFamily: "inherit" };
@@ -205,11 +209,10 @@ function AddLeadModal({ onClose, onAdd }: { onClose: () => void; onAdd: (lead: L
 
         <div style={{ marginBottom: 14 }}>
           <label style={{ fontSize: 12, fontWeight: 700, color: "#94a3b8", display: "block", marginBottom: 5 }}>ธุรกิจ <span style={{ color: "#f43f5e" }}>*</span></label>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 6 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 6 }}>
             {([
-              { value: "reno",    label: "🔨 รีโนเวท (Fix & Flip)", color: "#10b981" },
-              { value: "consult", label: "🔍 ที่ปรึกษา/ตรวจสอบ",     color: "#f59e0b" },
-              { value: "list",    label: "🏠 ฝากขาย",                color: "#6366f1" },
+              { value: "consult", label: "🔍 ที่ปรึกษา/ตรวจสอบ", color: "#f59e0b" },
+              { value: "list",    label: "🏠 ฝากขาย",             color: "#6366f1" },
             ] as const).map(opt => (
               <button key={opt.value} type="button" onClick={() => setForm(f => ({ ...f, business_unit: opt.value }))} style={{
                 padding: "8px 4px", borderRadius: 10, cursor: "pointer", fontSize: 11, fontWeight: 600,
@@ -676,21 +679,24 @@ export default function CRM() {
       const lines = text.trim().split("\n").slice(1);
       const rows = lines.map(line => {
         const cols = line.split(",").map(c => c.replace(/^"|"$/g, "").trim());
-        const bu = cols[10] as "reno" | "list" | "consult";
+        const bu = cols[10]; // อาจเป็น "reno"/"build" เก่าจาก CSV export ก่อนหน้า หรือว่างเปล่า
         // `area` is a numeric DB column — CSV's "พื้นที่" column is often a district
         // name (text), which fails Postgres numeric validation. Only send it through
         // if it actually parses as a number; otherwise fold it into notes instead of
         // dropping it silently.
         const areaNum = cols[4] && !isNaN(Number(cols[4])) ? Number(cols[4]) : null;
         const areaNote = cols[4] && areaNum === null ? `พื้นที่: ${cols[4]}` : "";
+        const notes = [cols[9], areaNote].filter(Boolean).join(" | ");
         return {
           name: cols[0] || "", phone: cols[1] || "", budget: cols[2] || "",
           style: cols[3] || "Modern Minimal", area: areaNum,
           source: cols[5] || "CSV Import", stage: cols[6] || "new",
           score: parseInt(cols[7]) || 60, lead_date: cols[8] || "",
-          notes: [cols[9], areaNote].filter(Boolean).join(" | "),
-          // "build" (Unit 1, discontinued) ที่หลงเหลือจาก CSV เก่า fallback ไป "reno" แทน
-          business_unit: (["reno","list","consult"].includes(bu) ? bu : "reno") as "reno" | "list" | "consult",
+          notes,
+          // "reno"/"build" (ไม่รองรับแล้วใน CRM — session 29 ต่อ, ADR-019) ไม่ใช่ค่าที่ถูกต้อง
+          // เหลือแค่ consult/list เท่านั้น ถ้า cols[10] ไม่ใช่ 2 ค่านี้ตรงๆ ให้เดาจาก
+          // notes/source ด้วย keyword (lib/businessUnit.ts) แล้ว fallback เป็น "list" ถ้าเดาไม่ได้เลย
+          business_unit: resolveBusinessUnit(bu, notes, cols[5]),
         };
       }).filter(r => r.name);
 
