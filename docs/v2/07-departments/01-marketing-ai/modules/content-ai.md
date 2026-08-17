@@ -31,7 +31,7 @@ buyer intelligence (persona + pain points + conversion triggers).
 | Image generation | 100% | OpenAI primary, Gemini fallback |
 | Reference taste library | 100% | Save good outputs as references for future prompts |
 | Multiple tone options | 100% | Casual, Professional, Educate, Fun, Heartfelt, 3T Story, Positioned |
-| Quality Gate (AI content check) | Partial | Live per ADR-016, feedback loop pending ADR-021 |
+| Quality Gate (AI content check) | Production | Live per ADR-016, feedback loop live per ADR-021 (session 31, Jul 25) |
 
 ---
 
@@ -49,7 +49,7 @@ Buyer Segments (current):
 - ADR-010: Finnhouses business model correction - ../../../04-decisions/accepted/ADR-010.md
 - ADR-012: Thai language quality + Sonnet model fix - ../../../04-decisions/accepted/ADR-012.md
 - ADR-016: WF1 AI Quality Gate - ../../../04-decisions/accepted/ADR-016.md
-- ADR-021: WF1 Quality Gate feedback loop - ../../../04-decisions/accepted/ADR-021.md
+- ADR-021: WF1 Quality Gate feedback loop (live in production since session 31, Jul 25) - ../../../04-decisions/accepted/ADR-021.md
 
 ---
 
