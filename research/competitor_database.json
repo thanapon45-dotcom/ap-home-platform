@@ -1,0 +1,305 @@
+{
+  "generated": "2026-07-16",
+  "method": "Mixed: 12 pages now live-verified via Claude-in-Chrome (Bangkok Asset, SpyEstates, Mahanakornhome, Bangkok Asset Center, TJ Singlehome [page unavailable], SC Asset Management/CS Property, Pen House, Bahn Mahanakornn, Home.ban2, FazWaz, CBRE Thailand, CheckRaka, REIC — real page visits, real post data, using both direct URLs and Facebook's own search when the URL was unknown). Remaining 8 pages are WebSearch-only (Nimble connector unauthenticated) or not yet checked. No data is fabricated — every field states its actual source.",
+  "evidence_policy": "Every field is either (a) observed directly on the live Facebook page via Claude-in-Chrome this pass — marked 'LIVE-VERIFIED', (b) a value found verbatim in a WebSearch result (source_note cites the query/result), or (c) the string \"UNVERIFIED\" when no result surfaced the value.",
+  "pages": [
+    {
+      "page_name": "Bangkok Asset",
+      "url": "https://www.facebook.com/bangkokassetsclub",
+      "followers": "~350,000 (Facebook shows '3.5 แสน' — LIVE-VERIFIED)",
+      "province": "Nonthaburi / Bangkok / Pathum Thani — LIVE-VERIFIED: page address is เลขที่ 99 ซอยงามวงศ์วาน 47, แขวงทุ่งสองห้อง เขตหลักสี่, กรุงเทพมหานคร; page also lists เทศบาลนครนนทบุรี and Amphoe Muang Pathum Thani as service areas",
+      "content_category": "Renovated second-hand house resale, premium positioning (\"บ้านเดี่ยวระดับพรีเมียม\")",
+      "posting_frequency": "At least 1 post/day observed (post timestamped '1 ชั่วโมง' i.e. 1 hour before this check) — LIVE-VERIFIED for this single data point, not a full frequency audit",
+      "rating": "98% recommend, 1,619 reviews — LIVE-VERIFIED",
+      "website": "bangkokassets.com — LIVE-VERIFIED",
+      "source_note": "Live Facebook page visit via Claude-in-Chrome, 2026-07-16"
+    },
+    {
+      "page_name": "Bangkok Asset Center",
+      "url": "https://www.facebook.com/bangkokassetcenter",
+      "followers": "5,000 likes / 5,000 followers — LIVE-VERIFIED (matches earlier WebSearch estimate exactly)",
+      "province": "Bangkok/Nonthaburi — LIVE-VERIFIED: identical registered address to Bangkok Asset above (เลขที่ 99 ซอยงามวงศ์วาน 47, แขวงทุ่งสองห้อง เขตหลักสี่)",
+      "content_category": "\"BKA รับซื้อบ้านในทุกสถานการณ์\" — cash-buyer / acquisition-focused service (buys distressed/urgent-sale houses), distinct function from Bangkok Asset's resale-marketing focus",
+      "posting_frequency": "Most recent post found was dated 12 มิถุนายน (June 12, 2026) — over a month stale relative to this check (July 16, 2026), and that post was itself a shared memorial/condolence post, not business content — LIVE-VERIFIED, suggests this page is much less actively posted to than Bangkok Asset",
+      "rating": "100% recommend, 206 reviews — LIVE-VERIFIED",
+      "important_finding": "CONFIRMED SAME COMPANY as Bangkok Asset: the memorial post viewed was explicitly attributed to \"บริษัท บางกอก แอสเซท อินเตอร์กรุ๊ป จำกัด (มหาชน)\" (Bangkok Asset Intergroup PUBLIC Company Limited) — a public company (มหาชน), and the logo/branding \"BANGKOK ASSET INTERGROUP\" matches both pages. This resolves the disambiguation flagged earlier: Bangkok Asset and Bangkok Asset Center are two Facebook Pages run by the same public company, not unrelated competitors and not a duplicate/typo.",
+      "source_note": "Live Facebook page visit via Claude-in-Chrome, 2026-07-16"
+    },
+    {
+      "page_name": "นักสืบอสังหา (SpyEstates)",
+      "url": "https://www.facebook.com/SpyEstates/",
+      "followers": "~210,000 (Facebook shows '2.1 แสน' — LIVE-VERIFIED, close to earlier WebSearch estimate of 212,000)",
+      "province": "National (Bangkok-based) — page category confirmed as \"บล็อกเกอร์\" (Blogger) — LIVE-VERIFIED",
+      "content_category": "Real estate investigation / consumer education blog (\"รวมทุกเรื่องอสังหา เราจะพาไปสืบ\") — LIVE-VERIFIED tagline",
+      "posting_frequency": "At least 1 post/day observed (post timestamped '1 ชั่วโมง') — single data point, not a full audit",
+      "rating": "100% recommend, 5 reviews — LIVE-VERIFIED",
+      "website": "spyestates.com — LIVE-VERIFIED",
+      "source_note": "Live Facebook page visit via Claude-in-Chrome, 2026-07-16"
+    },
+    {
+      "page_name": "มหานครโฮม (Mahanakornhome)",
+      "url": "https://www.facebook.com/mahanakornhome/",
+      "followers": "2,807 likes (7 talking about this) — per earlier WebSearch; live visit this pass did not re-display the like count on the page header viewed",
+      "province": "Bangkok — Minburi, Hathairat, Ramintra, Nimitmai, Nongchok",
+      "content_category": "Renovated second-hand house resale, direct listing/price-promo format",
+      "posting_frequency": "At least 1 post observed timestamped '2 ชั่วโมง' (2 hours before this check) — single data point",
+      "contact": "+66 96 104 1689 — LIVE-VERIFIED (listed directly on page)",
+      "source_note": "Live Facebook page visit via Claude-in-Chrome, 2026-07-16; follower count carried from prior WebSearch query in this session"
+    },
+    {
+      "page_name": "ขายบ้านมือสองรีโนเวทราคาเป็นกันเอง (Home.ban2)",
+      "url": "https://www.facebook.com/Home.ban2/?locale=th_TH",
+      "followers": "12,000 (Facebook shows '1.2 หมื่น') — LIVE-VERIFIED",
+      "province": "Nonthaburi, 11120 — LIVE-VERIFIED",
+      "content_category": "Renovated second-hand house resale, budget-focused, plus loan consultation service (\"ปรึกษาสินเชื่อ\") and authenticity/trust framing (\"บ้านสวยตรงปกต้องเพจนี้เลยค่ะขายจริงโอนจริง\" — \"genuinely sells, genuinely transfers\")",
+      "posting_frequency": "At least 1 post observed timestamped '6 ชั่วโมง' (6 hours before check) — single data point",
+      "rating": "100% recommend, 5 reviews — LIVE-VERIFIED",
+      "contact": "+66 96 326 4453, walanchaya88@gmail.com, TikTok @mew333 — LIVE-VERIFIED",
+      "live_verified_post": "Listing hook emphasizing transit/amenity proximity (near Purple Line MRT, Central Westgate mall, Kanchanaphisek ring road) — engagement: 1 reaction, 0 comments, 0 shares",
+      "source_note": "Live Facebook page visit via Claude-in-Chrome, 2026-07-16"
+    },
+    {
+      "page_name": "TJ Singlehome",
+      "url": "https://www.facebook.com/TJSinglehome/",
+      "followers": "PAGE UNAVAILABLE — LIVE-VERIFIED: visiting this URL returns Facebook's \"เนื้อหานี้ไม่พร้อมใช้งานในขณะนี้\" (content not currently available) error, suggesting this was a personal-profile share or the content/page has been removed/restricted, not an active public business Page",
+      "province": "N/A — page inaccessible",
+      "content_category": "N/A — page inaccessible",
+      "posting_frequency": "N/A",
+      "source_note": "Live Facebook page visit via Claude-in-Chrome, 2026-07-16 — recommend dropping from future rounds unless a corrected URL is found"
+    },
+    {
+      "page_name": "\"CS Property\" — ขายบ้านมือสอง มีนบุรี รามอินทรา คู้บอน พระยาสุเรนทร์ คลองสามวา นิมิตใหม่",
+      "url": "https://www.facebook.com/SC.Asset.Managenent/",
+      "followers": "3,600 (Facebook shows '3.6 พัน') — LIVE-VERIFIED (page's actual display name differs from the WebSearch-derived name \"SC Asset Management\" used earlier — corrected here)",
+      "province": "Bangkok — Panya Indra area (Minburi, Ramintra, Khu Bon, Phraya Suren, Khlong Sam Wa, Nimit Mai) — LIVE-VERIFIED",
+      "content_category": "Renovated second-hand house resale, bundled-freebies positioning (free furniture/AC/curtains) + amenity-proximity framing (near Big C, Lotus, schools, land office)",
+      "posting_frequency": "Very active — most recent post timestamped '24 นาที' (24 minutes before check) — LIVE-VERIFIED, the most recently-active page of all checked this pass",
+      "rating": "1 review only — LIVE-VERIFIED",
+      "live_verified_post": "Post too fresh (24 min old) to show meaningful engagement yet at time of check",
+      "source_note": "Live Facebook page visit via Claude-in-Chrome, 2026-07-16"
+    },
+    {
+      "page_name": "Pen House — บ้านมือสอง คอนโด รีโนเวทใหม่",
+      "url": "https://www.facebook.com/penhouse789/",
+      "followers": "1,900 (Facebook shows '1.9 พัน') — LIVE-VERIFIED",
+      "province": "Bangkok — Ram Inthra, Ramkhamhaeng, Minburi, Nongchok, Romklao, Saimai — LIVE-VERIFIED",
+      "content_category": "Real estate service: buy/sell/consign houses and condos, renovation",
+      "posting_frequency": "Most recent post surfaced in the recommended carousel was dated 23 พฤษภาคม 2025 (May 23, 2025) — over a year stale relative to this check (July 2026) — LIVE-VERIFIED, suggests this page has gone largely inactive",
+      "rating": "1 review only — LIVE-VERIFIED",
+      "source_note": "Live Facebook page visit via Claude-in-Chrome, 2026-07-16"
+    },
+    {
+      "page_name": "บ้านมหานคร รับสร้างบ้าน (Bahn Mahanakorn — custom home building, NOT the same as Mahanakornhome resale page above)",
+      "url": "https://www.facebook.com/bahnmahanakornn/",
+      "followers": "110,000 (Facebook shows '1.1 แสน') — LIVE-VERIFIED, Facebook-verified page (blue checkmark)",
+      "province": "Bangkok — บริษัท บ้านมหานคร จำกัด, ซอยเคหะร่มเกล้า 74, แขวงสะพานสูง — LIVE-VERIFIED",
+      "content_category": "IMPORTANT: this is a custom home-BUILDING company (รับสร้างบ้าน), not a resale/renovation page — directly comparable business model to Finnhouses' core home-building service, distinct from the resale-focused pages elsewhere in this database",
+      "posting_frequency": "Most recent post timestamped '4 ชั่วโมง' (4 hours before check) — LIVE-VERIFIED, actively posting",
+      "rating": "2 reviews only — LIVE-VERIFIED",
+      "website": "bahnmahanakorn.com, plus lin.ee and youtube.com links — LIVE-VERIFIED",
+      "live_verified_post": "Brand-recall slogan-style hook (\"นึกถึงการสร้างคิดถึงบ้านมหานคร\" — \"Think of building, think of Bahn Mahanakorn\") on a behind-the-scenes site-visit video — engagement: 9 reactions, 2 shares, 164 views",
+      "house_model_naming_observed": "WHITE PEARL, AMETHYST, CELESTINE, GARNET, JASPER — gemstone-themed house model/project names",
+      "source_note": "Live Facebook page visit via Claude-in-Chrome, 2026-07-16 — this is the largest and most directly comparable competitor found this pass given its shared home-building business model with Finnhouses"
+    },
+    {
+      "page_name": "FazWaz",
+      "url": "https://www.facebook.com/fazwazproperty — LIVE-VERIFIED (found via Facebook's own page search; direct URL guesses like facebook.com/FazWaz returned a dead/unavailable page)",
+      "followers": "36,000 (Facebook shows '3.6 หมื่น') — LIVE-VERIFIED",
+      "province": "National/international — LIVE-VERIFIED office address: 17th Floor, Asoke Towers, 217/16 21 Sukhumvit Rd, Bangkok",
+      "content_category": "Property investment platform, English-language content aimed at international/expat investors (\"Make buying a property as easy as booking a holiday\") — a distinctly different audience segment from the Thai-language local resale pages elsewhere in this database",
+      "posting_frequency": "Recent posts observed dated 18 มิถุนายน (June 18) and 8 เมษายน (April 8) — gap suggests roughly monthly-or-less posting cadence, in contrast to the daily-posting resale pages checked",
+      "live_verified_post_examples": "\"Cherngtalay is Phuket's most in-demand investment corridor — and Canvaz Palette is one of the strongest plays in it...\" (investment-thesis framing, with a \"UP TO ฿1M DISCOUNT / From 6.56M THB\" promo graphic); \"Buying property in [Bangkok] shouldn't feel this complicated\" (pain-point/simplicity framing)",
+      "website": "fazwaz.com — LIVE-VERIFIED",
+      "source_note": "Live Facebook page visit via Claude-in-Chrome, 2026-07-16 — engagement counts for the newest post were not captured before the feed stopped loading further content"
+    },
+    {
+      "page_name": "CBRE Thailand",
+      "url": "https://www.facebook.com/CBREThailand — LIVE-VERIFIED (found via Facebook's own page search)",
+      "followers": "61,000 (Facebook shows '6.1 หมื่น') — LIVE-VERIFIED. Note: a separate global \"CBRE\" page (verified, 540,000 followers) also exists but is the international brand page, not Thailand-specific — kept distinct here",
+      "province": "National — LIVE-VERIFIED office: 548 One City Centre, Floor 46-45, Ploenchit Road, Lumpini, Pathumwan, Bangkok; also lists a Phuket location",
+      "content_category": "Commercial real estate agent/advisory — content observed was B2B/corporate thought-leadership (office technology, workplace strategy) and corporate CSR (Pride Month), NOT residential home resale or building content. This is a different market segment from Finnhouses (commercial vs. residential) — lower direct relevance than initially assumed",
+      "posting_frequency": "Recent posts dated 8 กรกฎาคม (July 8) and 29 มิถุนายน (June 29) — roughly weekly-to-biweekly cadence observed",
+      "live_verified_post_example": "\"เทคโนโลยีอฟฟิศที่คุณลงทุนไป กำลังช่วยพนักงานหรือเป็น 'ภาระ' ให้พวกเขากันแน่?\" (\"Is the office technology you've invested in helping employees or becoming a 'burden' for them?\") — analytical/advisory B2B content style",
+      "website": "cbre.co.th — LIVE-VERIFIED",
+      "source_note": "Live Facebook page visit via Claude-in-Chrome, 2026-07-16"
+    },
+    {
+      "page_name": "Checkraka.com - เช็คราคา (general price-comparison/news site, not real-estate-exclusive)",
+      "url": "Facebook page found via search, exact URL not captured — LIVE-VERIFIED via Facebook's own page search",
+      "followers": "160,000 (Facebook shows '1.6 แสน') — LIVE-VERIFIED",
+      "province": "National",
+      "content_category": "News/media website covering general price comparisons across many product categories, not exclusively real estate — lower direct relevance to Finnhouses than a dedicated property media page",
+      "posting_frequency": "UNVERIFIED — did not visit individual posts this pass",
+      "website": "checkraka.com — LIVE-VERIFIED",
+      "source_note": "Live Facebook page visit via Claude-in-Chrome, 2026-07-16 — note this is a distinct entity from \"Property GURU Thailand\" which was the original WebSearch-era candidate name; PropertyGuru itself was not separately located this pass"
+    },
+    {
+      "page_name": "Estopolis.com",
+      "url": "UNVERIFIED (not re-confirmed this pass)",
+      "followers": "UNVERIFIED",
+      "province": "National",
+      "content_category": "Real estate news / investment media",
+      "posting_frequency": "UNVERIFIED",
+      "source_note": "Carried over from prior-session candidate list; not re-verified via WebSearch in this pass — flagged for follow-up"
+    },
+    {
+      "page_name": "Realist",
+      "url": "UNVERIFIED (not re-confirmed this pass)",
+      "followers": "UNVERIFIED",
+      "province": "National",
+      "content_category": "Property market news/analysis media",
+      "posting_frequency": "UNVERIFIED",
+      "source_note": "Carried over from prior-session candidate list; not re-verified via WebSearch in this pass — flagged for follow-up"
+    },
+    {
+      "page_name": "prop2morrow",
+      "url": "UNVERIFIED (not re-confirmed this pass)",
+      "followers": "UNVERIFIED",
+      "province": "National",
+      "content_category": "Property news media",
+      "posting_frequency": "UNVERIFIED",
+      "source_note": "Carried over from prior-session candidate list; not re-verified via WebSearch in this pass — flagged for follow-up"
+    },
+    {
+      "page_name": "Living Sneak Peek",
+      "url": "UNVERIFIED (not re-confirmed this pass)",
+      "followers": "UNVERIFIED",
+      "province": "National",
+      "content_category": "Home/condo review content",
+      "posting_frequency": "UNVERIFIED",
+      "source_note": "Carried over from prior-session candidate list; not re-verified via WebSearch in this pass — flagged for follow-up"
+    },
+    {
+      "page_name": "CondoDiary",
+      "url": "UNVERIFIED (not re-confirmed this pass)",
+      "followers": "UNVERIFIED",
+      "province": "National (condo-focused)",
+      "content_category": "Condo review / lifestyle content",
+      "posting_frequency": "UNVERIFIED",
+      "source_note": "Carried over from prior-session candidate list; not re-verified via WebSearch in this pass — flagged for follow-up"
+    },
+    {
+      "page_name": "Review by O",
+      "url": "UNVERIFIED (not re-confirmed this pass)",
+      "followers": "UNVERIFIED",
+      "province": "National",
+      "content_category": "Property review content",
+      "posting_frequency": "UNVERIFIED",
+      "source_note": "Carried over from prior-session candidate list; not re-verified via WebSearch in this pass — flagged for follow-up"
+    },
+    {
+      "page_name": "Passion Realtor",
+      "url": "UNVERIFIED (not re-confirmed this pass)",
+      "followers": "UNVERIFIED",
+      "province": "UNVERIFIED",
+      "content_category": "Brokerage / listing content",
+      "posting_frequency": "UNVERIFIED",
+      "source_note": "Carried over from prior-session candidate list; not re-verified via WebSearch in this pass — flagged for follow-up"
+    },
+    {
+      "page_name": "REIC - ศูนย์ข้อมูลอสังหาริมทรัพย์ (Real Estate Information Center)",
+      "url": "https://www.facebook.com/REICFan — LIVE-VERIFIED (found via Facebook's own page search)",
+      "followers": "23,000 (Facebook shows '2.3 หมื่น') — LIVE-VERIFIED",
+      "province": "National — LIVE-VERIFIED office: Floor 18, Government Housing Bank building, Phra Ram 9 Road, Huai Khwang, Bangkok",
+      "content_category": "Official government-affiliated real estate market data/statistics body (\"เป็นศูนย์กลางข้อมูลด้านอสังหาริมทรัพย์ของประเทศที่ได้รับการยอมรับในระดับสากล\" — \"the country's internationally-recognized central real estate data hub\")",
+      "rating": "0 reviews — LIVE-VERIFIED",
+      "posting_frequency": "Most recent post found (12 มิถุนายน) was a royal condolence/memorial notice, not market-data content — similar stale-non-business-post pattern as seen on Bangkok Asset Center",
+      "website": "reic.or.th — LIVE-VERIFIED",
+      "source_note": "Live Facebook page visit via Claude-in-Chrome, 2026-07-16"
+    }
+  ],
+  "geo_focused_candidates_pathum_thani_nonthaburi": {
+    "note": "Added at user's explicit request to prioritize pages with houses for sale specifically in Pathum Thani and Nonthaburi zones — these were found via targeted Facebook page search (not part of the original 20-candidate WebSearch discovery), so they extend rather than replace the list above. All entries below are LIVE-VERIFIED via Claude-in-Chrome, 2026-07-16.",
+    "pages": [
+      {
+        "page_name": "บ้านมือสองปทุมธานี (Home Pathum)",
+        "url": "https://www.facebook.com/profile.php?id=100063552071640",
+        "followers": "10,000 (Facebook shows '1 หมื่น') — LIVE-VERIFIED",
+        "province": "Pathum Thani, 12140 — LIVE-VERIFIED",
+        "content_category": "Resale house/land sales bundled with loan-application service (\"ขายบ้านมือสอง บริการสินเชื่อ พร้อมดูแลลูกค้า ขายบ้านและที่ดิน บริการยื่นสินเชื่อ\")",
+        "rating": "94% recommend, 12 reviews — LIVE-VERIFIED",
+        "posting_frequency": "Most recent posts in recommended carousel dated 2 พฤษภาคม 2025 and 4 สิงหาคม 2024 — both over a year stale relative to this check (July 2026), suggesting posting has slowed significantly despite a decent follower base and rating",
+        "contact": "+66 98 293 4528, pathum2008@hotmail.com, TikTok @homepathum — LIVE-VERIFIED",
+        "hook_pattern_observed": "Hashtag-based project naming (\"#บ้านเดี่ยวหลังใหญ่ทำเลถนนเนมหลัก โครงการ #โครงการวรางกูล\", \"#โครงการมณีรินทร์พาร์ค ปทุมธานี\")",
+        "source_note": "Live Facebook page visit via Claude-in-Chrome, 2026-07-16, found via Facebook page search for 'บ้านมือสองปทุมธานี'"
+      },
+      {
+        "page_name": "รับฝากขายบ้านมือสอง รังสิต-ปทุม-กทม",
+        "url": "https://www.facebook.com/profile.php?id=61577171264376",
+        "followers": "UNVERIFIED — not shown on the page sections viewed",
+        "province": "Rangsit, Pathum Thani — LIVE-VERIFIED",
+        "content_category": "Consignment listing service for houses, condos, and land across Rangsit-Pathum Thani-Bangkok",
+        "rating": "0 reviews — LIVE-VERIFIED",
+        "posting_frequency": "Most recent post timestamped '5 วัน' (5 days before check) — LIVE-VERIFIED",
+        "contact": "+66 65 955 8265, anyakoanan41@gmail.com — LIVE-VERIFIED",
+        "live_verified_post": "🌿บางครั้ง...การลงทุนที่ดีที่สุด ไม่ใช่หุ้น ไม่ใช่ทองคำ แต่คือ 'ที่ดิน'... (\"Sometimes, the best investment isn't stocks, isn't gold, but is 'land'...\") — land-investment philosophy hook with garden-house lifestyle imagery — engagement: 0 reactions, 0 comments, 0 shares",
+        "source_note": "Live Facebook page visit via Claude-in-Chrome, 2026-07-16, found via Facebook page search for 'บ้านมือสองรับปิดหนี้ รังสิต'"
+      },
+      {
+        "page_name": "บ้านมือสองนนทบุรี กรุงเทพฯและปริมณฑล สินเชื่อฟรี-by Perfect House Property",
+        "url": "https://www.facebook.com/profile.php?id=100064027815481",
+        "followers": "41,000 (Facebook shows '4.1 หมื่น') — LIVE-VERIFIED — the largest Nonthaburi/Pathum Thani-zone resale page found in this geo-focused round",
+        "province": "Nonthaburi, Bangkok, and ปริมณฑล (Bangkok metro region, which includes Pathum Thani) — LIVE-VERIFIED, address สราญสิริ ชัยพฤกษ์-แจ้งวัฒนะ, เทศบาลนครนนทบุรี",
+        "content_category": "Professional-branded resale consignment service bundled with free loan consultation (\"ยื่นกู้ ปรึกษาสินเชื่อฟรี\")",
+        "rating": "100% recommend — LIVE-VERIFIED",
+        "page_history": "Page created 9 พฤศจิกายน 2020 (established ~5.5 years as of this check) — profile last updated 42 minutes before check — LIVE-VERIFIED via Facebook's page transparency panel, confirms this is an actively-maintained, established operation rather than a new or abandoned page",
+        "contact": "+66 84 262 8878, LINE @perfect-house, Instagram @Perfecthouseproperty — LIVE-VERIFIED",
+        "website": "perfect-houseproperty.com — LIVE-VERIFIED",
+        "source_note": "Live Facebook page visit via Claude-in-Chrome, 2026-07-16, found via Facebook page search for 'บ้านมือสองนนทบุรี' — this is the strongest, most professional resale competitor found in Finnhouses' actual Nonthaburi/Pathum Thani service zone to date"
+      },
+      {
+        "page_name": "บ้านมือสองนนทบุรี by รักบ้าน",
+        "url": "UNVERIFIED — found via search list view only, not opened this pass",
+        "followers": "25,000 (Facebook shows '2.5 หมื่น') — LIVE-VERIFIED via search result card",
+        "province": "Nonthaburi",
+        "content_category": "Resale consignment + free loan consultation (\"บริการปรึกษาสินเชื่อฟรี\")",
+        "rating": "0 reviews shown in search card",
+        "contact": "Tel 098-667-7200, LINE taladbaan9 — LIVE-VERIFIED via search result card",
+        "source_note": "Found via Facebook page search for 'บ้านมือสองนนทบุรี'; not opened individually this pass — flagged for follow-up"
+      },
+      {
+        "page_name": "บ้านมือสอง นนทบุรี (Sapha Muang district)",
+        "url": "UNVERIFIED — found via search list view only, not opened this pass",
+        "followers": "471 — LIVE-VERIFIED via search result card",
+        "province": "Nonthaburi — สภาพเมืองทั่งโซนนนทบุรี area specifically",
+        "content_category": "Renovated resale houses, viewing available any day (\"สามารถนัดชมบ้านได้ทุกวัน\")",
+        "rating": "1 review",
+        "contact": "096-2171633, LINE Fah150341 — LIVE-VERIFIED via search result card",
+        "source_note": "Found via Facebook page search for 'บ้านมือสองนนทบุรี'; not opened individually this pass — flagged for follow-up"
+      },
+      {
+        "page_name": "บ้านมือสอง นนทบุรี (Bang Yai area)",
+        "url": "UNVERIFIED — found via search list view only, not opened this pass",
+        "followers": "1,100 (Facebook shows '1.1 พัน') — LIVE-VERIFIED via search result card",
+        "province": "Nonthaburi — Bang Yai (บางใหญ่) specifically",
+        "content_category": "Budget-positioned resale (\"ราคาถูก\")",
+        "source_note": "Found via Facebook page search for 'บ้านมือสองนนทบุรี'; not opened individually this pass — flagged for follow-up"
+      },
+      {
+        "page_name": "บ้านมือสอง กรุงเทพ-นนทบุรี ราคาถูก (HOME888)",
+        "url": "https://web.facebook.com/iamhome88",
+        "followers": "120,000 (Facebook shows '1.2 แสน') — LIVE-VERIFIED — the single largest resale page found anywhere in this geo-focused round, nearly 3x Perfect House Property's 41K",
+        "province": "Bangkok and Nonthaburi — LIVE-VERIFIED per page name/tagline",
+        "content_category": "Resale house consignment/sales, multi-platform brand presence (Instagram @iamhome88, YouTube Home888-b, TikTok Home88.offical, website home-888.com, linktr.ee)",
+        "contact": "+66 98 465 9788 — LIVE-VERIFIED",
+        "posting_frequency": "Most recent post in the actual post feed timestamped '2 วัน' (2 days before check) — LIVE-VERIFIED — an active-enough cadence, though a separate recommended-carousel post from 27 พฤศจิกายน 2023 also surfaced during this visit and is far stale by comparison; the 2-day-old post is the true current-activity signal, not the 2023 one",
+        "live_verified_post": "Caption: \"🏚️บ้านเดี่ยว หมู่บ้านพฤกษาวิเลจ 5 ใกล้ MRT ตลาดบางใหญ่ และเซ็นทรัล เวสต์เกต...\" (\"Single-detached house, Pruksa Village 5, near Bang Yai market MRT and Central Westgate mall\") — amenity/transit-proximity framing, same pattern independently observed on CS Property and Home.ban2 elsewhere in this database. NOTABLE: the attached video thumbnail/content was an unrelated stock-style wedding/bridal video (four people in formalwear, bride in a wedding gown) with no visible connection to the house listing caption — a real, observed mismatch between hook video and caption topic, not an assumption about intent. CTA was an \"Add LINE friend\" link-out card (LINE.me), not a phone call or direct comment prompt. Engagement: 3 reactions, 1,700 views (Facebook shows '1.7 พัน'), 0 comments/shares shown.",
+        "source_note": "Live Facebook page visit via Claude-in-Chrome, 2026-07-16, found via Facebook page search for 'บ้านมือสองนนทบุรี บย รักบ้าน' — despite having the largest follower count of any resale page in this entire project (120K, ahead of even Bangkok Asset's 350K-adjacent scale... actually below it, but still very large), its most recent post's engagement (3 reactions / 1,700 views) is lower than Perfect House Property's activity level suggests and starkly reinforces the cross-page finding that engagement does not track follower count"
+      },
+      {
+        "page_name": "คุณนัทบ้านสวยพร้อมอยู่ กรุงเทพ นนทบุรี ปทุมธานี ปริมณฑล",
+        "url": "UNVERIFIED — found via search list view only, not opened this pass",
+        "followers": "4,800 — LIVE-VERIFIED via search result card, Facebook-verified page (blue checkmark shown on search card)",
+        "province": "Bangkok, Nonthaburi, Pathum Thani, and ปริมณฑล — explicitly named in the page title itself, the only page found this round whose name explicitly covers all three of Finnhouses' core service areas at once",
+        "content_category": "Move-in-ready resale houses (\"บ้านสวยพร้อมอยู่\" — \"beautiful house, ready to live in\")",
+        "source_note": "Found via Facebook page search for 'บ้านมือสองนนทบุรี บย รักบ้าน' (surfaced as an adjacent result); not opened individually this pass — flagged for follow-up given its unusually precise geographic match to Finnhouses' service area"
+      }
+    ],
+    "geo_round_summary": "Nonthaburi has meaningfully more, and larger, dedicated resale-page competition than Pathum Thani in this sample. HOME888 (120K followers) is now the single largest resale competitor found anywhere in this geo-focused round — nearly 3x Perfect House Property (41K), which was the prior flagship finding — followed by รักบ้าน (25K), both centered on Nonthaburi + the wider ปริมณฑล region. Pathum Thani's largest dedicated page remains far smaller (10K followers) with posting activity that has slowed. Despite HOME888's much larger follower count, its most recently observed post (3 reactions, 1,700 views) shows lower engagement than would be expected from its scale — the strongest reinforcement yet, across this whole project, of the cross-page finding that follower count does not predict engagement. Both provinces continue to show the same recurring value-add pattern noted elsewhere in this database: bundling free loan/credit consultation with the resale listing itself, not just listing photos and price."
+  },
+  "not_included_needing_disambiguation_or_dropped": [
+    {
+      "note": "Several prior-session candidates (BAAN D, Top Thai Real Estate/Pattaya, Perfect Homes/Chiang Mai, Siam Real Estate, Conrad Properties/Koh Samui, SmartLiving, KobKid.com/bangkokcondoclub, The Best Property) were identified in an earlier part of this session but not re-verified via a fresh WebSearch call in this pass. Excluded from the 20-row list above to keep the list to entries with at least a confirmed URL/name from this session's actual tool calls, per the 'evidence only' constraint — listed here instead of silently dropped so nothing is lost."
+    }
+  ]
+}

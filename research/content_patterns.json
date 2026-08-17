@@ -1,0 +1,103 @@
+{
+  "generated": "2026-07-16",
+  "method": "Mixed: 7 real posts now live-verified via Claude-in-Chrome across 7 pages (Bangkok Asset, SpyEstates, Mahanakornhome, CS Property, Bahn Mahanakorn [home-building], Home.ban2, plus Bangkok Asset Center which had only a stale non-business post) with real engagement counts as displayed by Facebook. Remaining pages/posts are WebSearch snippet-only or not yet checked. This is NOT the full 50-posts-x-20-pages census the original spec calls for — Facebook's feed kept loading only 1-2 posts before stalling on skeleton placeholders during this session, so live verification is a small real sample, not a complete scrape.",
+  "evidence_policy": "Every entry below states its actual source. Fields marked UNVERIFIED were checked for and not found/displayed, not guessed.",
+  "live_verified_posts": [
+    {
+      "page": "Bangkok Asset (bangkokassetsclub)",
+      "posted": "1 ชั่วโมง (1 hour before check, 2026-07-16)",
+      "format": "Video with text overlay",
+      "hook": "🏡 บ้านเดี่ยวระดับพรีเมียม...บนทำเลที่หาได้ยากในฝั่งธนบุรี โครงการ #เศรษฐสิริ จรัญฯ–ปิ่นเกล้า",
+      "hook_translation": "Premium single-detached house...on a rare-to-find location on the Thonburi side. Project: #Sethsiri Charan-Pinklao",
+      "topic": "New premium house project promotion, scarcity/location framing",
+      "video_overlay_text": "ถ้าให้เลือก (\"If you had to choose\") — curiosity/choice-based hook on the video itself",
+      "cta": "UNVERIFIED — not visible in the portion of the post viewed (may be in a longer caption behind \"ดูเพิ่มเติม\"/see more, or in video itself)",
+      "engagement": {"reactions": 5, "comments": "UNVERIFIED (not shown/zero)", "shares": "UNVERIFIED (not shown/zero)", "views": 448},
+      "source_note": "Live Facebook page visit via Claude-in-Chrome, 2026-07-16"
+    },
+    {
+      "page": "นักสืบอสังหา (SpyEstates)",
+      "posted": "1 ชั่วโมง (1 hour before check, 2026-07-16)",
+      "format": "Multi-photo album (14+ images)",
+      "hook": "💥 ในที่สุด 'Cloud 11' ครีเอทีฟแลนด์ ก็ได้เปิดอย่างเป็นทางการแล้วครับ",
+      "hook_translation": "Finally, 'Cloud 11' creative land has officially opened",
+      "topic": "Major mixed-use development opening — news/announcement framing",
+      "cta": "UNVERIFIED — caption truncated behind \"ดูเพิ่มเติม\"",
+      "engagement": {"reactions": 21, "comments": 8, "shares": 3},
+      "audience_reaction_sample": "1 real visible comment: \"ถ้าร้านส่วนห้างเปิดเต็มสเกลผมว่าได้ฟีลแนวๆ emsphere เลยครับ...\" (\"If the retail section opens at full scale, I think it'll feel like Emsphere...\") — audience comparing the new project to an existing well-known Bangkok mall/mixed-use development",
+      "source_note": "Live Facebook page visit via Claude-in-Chrome, 2026-07-16"
+    },
+    {
+      "page": "มหานครโฮม (Mahanakornhome)",
+      "posted": "2 ชั่วโมง (2 hours before check, 2026-07-16)",
+      "format": "Multi-photo listing (16+ images)",
+      "hook": "📍 พนาสนธิ์การ์เด้นโฮม6 หลังมุม 🔥🔥ราคา 3,990,000 บาท ฟรีโอน🔥🔥",
+      "hook_translation": "Panasont Garden Home, corner unit no.6 — Price 3,990,000 THB, free transfer fees",
+      "topic": "Direct listing with price and promo, emoji-heavy urgency framing (fire emojis)",
+      "cta": "UNVERIFIED — caption truncated behind \"ดูเพิ่มเติม\"; phone contact +66 96 104 1689 listed on page itself",
+      "engagement": {"reactions": 3, "comments": 0, "shares": 0},
+      "source_note": "Live Facebook page visit via Claude-in-Chrome, 2026-07-16"
+    },
+    {
+      "page": "CS Property (SC.Asset.Managenent — display name differs from URL slug)",
+      "posted": "24 นาที (24 minutes before check, 2026-07-16)",
+      "format": "Multi-photo listing (19+ images)",
+      "hook": "🏡🎉บ้านแฝดสไตล์บ้านเดี่ยว📌ทำเลลูกกาคลอง 6 รีโนเวทใหม่ สไตล์เดิร์น English แถมฟรีเฟอร์นิเจอร์ แอร์ ผ่าม่าน ใกล้ห้างบิ๊กซี โลตัส โรงเรียน สำนักงานที่ดินลำลูกกา",
+      "hook_translation": "Semi-detached house styled as a single-detached home, Lam Luk Ka Khlong 6 location, freshly renovated, modern English style, includes free furniture/AC/curtains, near Big C, Lotus, schools, and the Lam Luk Ka land office",
+      "topic": "Bundled-freebies + amenity-proximity listing",
+      "cta": "UNVERIFIED — caption truncated behind \"ดูเพิ่มเติม\"",
+      "engagement": {"reactions": "post too fresh (24 min) to show meaningful counts at time of check", "comments": "same", "shares": "same"},
+      "source_note": "Live Facebook page visit via Claude-in-Chrome, 2026-07-16"
+    },
+    {
+      "page": "บ้านมหานคร รับสร้างบ้าน (Bahn Mahanakorn — custom home-building company, verified page, 110K followers)",
+      "posted": "4 ชั่วโมง (4 hours before check, 2026-07-16)",
+      "format": "Video — behind-the-scenes site visit footage of staff/owner walking through a construction site",
+      "hook": "🏠นึกถึงการสร้างคิดถึงบ้านมหานคร🏠🏠ออกแบบบ้านจนกว่าคุณจะพอใจ🏠🏠ออกแบบตกแต่งภายใน🏠🏠รับสร้างบ้านคุณภาพสูงราคายุติธรรม🏠",
+      "hook_translation": "Think of building, think of Bahn Mahanakorn — we design until you're satisfied, interior design, high-quality home construction at fair prices",
+      "topic": "Brand-recall slogan + behind-the-scenes trust-building content — DIRECTLY comparable content type to Finnhouses' own core business (custom home building, not resale)",
+      "cta": "UNVERIFIED — caption truncated behind \"ดูเพิ่มเติม\"",
+      "engagement": {"reactions": 9, "comments": 0, "shares": 2, "views": 164},
+      "source_note": "Live Facebook page visit via Claude-in-Chrome, 2026-07-16 — this is the most strategically relevant live-verified page found this pass since it shares Finnhouses' actual business model (building, not just resale)"
+    },
+    {
+      "page": "ขายบ้านมือสองรีโนเวทราคาเป็นกันเอง (Home.ban2)",
+      "posted": "6 ชั่วโมง (6 hours before check, 2026-07-16)",
+      "format": "Multi-photo listing (17+ images)",
+      "hook": "📌หมู่บ้านบัวทอง2 (3นอน) อยู่ต้นซอย //ติดรถไฟฟ้าสายสีม่วง//ใกล้เซ็นทรัลเวสต์เกต//ติดถนนกาญจนาภิเษก",
+      "hook_translation": "Bua Thong 2 Village (3 bedrooms), located at the start of the soi, adjacent to the Purple Line MRT, near Central Westgate mall, on Kanchanaphisek ring road",
+      "topic": "Transit/amenity-proximity listing framing — same pattern type as CS Property's post above, now observed on 2 independent pages",
+      "cta": "UNVERIFIED — caption truncated behind \"ดูเพิ่มเติม\"",
+      "engagement": {"reactions": 1, "comments": 0, "shares": 0},
+      "source_note": "Live Facebook page visit via Claude-in-Chrome, 2026-07-16"
+    },
+    {
+      "page": "Bangkok Asset Center",
+      "posted": "12 มิถุนายน (June 12, 2026 — over a month stale relative to this check)",
+      "format": "Shared memorial/condolence graphic (royal mourning notice), not business content",
+      "hook": "ถวายอาลัย น้อมรำลึกในพระกรุณาธิคุณ",
+      "hook_translation": "Condolence offering, respectfully remembering [the late royal's] grace",
+      "topic": "Non-commercial — this was the most recent post visible on the page, indicating low current posting activity",
+      "cta": "N/A",
+      "engagement": {"reactions": 2, "comments": 0, "shares": 0},
+      "source_note": "Live Facebook page visit via Claude-in-Chrome, 2026-07-16. Notably, this shared post's attribution text confirmed the page is run by \"บริษัท บางกอก แอสเซท อินเตอร์กรุ๊ป จำกัด (มหาชน)\" — same public company as Bangkok Asset (bangkokassetsclub)"
+    }
+    {
+      "page": "บ้านมือสอง กรุงเทพ-นนทบุรี ราคาถูก (HOME888 — geo-focused Nonthaburi/Pathum Thani round)",
+      "posted": "2 วัน (2 days before check, 2026-07-16)",
+      "format": "Video, with a text caption listing the property",
+      "hook": "🏚️บ้านเดี่ยว หมู่บ้านพฤกษาวิเลจ 5 ใกล้ MRT ตลาดบางใหญ่ และเซ็นทรัล เวสต์เกต...",
+      "hook_translation": "Single-detached house, Pruksa Village 5, near Bang Yai market MRT and Central Westgate mall",
+      "topic": "Transit/amenity-proximity listing framing — the same pattern type independently observed on CS Property and Home.ban2 above, now confirmed on a third, much larger page",
+      "notable_observation": "The video attached to this post was an unrelated stock-style wedding/bridal scene (four people in formalwear, a bride in a wedding gown) with no visible connection to the house-listing caption — a real, directly observed mismatch between the hook video and the caption topic, not an inferred or assumed pattern.",
+      "cta": "\"Add LINE friend\" link-out card (LINE.me), not a phone-call or comment prompt",
+      "engagement": {"reactions": 3, "comments": "UNVERIFIED (not shown/zero)", "shares": "UNVERIFIED (not shown/zero)", "views": 1700},
+      "source_note": "Live Facebook page visit via Claude-in-Chrome, 2026-07-16 — HOME888 has ~120,000 followers, the largest of any resale page found in the geo-focused Nonthaburi/Pathum Thani round, yet this post's engagement (3 reactions / 1,700 views) is modest relative to that scale"
+    }
+  ],
+  "cross_page_pattern_observation": {
+    "note": "Engagement does NOT scale with follower count across the now-8-post live-verified sample. SpyEstates (~210K followers, investigative/news-style content) got the highest engagement of any page (21 reactions + 8 comments + 3 shares). Bahn Mahanakorn (~110K followers, home-building, behind-the-scenes video) got 9 reactions + 2 shares + 164 views. Bangkok Asset (~350K followers, direct project-promo) got only 5 reactions + 448 views. HOME888 (~120K followers, geo-focused round) got 3 reactions + 1,700 views on a plain amenity-proximity listing video — again a large follower base without correspondingly large reaction counts. Mahanakornhome, CS Property, and Home.ban2 (all small pages, plain listing formats) got 1-3 reactions and effectively zero comments/shares each. This is now an 8-post comparison across 8 pages, not a statistically validated finding, but the pattern is consistent enough across a growing sample to treat as a real signal: news/announcement or behind-the-scenes/trust-building framing appears to outperform plain price-listing posts, regardless of the page's follower count.",
+    "second_finding": "Three independent pages (CS Property, Home.ban2, and now HOME888 — spanning small, medium, and large follower counts) have all used the same transit/amenity-proximity hook pattern (\"near BTS/MRT line, near a named mall, near a major road\") — suggesting this is a common, low-effort format used across resale operators of every size, not a differentiated one. Worth noting as a pattern Finnhouses should expect virtually all competitors to already be using, not a novel angle to claim as a differentiator."
+  },
+  "limitation_note": "8 live-verified posts collected across 8 pages (out of 20+ candidates now tracked, including the geo-focused Nonthaburi/Pathum Thani additions), not 50 posts x 20 pages (1,000 data points) as the original spec requests. Facebook's page feed only rendered 1-2 real posts per page before further scroll attempts returned loading skeletons that didn't resolve within a reasonable wait — closing this gap fully would need either repeated retries per page over a longer session, or the Nimble scraping connector once authenticated. Several candidate pages remain fully unchecked via live browser (FazWaz's per-post engagement, Estopolis.com, Realist, prop2morrow, Living Sneak Peek, CondoDiary, Review by O, Passion Realtor, plus บ้านมือสองนนทบุรี by รักบ้าน and คุณนัท from the geo-focused round)."
+}

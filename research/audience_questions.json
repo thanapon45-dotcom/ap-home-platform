@@ -1,0 +1,18 @@
+{
+  "generated": "2026-07-16",
+  "method": "Mixed: WebSearch (surfaced nothing) plus live Claude-in-Chrome page visits, which did surface one real visible audience comment.",
+  "evidence_policy": "Only real, observed comment text is listed. Nothing here is inferred or extrapolated into a general 'pain point' or 'question' category unless the comment itself is phrased that way.",
+  "questions_found": [],
+  "pain_points_found": [],
+  "audience_reactions_found": [
+    {
+      "page": "นักสืบอสังหา (SpyEstates)",
+      "comment_text": "ถ้าร้านส่วนห้างเปิดเต็มสเกลผมว่าได้ฟีลแนวๆ emsphere เลยครับ...",
+      "translation": "If the retail/mall section opens at full scale, I think it'll feel like Emsphere...",
+      "type": "Comparison / expectation-setting reaction (not a direct question or complaint)",
+      "context": "Comment on a post announcing the official opening of 'Cloud 11' creative land mixed-use development",
+      "source_note": "LIVE-VERIFIED — real, visible top comment on a live Facebook post, viewed via Claude-in-Chrome, 2026-07-16"
+    }
+  ],
+  "limitation_note": "Only 1 real audience comment was captured this pass (from the single post-with-comments live-verified across 3 pages checked; Bangkok Asset and Mahanakornhome's live-verified posts had 0 visible comments). This is far short of a 'Top Customer Questions' / 'Top Customer Pain Points' list, and this single data point is a comparison remark, not a question or a stated pain point. Genuinely surfacing customer questions/pain points requires reading comment sections across many more posts — each post needs its own visit and the comments often need expanding (\"ดูความคิดเห็นเพิ่มเติม\") to see beyond the first 1-2 replies. This remains the weakest-covered deliverable of the six and should be prioritized in any follow-up session with more time for live browsing."
+}

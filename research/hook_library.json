@@ -1,0 +1,103 @@
+{
+  "generated": "2026-07-16",
+  "method": "Mixed: WebSearch snippet analysis, plus 3 real live-verified post captions via Claude-in-Chrome (marked LIVE-VERIFIED below).",
+  "evidence_policy": "This is NOT a Top 100 hook list as specified. Even with live browser access, Facebook's feed only rendered 1-2 posts per page before stalling — so this remains a small, real, evidence-backed sample rather than a full census. Presenting a fabricated or extrapolated Top 100 would violate 'Evidence only. No assumptions.' — so this file lists only what was actually found.",
+  "hooks_found": [
+    {
+      "hook": "🏡 บ้านเดี่ยวระดับพรีเมียม...บนทำเลที่หาได้ยากในฝั่งธนบุรี โครงการ #เศรษฐสิริ จรัญฯ–ปิ่นเกล้า",
+      "translation": "Premium single-detached house...on a rare-to-find location on the Thonburi side. Project: #Sethsiri Charan-Pinklao",
+      "pattern_type": "Premium/scarcity framing + branded project hashtag",
+      "source_page": "Bangkok Asset (bangkokassetsclub)",
+      "verification": "LIVE-VERIFIED — real post dated 1 hour before check, 2026-07-16, engagement: 5 reactions / 448 views"
+    },
+    {
+      "hook": "ถ้าให้เลือก",
+      "translation": "If you had to choose",
+      "pattern_type": "Curiosity/choice-based video text overlay (distinct from the caption hook above, used within the same post's video)",
+      "source_page": "Bangkok Asset (bangkokassetsclub)",
+      "verification": "LIVE-VERIFIED — same post as above"
+    },
+    {
+      "hook": "💥 ในที่สุด 'Cloud 11' ครีเอทีฟแลนด์ ก็ได้เปิดอย่างเป็นทางการแล้วครับ",
+      "translation": "Finally, 'Cloud 11' creative land has officially opened",
+      "pattern_type": "News/announcement framing (\"finally... officially\")",
+      "source_page": "นักสืบอสังหา (SpyEstates)",
+      "verification": "LIVE-VERIFIED — real post dated 1 hour before check, 2026-07-16, engagement: 21 reactions / 8 comments / 3 shares — highest engagement of the 3 live-verified posts"
+    },
+    {
+      "hook": "📍 พนาสนธิ์การ์เด้นโฮม6 หลังมุม 🔥🔥ราคา 3,990,000 บาท ฟรีโอน🔥🔥",
+      "translation": "Panasont Garden Home, corner unit no.6 — Price 3,990,000 THB, free transfer fees",
+      "pattern_type": "Direct listing with price + fire-emoji urgency framing",
+      "source_page": "มหานครโฮม (Mahanakornhome)",
+      "verification": "LIVE-VERIFIED — real post dated 2 hours before check, 2026-07-16, engagement: 3 reactions / 0 comments / 0 shares — lowest engagement of the 3 live-verified posts"
+    },
+    {
+      "hook": "🏡🎉บ้านแฝดสไตล์บ้านเดี่ยว📌ทำเลลูกกาคลอง 6 รีโนเวทใหม่ สไตล์เดิร์น English แถมฟรีเฟอร์นิเจอร์ แอร์ ผ่าม่าน ใกล้ห้างบิ๊กซี โลตัส โรงเรียน สำนักงานที่ดินลำลูกกา",
+      "translation": "Semi-detached house styled as single-detached, Lam Luk Ka Khlong 6 location, freshly renovated, modern English style, includes free furniture/AC/curtains, near Big C, Lotus, schools, land office",
+      "pattern_type": "Bundled-freebies + amenity-proximity framing",
+      "source_page": "CS Property (SC.Asset.Managenent)",
+      "verification": "LIVE-VERIFIED — real post dated 24 minutes before check, 2026-07-16 (too fresh for engagement counts yet)"
+    },
+    {
+      "hook": "🏠นึกถึงการสร้างคิดถึงบ้านมหานคร🏠🏠ออกแบบบ้านจนกว่าคุณจะพอใจ🏠🏠ออกแบบตกแต่งภายใน🏠🏠รับสร้างบ้านคุณภาพสูงราคายุติธรรม🏠",
+      "translation": "Think of building, think of Bahn Mahanakorn — we design until you're satisfied, interior design, high-quality home construction at fair prices",
+      "pattern_type": "Brand-recall slogan + behind-the-scenes trust content — from a custom HOME-BUILDING competitor (not resale), directly comparable to Finnhouses' own business model",
+      "source_page": "บ้านมหานคร รับสร้างบ้าน (Bahn Mahanakorn, verified page, ~110K followers)",
+      "verification": "LIVE-VERIFIED — real post dated 4 hours before check, 2026-07-16, engagement: 9 reactions / 2 shares / 164 views"
+    },
+    {
+      "hook": "📌หมู่บ้านบัวทอง2 (3นอน) อยู่ต้นซอย //ติดรถไฟฟ้าสายสีม่วง//ใกล้เซ็นทรัลเวสต์เกต//ติดถนนกาญจนาภิเษก",
+      "translation": "Bua Thong 2 Village (3 bedrooms), start of the soi, adjacent to the Purple Line MRT, near Central Westgate mall, on Kanchanaphisek ring road",
+      "pattern_type": "Transit/amenity-proximity framing — same pattern independently observed on CS Property above, now confirmed on 2 separate pages",
+      "source_page": "ขายบ้านมือสองรีโนเวทราคาเป็นกันเอง (Home.ban2)",
+      "verification": "LIVE-VERIFIED — real post dated 6 hours before check, 2026-07-16, engagement: 1 reaction / 0 comments / 0 shares"
+    },
+    {
+      "hook": "รีโนเวทใหม่ทุกทำเล",
+      "translation": "Renovated fresh, every location",
+      "pattern_type": "Coverage-breadth claim",
+      "source_page": "Bangkok Asset (bangkokassetsclub)",
+      "verification": "WebSearch snippet only (page tagline, not a dated post)"
+    },
+    {
+      "hook": "เข้าสู่เดือนสุดท้าย Q1 แบรนด์อสังหาฯ ใหญ่ๆ แถลงแผนธุรกิจปี 2568 กันเก็บหมดแล้ว",
+      "translation": "Entering the final month of Q1 — major real estate brands have all announced their 2025 business plans",
+      "pattern_type": "Industry-roundup / timeliness hook",
+      "source_page": "นักสืบอสังหา (SpyEstates)"
+    },
+    {
+      "hook": "บ้านมือสอง บ้านรีโนเวทใหม่ มีนบุรี หทัยราษฏร์ รามอินทรา นิมิตรใหม่ หนองจอก",
+      "translation": "Second-hand house, freshly renovated — Minburi, Hathairat, Ramintra, Nimitmai, Nongchok",
+      "pattern_type": "Product-first + district-stacking (local SEO / recognition hook)",
+      "source_page": "มหานครโฮม (Mahanakornhome)"
+    },
+    {
+      "hook": "ขายบ้านมือสองรีโนเวทราคาเป็นกันเอง",
+      "translation": "Renovated second-hand house for sale, at a friendly/affordable price",
+      "pattern_type": "Affordability-first positioning",
+      "source_page": "ขายบ้านมือสองรีโนเวทราคาเป็นกันเอง (Home.ban2)"
+    },
+    {
+      "hook": "บ้านร้าง สร้างรายได้",
+      "translation": "Abandoned house, turned into income",
+      "pattern_type": "Transformation / before-after narrative (adjacent content format, not a target FB page)",
+      "source_page": "YouTube series (reference pattern only, not in competitor database)"
+    },
+    {
+      "hook": "🏚️บ้านเดี่ยว หมู่บ้านพฤกษาวิเลจ 5 ใกล้ MRT ตลาดบางใหญ่ และเซ็นทรัล เวสต์เกต...",
+      "translation": "Single-detached house, Pruksa Village 5, near Bang Yai market MRT and Central Westgate mall",
+      "pattern_type": "Transit/amenity-proximity framing — same pattern independently observed on CS Property and Home.ban2, now confirmed on a third, much larger page (~120K followers)",
+      "source_page": "บ้านมือสอง กรุงเทพ-นนทบุรี ราคาถูก (HOME888, geo-focused Nonthaburi/Pathum Thani round)",
+      "verification": "LIVE-VERIFIED — real post dated 2 days before check, 2026-07-16, engagement: 3 reactions / 1,700 views. Notable: attached video was an unrelated stock-style wedding/bridal scene with no visible connection to the caption topic — a real, observed mismatch."
+    },
+    {
+      "hook": "🌿บางครั้ง...การลงทุนที่ดีที่สุด ไม่ใช่หุ้น ไม่ใช่ทองคำ แต่คือ 'ที่ดิน'",
+      "translation": "Sometimes, the best investment isn't stocks, isn't gold, but is 'land'",
+      "pattern_type": "Land-investment philosophy framing, distinct from plain listing/price hooks",
+      "source_page": "รับฝากขายบ้านมือสอง รังสิต-ปทุม-กทม (geo-focused Pathum Thani round)",
+      "verification": "LIVE-VERIFIED — real post dated 5 days before check, 2026-07-16, engagement: 0 reactions / 0 comments / 0 shares"
+    }
+  ],
+  "count": 14,
+  "limitation_note": "14 of 100 requested (9 live-verified real posts + 5 WebSearch snippets). A genuine Top 100 requires scraping actual post captions at volume across many more posts per page — Facebook's feed rendering only 1-2 posts per page before stalling was the limiting factor even with live browser access this pass."
+}
