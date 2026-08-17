@@ -421,8 +421,8 @@ Archi อัปโหลดไฟล์ workflow มาให้ตรวจ →
 ---
 
 ## ADR-021 — WF1 AI Quality Gate feedback loop (item #2 ของแผน 3 ข้อ "ระบบพิสูจน์ตัวเองว่าทำงานถูก")
-**Date**: 2026-07-23 (session 29 ต่อๆๆๆๆ)
-**Status**: Code + schema เสร็จแล้ว ✅ — **ยังไม่ได้ import/activate workflow (11_gate_log) ใน n8n จริง** (รอ Archi ทำเหมือน (10_ai_quality_gate) รอบก่อน)
+**Date**: 2026-07-23 (session 29 ต่อๆๆๆๆ) — **ปิดงาน 2026-07-25 (session 31)**
+**Status**: ✅ LIVE in production — import + activate โดย Archi แล้ว, verify ผ่านจริง 2 ทาง (ดู "Go-live update" ท้ายรายการนี้)
 
 **Context**: หลัง Archi ยืนยัน "ทำทั้ง 3 อันเลย เรียงตามลำดับ" จากแผน 3 ข้อที่เสนอไว้ (จากการ audit module-by-module) — ข้อแรกคือ WF1 AI Quality Gate (ADR-016, LIVE ตั้งแต่ session 29 ก่อนหน้า) เช็คบล็อก/ปล่อยผ่านบทความอัตโนมัติ แต่**ไม่มีที่ไหนเก็บ log การตัดสินใจของ Gate เลย** และ**ไม่มีทางให้มนุษย์ยืนยันย้อนหลังว่า Gate ตัดสินใจถูกไหม** — เหมือนกับที่ QC Line เคยเป็นก่อน ADR-015 (มี AI ตัดสินใจ แต่ไม่มีกลไกพิสูจน์ตัวเองว่าตัดสินใจถูก)
 
@@ -440,7 +440,16 @@ Archi อัปโหลดไฟล์ workflow มาให้ตรวจ →
 
 **Verify**: ✅ Supabase migration `create_quality_gate_log` สำเร็จ ✅ n8n JSON parse ผ่าน + wiring + reachability ยืนยันด้วย Python ✅ `npx tsc --noEmit` ผ่านสะอาด
 
-**ยังไม่ได้ทำ / รอ Archi**: (1) ใส่ service_role key จริงในไฟล์ (11_gate_log) ก่อน import (เหมือนที่ทำกับ (10_ai_quality_gate) ตอน go-live รอบก่อน — จุดนี้ไม่ต้องใส่ key เพราะ workflow เดิมใช้ hub_callback_url ไม่ใช่ Supabase ตรง, แต่ node ใหม่นี้ต้องใส่ service_role key เอง) (2) import เข้า n8n แทนตัวเดิม (10) (3) activate แล้วรอดูรอบถัดไปว่า `quality_gate_log` เริ่มมีแถวจริง (4) เมื่อมีข้อมูลสะสม ≥10 ครั้งที่ Archi กดยืนยันแล้ว ถึงจะเริ่มเห็น % ความแม่นยำจริงในหน้า dashboard
+**ยังไม่ได้ทำ / รอ Archi (ตอนเขียนรอบแรก — ปิดครบแล้ว ดู Go-live update ด้านล่าง)**: (1) ใส่ service_role key จริงในไฟล์ (11_gate_log) ก่อน import (2) import เข้า n8n แทนตัวเดิม (10) (3) activate แล้วรอดูรอบถัดไปว่า `quality_gate_log` เริ่มมีแถวจริง (4) เมื่อมีข้อมูลสะสม ≥10 ครั้งที่ Archi กดยืนยันแล้ว ถึงจะเริ่มเห็น % ความแม่นยำจริงในหน้า dashboard
+
+**Go-live update (2026-07-25, session 31)**:
+- พบบั๊กเพิ่มก่อนส่งไฟล์ให้ Archi import: node "Log Quality Gate Decision" เขียนด้วย `fetch()` ตรงๆ ซึ่งขัดกับกฎที่ยืนยันแล้วจาก CRM Note Parser (Wave 16 — n8n Code node sandbox ไม่ expose `fetch()` ให้เชื่อถือได้) แก้เป็น `this.helpers.httpRequest()` + ใส่ service_role key จริง (ดึงจาก `memory/secrets/n8n.env` ที่ใช้อยู่แล้วกับ workflow อื่น) ก่อนส่งให้ Archi import — ถ้าไม่แก้จุดนี้จะกลับไปเจอ silent-fail แบบเดิม (fail-open ออกแบบไว้ไม่บล็อก publish แต่ก็ไม่มี error โผล่ให้เห็นเลย)
+- Archi import แทน `(10_ai_quality_gate)` แล้ว activate สำเร็จ
+- Verify ผ่านจริง 2 ทาง: (1) หน้า Quality Gate tab โชว์ "ตัดสินใจทั้งหมด 1" (2) query ตรง Supabase `quality_gate_log` มี 1 แถวจริง ตรงกับ dashboard เป๊ะ (`unverifiable_factual_claim`, blocked, human_feedback="correct")
+- Archi ตั้งคำถามเรื่อง design ของปุ่มยืนยัน ✅/❌ ว่าดูย้อนแย้ง (AI ตรวจแล้วให้คนตรวจซ้ำ) — ชี้แจงแล้วว่าปุ่มนี้ไม่ใช่ส่วนหนึ่งของ pipeline บล็อก/ปล่อยผ่าน (Gate ตัดสินใจและมีผลจริงไปแล้วก่อนหน้านั้น) แต่เป็น retrospective audit เพื่อวัด calibration สะสมเท่านั้น — pattern เดียวกับ QC Line (ADR-015), ไม่บังคับกดทุกแถว
+- Monitor ต่อเนื่อง — สะสม ≥10 ครั้งยืนยันก่อนจะเห็น % ความแม่นยำจริง (ตอนนี้ 1/10)
+
+**ดูเพิ่ม**: `CLAUDE.md` Known Bugs #15, `docs/issues-log.md`
 
 ---
 
