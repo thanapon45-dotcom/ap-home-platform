@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Finnhouses Platform Architecture — Jun 2026</title>
+<style>
+  :root {
+    --gold: #C9A84C;
+    --gold-light: #E2C47A;
+    --dark: #0D0D0D;
+    --dark-2: #141414;
+    --dark-3: #1C1C1C;
+    --dark-4: #242424;
+    --text: #F5F0E8;
+    --text-muted: #888;
+    --green: #4CAF50;
+    --blue: #4A90D9;
+    --orange: #E07B39;
+    --purple: #8B5CF6;
+    --teal: #14B8A6;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--dark);
+    color: var(--text);
+    font-family: 'Prompt', 'Segoe UI', sans-serif;
+    min-height: 100vh;
+    padding: 32px 24px;
+  }
+  h1 {
+    text-align: center;
+    color: var(--gold);
+    font-size: 1.6rem;
+    letter-spacing: 0.1em;
+    margin-bottom: 6px;
+  }
+  .subtitle {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    margin-bottom: 40px;
+  }
+
+  /* ─── Layer ─── */
+  .layer {
+    margin-bottom: 16px;
+  }
+  .layer-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+    padding-left: 4px;
+  }
+  .layer-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: stretch;
+  }
+
+  /* ─── Card ─── */
+  .card {
+    background: var(--dark-3);
+    border: 1px solid #2a2a2a;
+    border-radius: 10px;
+    padding: 14px 16px;
+    flex: 1;
+    min-width: 160px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+  }
+  .card:hover {
+    border-color: var(--gold);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(201,168,76,0.15);
+  }
+  .card.active {
+    border-color: var(--gold);
+    background: var(--dark-4);
+  }
+  .card-icon { font-size: 1.4rem; margin-bottom: 6px; }
+  .card-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 2px;
+  }
+  .card-sub {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    line-height: 1.4;
+  }
+  .card-badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    font-size: 0.6rem;
+    background: var(--dark-4);
+    border: 1px solid #333;
+    border-radius: 4px;
+    padding: 2px 5px;
+    color: var(--text-muted);
+  }
+  .card-badge.gold { border-color: var(--gold); color: var(--gold); }
+  .card-badge.green { border-color: var(--green); color: var(--green); }
+
+  /* color accents */
+  .c-gold .card-icon { filter: none; }
+  .c-blue { border-color: #1e3a5f; }
+  .c-blue .card-title { color: var(--blue); }
+  .c-orange { border-color: #3a2010; }
+  .c-orange .card-title { color: var(--orange); }
+  .c-green { border-color: #1a3a1a; }
+  .c-green .card-title { color: var(--green); }
+  .c-purple { border-color: #2a1a4a; }
+  .c-purple .card-title { color: var(--purple); }
+  .c-teal { border-color: #0f2a28; }
+  .c-teal .card-title { color: var(--teal); }
+  .c-gold-b { border-color: #3a2a00; }
+  .c-gold-b .card-title { color: var(--gold); }
+
+  /* ─── Arrow connector ─── */
+  .arrow-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 32px;
+    height: 28px;
+    margin: 4px 0;
+  }
+  .arrow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    color: #444;
+    font-size: 0.65rem;
+    position: relative;
+  }
+  .arrow span { color: #555; font-size: 0.62rem; margin-bottom: 1px; }
+  .arrow::after {
+    content: '▼';
+    color: #444;
+    font-size: 0.6rem;
+  }
+
+  /* ─── Detail Panel ─── */
+  #detail-panel {
+    position: fixed;
+    top: 0; right: 0;
+    width: 340px;
+    height: 100vh;
+    background: var(--dark-3);
+    border-left: 1px solid var(--gold);
+    padding: 24px;
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+    overflow-y: auto;
+    z-index: 100;
+  }
+  #detail-panel.open { transform: translateX(0); }
+  #detail-panel h2 { color: var(--gold); font-size: 1rem; margin-bottom: 12px; }
+  #detail-panel .close-btn {
+    position: absolute; top: 16px; right: 16px;
+    background: none; border: none; color: var(--text-muted);
+    cursor: pointer; font-size: 1.2rem;
+  }
+  .detail-section { margin-bottom: 16px; }
+  .detail-section h3 {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+    border-bottom: 1px solid #2a2a2a;
+    padding-bottom: 4px;
+  }
+  .detail-section p, .detail-section li {
+    font-size: 0.8rem;
+    line-height: 1.6;
+    color: var(--text);
+  }
+  .detail-section ul { padding-left: 16px; }
+  .detail-section a { color: var(--gold); text-decoration: none; }
+  .tag {
+    display: inline-block;
+    background: var(--dark-4);
+    border: 1px solid #333;
+    border-radius: 4px;
+    padding: 2px 7px;
+    font-size: 0.68rem;
+    margin: 2px;
+    color: var(--text-muted);
+  }
+  .tag.gold { border-color: var(--gold); color: var(--gold); }
+
+  /* ─── Workflow section ─── */
+  .workflow-section {
+    margin-top: 32px;
+    border-top: 1px solid #2a2a2a;
+    padding-top: 24px;
+  }
+  .workflow-section h2 {
+    color: var(--gold);
+    font-size: 1rem;
+    margin-bottom: 16px;
+    letter-spacing: 0.05em;
+  }
+  .wf-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+  }
+  .wf-card {
+    background: var(--dark-3);
+    border: 1px solid #2a2a2a;
+    border-radius: 10px;
+    padding: 16px;
+  }
+  .wf-card h3 {
+    font-size: 0.85rem;
+    color: var(--gold-light);
+    margin-bottom: 10px;
+  }
+  .wf-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 6px;
+    font-size: 0.75rem;
+    line-height: 1.5;
+  }
+  .wf-num {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: var(--dark-4);
+    border: 1px solid var(--gold);
+    color: var(--gold);
+    font-size: 0.65rem;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .wf-arrow { color: #444; font-size: 0.7rem; margin: 2px 0 2px 8px; }
+
+  /* legend */
+  .legend {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 24px;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+  }
+  .legend-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+  }
+</style>
+</head>
+<body>
+
+<h1>⚡ Finnhouses Platform Architecture</h1>
+<p class="subtitle">คลิกที่ service ใดๆ เพื่อดูรายละเอียด &nbsp;|&nbsp; อัปเดต: May 22, 2026</p>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:#4A90D9"></div>Frontend / UI</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#E07B39"></div>Backend Services</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#8B5CF6"></div>Automation</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#4CAF50"></div>Database</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#14B8A6"></div>External</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#C9A84C"></div>Website</div>
+</div>
+
+<!-- ═══ LAYER 1: USER TOUCHPOINTS ═══ -->
+<div class="layer">
+  <div class="layer-label">👤 User Touchpoints</div>
+  <div class="layer-row">
+    <div class="card" onclick="showDetail('fb-user')">
+      <div class="card-icon">📱</div>
+      <div class="card-title">Facebook Followers</div>
+      <div class="card-sub">เห็น posts บน Finnhouses Page</div>
+    </div>
+    <div class="card" onclick="showDetail('web-visitor')">
+      <div class="card-icon">🌐</div>
+      <div class="card-title">Website Visitors</div>
+      <div class="card-sub">finnhouses.com — ดูบทความ, ทรัพย์, budget tool</div>
+    </div>
+    <div class="card" onclick="showDetail('line-user')">
+      <div class="card-icon">💚</div>
+      <div class="card-title">LINE Users</div>
+      <div class="card-sub">QC ช่าง + Seller ฝากขายทรัพย์</div>
+    </div>
+    <div class="card" onclick="showDetail('archi')">
+      <div class="card-icon">👨‍💼</div>
+      <div class="card-title">Archi (Owner)</div>
+      <div class="card-sub">ใช้ Dashboard OS จัดการทุกอย่าง</div>
+      <div class="card-badge gold">Admin</div>
+    </div>
+  </div>
+</div>
+
+<div class="arrow-row">
+  <div class="arrow"><span>HTTP / LINE / FB</span></div>
+</div>
+
+<!-- ═══ LAYER 2: FRONTEND ═══ -->
+<div class="layer">
+  <div class="layer-label">🖥️ Frontend — Next.js 15 (Vercel)</div>
+  <div class="layer-row">
+    <div class="card c-blue" onclick="showDetail('dashboard')">
+      <div class="card-icon">📊</div>
+      <div class="card-title">Dashboard OS</div>
+      <div class="card-sub">/dashboard — Overview + ทรัพย์รอ Review</div>
+      <div class="card-badge">/dashboard</div>
+    </div>
+    <div class="card c-blue" onclick="showDetail('crm')">
+      <div class="card-icon">🗂️</div>
+      <div class="card-title">CRM</div>
+      <div class="card-sub">Kanban 5 stages — new/followup/qualified/closed</div>
+      <div class="card-badge">/crm</div>
+    </div>
+    <div class="card c-blue" onclick="showDetail('ai-content')">
+      <div class="card-icon">✍️</div>
+      <div class="card-title">FB Content Engine</div>
+      <div class="card-sub">สร้าง post + Content Queue 7 วัน</div>
+      <div class="card-badge">/ai-content</div>
+    </div>
+    <div class="card c-blue" onclick="showDetail('blog-runner')">
+      <div class="card-icon">📝</div>
+      <div class="card-title">Blog Runner</div>
+      <div class="card-sub">n8n pipeline → WordPress SEO articles</div>
+      <div class="card-badge">/marketing</div>
+    </div>
+    <div class="card c-blue" onclick="showDetail('land-analyzer-dash')">
+      <div class="card-icon">🗺️</div>
+      <div class="card-title">Land Analyzer</div>
+      <div class="card-sub">Internal — วิเคราะห์ที่ดิน → projects table</div>
+      <div class="card-badge">/land-analyzer</div>
+    </div>
+    <div class="card c-blue" onclick="showDetail('budget')">
+      <div class="card-icon">💰</div>
+      <div class="card-title">Budget Tool</div>
+      <div class="card-sub">คำนวณงบ + capture lead → Telegram</div>
+      <div class="card-badge">/budget</div>
+    </div>
+    <div class="card c-gold-b" onclick="showDetail('fixflip-deals')">
+      <div class="card-icon">🏗️</div>
+      <div class="card-title">Fix & Flip Deals 🆕</div>
+      <div class="card-sub">Kanban deal pipeline → reno_deals table</div>
+      <div class="card-badge gold">/deals</div>
+    </div>
+  </div>
+</div>
+
+<div class="arrow-row">
+  <div class="arrow"><span>Server-side Proxy (CORS fix)</span></div>
+</div>
+
+<!-- ═══ LAYER 3: BACKEND ═══ -->
+<div class="layer">
+  <div class="layer-label">⚙️ Backend — Railway</div>
+  <div class="layer-row">
+    <div class="card c-orange" onclick="showDetail('hub')">
+      <div class="card-icon">🔧</div>
+      <div class="card-title">Backend Hub</div>
+      <div class="card-sub">Express.js — API ทั้งหมด: blog, image, land-lead, property</div>
+      <div class="card-badge">Railway</div>
+    </div>
+    <div class="card c-orange" onclick="showDetail('fb-backend')">
+      <div class="card-icon">📘</div>
+      <div class="card-title">FB Backend</div>
+      <div class="card-sub">Express.js — โพสต์ไปยัง Facebook Page API</div>
+      <div class="card-badge">Railway</div>
+    </div>
+    <div class="card c-purple" onclick="showDetail('n8n')">
+      <div class="card-icon">🔄</div>
+      <div class="card-title">n8n Automation</div>
+      <div class="card-sub">Blog gen, QC LINE, Seller intake, Wake-up, Schedule</div>
+      <div class="card-badge">Railway</div>
+    </div>
+  </div>
+</div>
+
+<div class="arrow-row">
+  <div class="arrow"><span>Supabase REST API / WP REST API</span></div>
+</div>
+
+<!-- ═══ LAYER 4: DATA & EXTERNAL ═══ -->
+<div class="layer">
+  <div class="layer-label">🗄️ Data & External Services</div>
+  <div class="layer-row">
+    <div class="card c-green" onclick="showDetail('supabase')">
+      <div class="card-icon">🗃️</div>
+      <div class="card-title">Supabase (PostgreSQL)</div>
+      <div class="card-sub">leads · properties · market_listings · projects</div>
+      <div class="card-badge green">DB</div>
+    </div>
+    <div class="card c-gold-b" onclick="showDetail('wordpress')">
+      <div class="card-icon">🏠</div>
+      <div class="card-title">WordPress (finnhouses.com)</div>
+      <div class="card-sub">บทความ SEO + listings + custom theme Finnhouses</div>
+      <div class="card-badge gold">CMS</div>
+    </div>
+    <div class="card c-teal" onclick="showDetail('openai')">
+      <div class="card-icon">🤖</div>
+      <div class="card-title">OpenAI / Gemini</div>
+      <div class="card-sub">GPT-4o: text gen, image gen (DALL-E/Gemini fallback)</div>
+    </div>
+    <div class="card c-teal" onclick="showDetail('telegram')">
+      <div class="card-icon">✈️</div>
+      <div class="card-title">Telegram Bot</div>
+      <div class="card-sub">แจ้งเตือน lead ใหม่, QC alerts, system errors</div>
+    </div>
+    <div class="card c-teal" onclick="showDetail('facebook-api')">
+      <div class="card-icon">📘</div>
+      <div class="card-title">Facebook Graph API</div>
+      <div class="card-sub">โพสต์บน Finnhouses Page — Page Token exp ~Aug 2, 2026</div>
+      <div class="card-badge" style="border-color:#ff6b6b;color:#ff6b6b">⚠️ Aug 2</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SPECIAL: LOCAL + PUBLIC ═══ -->
+<div class="layer" style="margin-top:8px">
+  <div class="layer-label">🖥️ Local Tools &amp; Public Lead Magnets</div>
+  <div class="layer-row">
+    <div class="card" onclick="showDetail('scraper')">
+      <div class="card-icon">🕷️</div>
+      <div class="card-title">Market Scraper</div>
+      <div class="card-sub">Playwright local — baan.kaidee.com → market_listings</div>
+      <div class="card-badge">Local .bat</div>
+    </div>
+    <div class="card c-gold-b" onclick="showDetail('land-wp')">
+      <div class="card-icon">🏗️</div>
+      <div class="card-title">Land Analyzer (Public)</div>
+      <div class="card-sub">finnhouses.com/land-analyzer — lead magnet, lock gate</div>
+      <div class="card-badge gold">WP Page</div>
+    </div>
+    <div class="card" onclick="showDetail('qc-line')">
+      <div class="card-icon">📋</div>
+      <div class="card-title">QC LINE System</div>
+      <div class="card-sub">ช่างส่งรูป → AI Vision → Reply Thai ≤15s</div>
+      <div class="card-badge">LINE OA</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ WORKFLOWS ═══ -->
+<div class="workflow-section">
+  <h2>🔄 Key Workflows</h2>
+  <div class="wf-grid">
+
+    <div class="wf-card">
+      <h3>📥 Lead Capture (Budget Tool)</h3>
+      <div class="wf-step"><div class="wf-num">1</div>ลูกค้ากรอก budget บน finnhouses.com/budget</div>
+      <div class="wf-arrow">↓</div>
+      <div class="wf-step"><div class="wf-num">2</div>Vercel → Hub → Supabase leads (stage=new)</div>
+      <div class="wf-arrow">↓</div>
+      <div class="wf-step"><div class="wf-num">3</div>Telegram แจ้ง Archi ทันที</div>
+      <div class="wf-arrow">↓</div>
+      <div class="wf-step"><div class="wf-num">4</div>CRM Kanban แสดง lead ใหม่</div>
+    </div>
+
+    <div class="wf-card">
+      <h3>📝 Blog Content (n8n Auto)</h3>
+      <div class="wf-step"><div class="wf-num">1</div>n8n Schedule 09:05 ทุกวัน</div>
+      <div class="wf-arrow">↓</div>
+      <div class="wf-step"><div class="wf-num">2</div>Blog Queue → ดึง keyword จาก 16 pools</div>
+      <div class="wf-arrow">↓</div>
+      <div class="wf-step"><div class="wf-num">3</div>GPT-4o เขียนบทความ SEO (ภาษาไทย)</div>
+      <div class="wf-arrow">↓</div>
+      <div class="wf-step"><div class="wf-num">4</div>Gemini สร้างรูป → WP REST API publish</div>
+      <div class="wf-arrow">↓</div>
+      <div class="wf-step"><div class="wf-num">5</div>finnhouses.com/blog/[slug]/ live</div>
+    </div>
+
+    <div class="wf-card">
+      <h3>📘 Facebook Content</h3>
+      <div class="wf-step"><div class="wf-num">1</div>Archi กด Generate ใน /ai-content</div>
+      <div class="wf-arrow">↓</div>
+      <div class="wf-step"><div class="wf-num">2</div>Claude สร้าง concept → DALL-E/Gemini สร้างรูป</div>
+      <div class="wf-arrow">↓</div>
+      <div class="wf-step"><div class="wf-num">3</div>ใส่ใน Content Queue 7 วัน</div>
+      <div class="wf-arrow">↓</div>
+      <div class="wf-step"><div class="wf-num">4</div>n8n 09:05 → FB Backend → Facebook Page</div>
+    </div>
+
+    <div class="wf-card">
+      <h3>🏠 Seller Property Pipeline</h3>
+      <div class="wf-step"><div class="wf-num">1</div>ลูกค้าส่งข้อมูลทรัพย์ผ่าน LINE OA</div>
+      <div class="wf-arrow">↓</div>
+      <div class="wf-step"><div class="wf-num">2</div>n8n webhook → GPT parse → Supabase properties (pending_review)</div>
+      <div class="wf-arrow">↓</div>
+      <div class="wf-step"><div class="wf-num">3</div>Dashboard tab "ทรัพย์รอ Review" → Archi ตรวจ แก้ไข อัพรูป</div>
+      <div class="wf-arrow">↓</div>
+      <div class="wf-step"><div class="wf-num">4</div>Approve → Hub → WP REST API → publish post</div>
+      <div class="wf-arrow">↓</div>
+      <div class="wf-step"><div class="wf-num">5</div>finnhouses.com/properties/[id]/ live</div>
+    </div>
+
+    <div class="wf-card">
+      <h3>🔍 QC LINE System</h3>
+      <div class="wf-step"><div class="wf-num">1</div>ช่างส่งรูปงานก่อสร้างผ่าน LINE OA</div>
+      <div class="wf-arrow">↓</div>
+      <div class="wf-step"><div class="wf-num">2</div>n8n LINE webhook รับรูป</div>
+      <div class="wf-arrow">↓</div>
+      <div class="wf-step"><div class="wf-num">3</div>Hub → AI Vision วิเคราะห์ (GPT-4V)</div>
+      <div class="wf-arrow">↓</div>
+      <div class="wf-step"><div class="wf-num">4</div>Reply กลับ LINE ≤15 วินาที (ภาษาไทย)</div>
+    </div>
+
+    <div class="wf-card">
+      <h3>🗺️ Land Analyzer (Lead Magnet)</h3>
+      <div class="wf-step"><div class="wf-num">1</div>ลูกค้าเข้า finnhouses.com/land-analyzer</div>
+      <div class="wf-arrow">↓</div>
+      <div class="wf-step"><div class="wf-num">2</div>กรอกข้อมูลที่ดิน + Reno estimator → เห็น ROI</div>
+      <div class="wf-arrow">↓</div>
+      <div class="wf-step"><div class="wf-num">3</div>ผล detailed ถูก blur → กรอก ชื่อ+เบอร์ unlock</div>
+      <div class="wf-arrow">↓</div>
+      <div class="wf-step"><div class="wf-num">4</div>Hub → Supabase leads + Telegram แจ้ง Archi</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══ DETAIL PANEL ═══ -->
+<div id="detail-panel">
+  <button class="close-btn" onclick="closeDetail()">✕</button>
+  <h2 id="detail-title">—</h2>
+  <div id="detail-body"></div>
+</div>
+
+<script>
+const details = {
+  'hub': {
+    title: '🔧 Backend Hub',
+    body: `
+      <div class="detail-section">
+        <h3>URL</h3>
+        <p><a href="https://ap-home-platform-production.up.railway.app" target="_blank">ap-home-platform-production.up.railway.app</a></p>
+      </div>
+      <div class="detail-section">
+        <h3>Platform</h3>
+        <p>Express.js บน Railway — server.cjs</p>
+      </div>
+      <div class="detail-section">
+        <h3>Key Endpoints</h3>
+        <ul>
+          <li>POST /api/chat — Claude text gen</li>
+          <li>POST /api/image — Image gen (OpenAI/Gemini)</li>
+          <li>POST /action/blog/run — trigger n8n blog</li>
+          <li>POST /action/fb/queue/build — build FB queue</li>
+          <li>POST /action/land-lead — save lead จาก land analyzer</li>
+          <li>POST /action/property/upload-image — proxy รูปไป WP</li>
+          <li>POST /action/property/publish — publish ทรัพย์ไป WP</li>
+          <li>GET /api/properties/pending — ดึง pending review</li>
+        </ul>
+      </div>
+      <div class="detail-section">
+        <h3>Environment Variables (Railway)</h3>
+        <ul>
+          <li>SUPABASE_URL / SUPABASE_KEY</li>
+          <li>OPENAI_API_KEY</li>
+          <li>TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID</li>
+          <li>WP_URL / WP_USER / WP_APP_PASS</li>
+          <li>N8N_BLOG_WEBHOOK_URL</li>
+        </ul>
+      </div>
+      <div class="detail-section">
+        <h3>ไฟล์หลัก</h3>
+        <p>D:\\ARCHI\\01_PROJECTS\\CORE\\ap-home-platform\\services\\backend-hub\\server.cjs</p>
+      </div>`
+  },
+  'n8n': {
+    title: '🔄 n8n Automation',
+    body: `
+      <div class="detail-section">
+        <h3>URL</h3>
+        <p><a href="https://primary-production-8158a.up.railway.app" target="_blank">primary-production-8158a.up.railway.app</a></p>
+      </div>
+      <div class="detail-section">
+        <h3>Version</h3>
+        <p>n8nio/n8n:2.21.4 (pinned บน Railway)</p>
+      </div>
+      <div class="detail-section">
+        <h3>Workflows สำคัญ</h3>
+        <ul>
+          <li><strong>Wake-up</strong> — Cron 09:02 ทุกวัน (ping services)</li>
+          <li><strong>Queue Auto-run</strong> — 09:05 ทุกวัน (FB + Blog)</li>
+          <li><strong>Blog Runner V3.2</strong> — article gen + image + WP publish</li>
+          <li><strong>LINE QC</strong> — wf_qc_line (11 nodes)</li>
+          <li><strong>LINE Seller Intake</strong> — webhook → GPT → Supabase</li>
+        </ul>
+      </div>
+      <div class="detail-section">
+        <h3>Workflow JSON files</h3>
+        <p>D:\\ARCHI\\01_PROJECTS\\memory\\n8n-workflows\\</p>
+      </div>`
+  },
+  'supabase': {
+    title: '🗃️ Supabase Database',
+    body: `
+      <div class="detail-section">
+        <h3>Project ID</h3>
+        <p>omvpagvqyfmkkhzuuzda</p>
+      </div>
+      <div class="detail-section">
+        <h3>Tables</h3>
+        <ul>
+          <li><strong>leads</strong> — CRM leads (stage: new/followup/qualified/closed)</li>
+          <li><strong>properties</strong> — ทรัพย์ฝากขาย (status: pending_review/published)</li>
+          <li><strong>market_listings</strong> — ราคาตลาด (scraped จาก Kaidee)</li>
+          <li><strong>projects</strong> — โปรเจกต์สร้างบ้าน (internal land analyzer)</li>
+          <li><strong>reno_deals</strong> 🆕 — Fix & Flip deal pipeline (stage: evaluating/renovating/listed/closed) — module ใหม่ /deals</li>
+        </ul>
+      </div>
+      <div class="detail-section">
+        <h3>CRM Stage Names (ห้ามเปลี่ยน)</h3>
+        <ul>
+          <li>new → followup → qualified → closed</li>
+          <li>⚠️ ถ้าเปลี่ยนต้อง migrate data ด้วย</li>
+        </ul>
+      </div>
+      <div class="detail-section">
+        <h3>Credentials</h3>
+        <p>ดูที่: memory/tokens.md</p>
+      </div>`
+  },
+  'wordpress': {
+    title: '🏠 WordPress (finnhouses.com)',
+    body: `
+      <div class="detail-section">
+        <h3>URL</h3>
+        <p><a href="https://finnhouses.com" target="_blank">finnhouses.com</a></p>
+      </div>
+      <div class="detail-section">
+        <h3>Custom Theme</h3>
+        <p>Finnhouses Theme — Dark luxury, CSS vars: --dark, --gold, Cormorant Garamond + Prompt</p>
+        <p>Path: D:\\ARCHI\\01_PROJECTS\\CORE\\threme web\\finnhouses-theme\\</p>
+      </div>
+      <div class="detail-section">
+        <h3>Key Files</h3>
+        <ul>
+          <li>functions.php — CPT, REST endpoints, meta registration</li>
+          <li>front-page.php — Homepage 3T Framework</li>
+          <li>single.php — Blog post template + JSON-LD</li>
+          <li>page-land-analyzer.php — Lead magnet calculator</li>
+          <li>single-property.php — Property listing page</li>
+        </ul>
+      </div>
+      <div class="detail-section">
+        <h3>⚠️ สำคัญ</h3>
+        <p>แก้ PHP files ต้องอัพโหลดผ่าน cPanel ทุกครั้ง (ไม่ใช่ git)</p>
+      </div>
+      <div class="detail-section">
+        <h3>WP REST Endpoint</h3>
+        <p>POST /wp-json/finnhouses/v1/property-intake</p>
+        <p>Auth: Basic (WP App Password — ดู tokens.md)</p>
+      </div>`
+  },
+  'facebook-api': {
+    title: '📘 Facebook Graph API',
+    body: `
+      <div class="detail-section">
+        <h3>FB App</h3>
+        <p>Finnhouses Page</p>
+      </div>
+      <div class="detail-section">
+        <h3>⚠️ Token หมดอายุ ~Aug 2, 2026</h3>
+        <p>ต้อง renew ก่อนวันนั้น! (renew reminder ตั้งไว้ ~25 Jul 2026)</p>
+      </div>
+      <div class="detail-section">
+        <h3>วิธี Renew Token</h3>
+        <ul>
+          <li>ไป Graph API Explorer</li>
+          <li>เลือก Finnhouses App</li>
+          <li>Get Token → Page Token</li>
+          <li>เลือก Finnhouses Page</li>
+          <li>Copy token → ใส่ใน Railway easygoing-friendship env var FB_PAGE_TOKEN</li>
+        </ul>
+      </div>
+      <div class="detail-section">
+        <h3>Permissions ที่ต้องมี</h3>
+        <ul>
+          <li>pages_show_list</li>
+          <li>pages_read_engagement</li>
+          <li>pages_manage_posts</li>
+          <li>business_management</li>
+        </ul>
+      </div>`
+  },
+  'dashboard': {
+    title: '📊 Dashboard OS',
+    body: `
+      <div class="detail-section">
+        <h3>Route</h3>
+        <p>/dashboard</p>
+      </div>
+      <div class="detail-section">
+        <h3>Features</h3>
+        <ul>
+          <li>Tab 1: Overview — engine cards, revenue pipeline, lead counts</li>
+          <li>Tab 2: ทรัพย์รอ Review — PropertyReview.tsx</li>
+        </ul>
+      </div>
+      <div class="detail-section">
+        <h3>Data Sources</h3>
+        <ul>
+          <li>useLeadCounts → Supabase leads (poll 30s)</li>
+          <li>GET /api/properties/pending → Hub → Supabase</li>
+        </ul>
+      </div>
+      <div class="detail-section">
+        <h3>ไฟล์</h3>
+        <p>components/DashboardOS.tsx<br>components/PropertyReview.tsx</p>
+      </div>`
+  },
+  'fixflip-deals': {
+    title: '🏗️ Fix & Flip Deals 🆕',
+    body: `
+      <div class="detail-section">
+        <h3>Route</h3>
+        <p>/deals</p>
+      </div>
+      <div class="detail-section">
+        <h3>Features</h3>
+        <ul>
+          <li>Kanban board 4 stage: กำลังประเมิน → กำลังรีโนเวท → ประกาศขาย → ปิดดีลแล้ว</li>
+          <li>Summary metrics: ดีล active/closed, เงินทุนที่ใช้อยู่, ROI เฉลี่ยดีลที่ปิดแล้ว</li>
+          <li>เพิ่มขึ้นเพื่อ Business Unit 3 (Fix &amp; Flip) — 60% ของธุรกิจ ที่ก่อนหน้านี้ไม่มีเครื่องมือ dedicated ติดตามดีลเลย</li>
+        </ul>
+      </div>
+      <div class="detail-section">
+        <h3>Data</h3>
+        <p>ต่อยอดตาราง <strong>reno_deals</strong> ที่มีอยู่แล้วแต่ไม่เคยถูกใช้งาน — API server-side เท่านั้น (service_role, RLS ล็อก anon)</p>
+      </div>
+      <div class="detail-section">
+        <h3>ไฟล์</h3>
+        <p>components/Deals.tsx<br>app/api/deals/route.ts<br>app/api/deals/[id]/route.ts</p>
+      </div>
+      <div class="detail-section">
+        <h3>เพิ่มเมื่อ</h3>
+        <p>22 Jul 2026 (session 28, ADR-014)</p>
+      </div>`
+  },
+  'scraper': {
+    title: '🕷️ Market Scraper',
+    body: `
+      <div class="detail-section">
+        <h3>วิธีรัน</h3>
+        <p>ดับเบิลคลิก run-market-scraper.bat<br>รันบนเครื่องของ Archi เท่านั้น</p>
+      </div>
+      <div class="detail-section">
+        <h3>Source</h3>
+        <p>baan.kaidee.com — บ้านเดี่ยว + ทาวน์เฮาส์</p>
+      </div>
+      <div class="detail-section">
+        <h3>ข้อมูลที่ดึง</h3>
+        <ul>
+          <li>ลำลูกกา, รังสิต, คลองหลวง, ลาดหลุมแก้ว</li>
+          <li>ราคา, ขนาดที่ดิน, ห้องนอน, URL</li>
+        </ul>
+      </div>
+      <div class="detail-section">
+        <h3>Save ไปที่</h3>
+        <p>Supabase: market_listings table</p>
+      </div>
+      <div class="detail-section">
+        <h3>ไฟล์</h3>
+        <p>scripts/scrape-market.js<br>scripts/market-listings.sql</p>
+      </div>`
+  },
+  'land-wp': {
+    title: '🏗️ Land Analyzer (Public)',
+    body: `
+      <div class="detail-section">
+        <h3>URL</h3>
+        <p><a href="https://finnhouses.com/land-analyzer" target="_blank">finnhouses.com/land-analyzer</a></p>
+      </div>
+      <div class="detail-section">
+        <h3>Features</h3>
+        <ul>
+          <li>Tab 1: วิเคราะห์ที่ดิน (ราคา, ROI, ความเป็นไปได้)</li>
+          <li>Tab 2: Reno Estimator (ค่ารีโนเวท, ROI flip)</li>
+        </ul>
+      </div>
+      <div class="detail-section">
+        <h3>Lock Mechanism</h3>
+        <p>แสดง ROI → blur detailed results → modal กรอก ชื่อ+เบอร์ → unlock → save lead ไป Hub</p>
+      </div>
+      <div class="detail-section">
+        <h3>ไฟล์</h3>
+        <p>D:\\ARCHI\\01_PROJECTS\\CORE\\threme web\\finnhouses-theme\\finnhouses-theme\\page-land-analyzer.php</p>
+        <p>⚠️ แก้แล้วต้อง upload ผ่าน cPanel</p>
+      </div>`
+  }
+};
+
+function showDetail(id) {
+  const d = details[id];
+  if (!d) return;
+  document.getElementById('detail-title').textContent = d.title;
+  document.getElementById('detail-body').innerHTML = d.body;
+  document.getElementById('detail-panel').classList.add('open');
+  document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+}
+function closeDetail() {
+  document.getElementById('detail-panel').classList.remove('open');
+  document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
+}
+</script>
+</body>
+</html>

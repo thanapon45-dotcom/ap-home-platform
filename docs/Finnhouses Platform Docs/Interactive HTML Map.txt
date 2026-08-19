@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>Finnhouses — Companion Documents Map</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 0;
+    font-family: 'Segoe UI', -apple-system, sans-serif;
+    background: #fafaf9;
+    color: #37352f;
+    overflow: hidden;
+  }
+  #header {
+    position: absolute; top: 0; left: 0; right: 0;
+    padding: 16px 24px; z-index: 10;
+    background: rgba(255,255,255,.95);
+    border-bottom: 1px solid #e8e8e6;
+  }
+  #header h1 { font-size: 16px; margin: 0 0 4px 0; font-weight: 600; }
+  #header p { font-size: 11px; margin: 0; color: #6b6b68; }
+
+  #legend {
+    position: absolute; bottom: 16px; left: 20px; z-index: 10;
+    background: rgba(255,255,255,.92); border: 1px solid #e8e8e6;
+    border-radius: 10px; padding: 12px 16px; font-size: 11px;
+    max-width: 320px; max-height: 50vh; overflow-y: auto;
+  }
+  #legend h3 { margin: 0 0 8px 0; font-size: 12px; }
+  #legend .row { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
+  #legend .swatch { width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0; }
+  #legend .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+  #info {
+    position: absolute; top: 90px; right: 20px; z-index: 10;
+    background: rgba(255,255,255,.95); border: 1px solid #e8e8e6;
+    border-radius: 10px; padding: 12px 16px; font-size: 11px;
+    max-width: 280px; line-height: 1.6;
+  }
+
+  #tooltip {
+    position: absolute; pointer-events: none; z-index: 20;
+    background: #202020; color: #f0f0ee; font-size: 11px; line-height: 1.55;
+    padding: 10px 14px; border-radius: 7px; max-width: 320px;
+    opacity: 0; transition: opacity .12s;
+  }
+
+  svg { width: 100vw; height: 100vh; display: block; cursor: grab; }
+  svg:active { cursor: grabbing; }
+
+  .link { stroke: #d0d0cd; stroke-width: 1.5px; fill: none; }
+  .link.doc-link { stroke: #8b5cf6; stroke-width: 2px; }
+  .link.section-link { stroke: #94a3b8; stroke-width: 1px; stroke-dasharray: 4,3; }
+
+  .node-label { font-size: 11px; fill: #37352f; pointer-events: none; user-select: none; font-weight: 500; }
+  .node-label.dim { fill: #d0d0cd; }
+  .node-label.title { font-weight: 700; font-size: 13px; }
+
+  rect.node { cursor: pointer; stroke: #ffffff; stroke-width: 1.5px; rx: 6; ry: 6; }
+  rect.node.dim { opacity: 0.25; }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <h1>Finnhouses — Companion Documents Map</h1>
+  <p>???? node ??????? sections ?????????????????????????? · ???/zoom ??? · DOCX = Executive · Blueprint = Technical · Graph = Current State</p>
+</div>
+
+<div id="info">
+  <b>3 ???????????:</b><br>
+  ?? <b>DOCX</b> — Executive Reference (?????? stakeholder)<br>
+  ?? <b>Blueprint</b> — Architecture Baseline (?????? engineer)<br>
+  ?? <b>Graph</b> — Current Topology (?????? visual debug)<br>
+  <br>
+  <b>Content overlap:</b><br>
+  ?? = shared content (DOCX ? Blueprint)<br>
+  ? = technical detail (Blueprint only)<br>
+  ?? = operational detail (Graph only)
+</div>
+
+<div id="legend">
+  <h3>Document Types</h3>
+  <div class="row"><div class="swatch" style="background:#8b5cf6"></div>DOCX (Executive Reference)</div>
+  <div class="row"><div class="swatch" style="background:#f59e0b"></div>Blueprint (Architecture Baseline)</div>
+  <div class="row"><div class="swatch" style="background:#10b981"></div>Graph View (Current State)</div>
+  <h3 style="margin-top:12px">Content Categories</h3>
+  <div class="row"><div class="dot" style="background:#37352f"></div>Strategic Narrative</div>
+  <div class="row"><div class="dot" style="background:#3b82f6"></div>Architecture Intent</div>
+  <div class="row"><div class="dot" style="background:#ef4444"></div>Current State / Topology</div>
+  <div class="row"><div class="dot" style="background:#0ea5e9"></div>Decision Options</div>
+  <div class="row"><div class="dot" style="background:#f97316"></div>Migration / Roadmap</div>
+  <div class="row"><div class="dot" style="background:#d946ef"></div>Governance Model</div>
+  <div class="row"><div class="dot" style="background:#6b6b68"></div>Domain Definitions</div>
+  <h3 style="margin-top:12px">Link Types</h3>
+  <div class="row"><div style="width:14px;height:2px;background:#8b5cf6"></div>Document reference (same content)</div>
+  <div class="row"><div style="width:14px;height:1px;background:#94a3b8;border-top:1px dashed #94a3b8"></div>Section reference (related)</div>
+</div>
+
+<div id="tooltip"></div>
+
+<svg></svg>
+
+<script>
+// Node structure: each content topic with its appearances in each doc
+const nodes = [
+  // --- Document roots (3 corners) ------------------------------------
+  {
+    id: "DOCX",
+    type: "doc",
+    label: "DOCX\nExecutive Reference",
+    x: 250, y: 300, w: 110, h: 70,
+    color: "#8b5cf6",
+    desc: "Executive-facing condensed document<br><br><b>Purpose:</b> Quick strategic read<br><b>Audience:</b> Board, stakeholders<br><b>Time to read:</b> 10-15 minutes<br><br><b>Sections:</b> Executive Brief, Final Summary, Top 10 ADRs, Roadmap, Governance, Domain Dictionary"
+  },
+  {
+    id: "BLUEPRINT",
+    type: "doc",
+    label: "Blueprint\nArchitecture Baseline",
+    x: 700, y: 300, w: 110, h: 70,
+    color: "#f59e0b",
+    desc: "Full technical architecture baseline<br><br><b>Purpose:</b> Authoritative technical reference<br><b>Audience:</b> Engineers, architects, auditors<br><b>Time to read:</b> 2-4 hours (full)<br><br><b>Sections:</b> 14 chapters (Ch0-13), Final Summary, ADR Register, Domain Dictionary, Changelog"
+  },
+  {
+    id: "GRAPH",
+    type: "doc",
+    label: "Graph View\nCurrent Topology",
+    x: 1150, y: 300, w: 110, h: 70,
+    color: "#10b981",
+    desc: "Interactive HTML topology diagram<br><br><b>Purpose:</b> Visual current state<br><b>Audience:</b> Engineers, debugging sessions<br><b>Time to read:</b> Visual scan + click<br><br><b>Content:</b> 50+ nodes (Hub, n8n, Supabase, /api routes, FB Backend), 70+ links, verified 23 Jul 2026"
+  },
+
+  // --- Content topics (middle layer) ---------------------------------
+  {
+    id: "exec-brief",
+    parent: "DOCX",
+    label: "Executive Brief",
+    category: "narrative",
+    color: "#37352f",
+    desc: "<b>DOCX Page 1-8</b><br>Vision, Current Position, Main Finding, Strategic Direction, 3 Cross-Cutting Patterns, Strategic Decisions, Evolution Path, Action Plan, Future State, 3 Executive Questions<br><br><b>Blueprint:</b> 00_Executive_Brief.md (identical content)<br><br><b>Graph:</b> ? Not represented"
+  },
+  {
+    id: "final-summary",
+    parent: "DOCX",
+    label: "Final Summary",
+    category: "narrative",
+    color: "#37352f",
+    desc: "<b>DOCX Page 'Final Summary'</b><br>3 Cross-Cutting Patterns, Maturity Assessment table, Top 4 Risks, Top 4 Opportunities, 5 Open Questions, Executive Conclusion<br><br><b>Blueprint:</b> Final_Summary.md (identical)<br><br><b>Graph:</b> ? Not represented"
+  },
+  {
+    id: "top10-adr",
+    parent: "DOCX",
+    label: "Top 10 ADRs",
+    category: "decision",
+    color: "#0ea5e9",
+    desc: "<b>DOCX Page 'Top 10 Architecture Decisions'</b><br>10 ranked decisions with convergence + urgency<br><br><b>Blueprint:</b> ADR_Register.md §'Top 10' (more detail)<br><br><b>Graph:</b> ? Not represented"
+  },
+  {
+    id: "roadmap",
+    parent: "DOCX",
+    label: "Roadmap Summary",
+    category: "migration",
+    color: "#f97316",
+    desc: "<b>DOCX Page 'Roadmap Summary'</b><br>Track A (S0-S2 + Gates), Track B (O1-O4), 4 Guardrails, Migration Risk Register<br><br><b>Blueprint:</b> Ch11 + Ch12 (full detail)<br><br><b>Graph:</b> ? Not represented"
+  },
+  {
+    id: "governance",
+    parent: "DOCX",
+    label: "Governance Model",
+    category: "governance",
+    color: "#d946ef",
+    desc: "<b>DOCX Page 'Governance Model'</b><br>Governance Objective, Minimum Agent Contract, Change Classification (L1/L2/L3), Evolution Model (3 Stages), 6 Metrics<br><br><b>Blueprint:</b> Ch13 (full detail with roles, ADR lifecycle)<br><br><b>Graph:</b> ? Not represented"
+  },
+  {
+    id: "domain-dict",
+    parent: "DOCX",
+    label: "Domain Dictionary",
+    category: "domain",
+    color: "#6b6b68",
+    desc: "<b>DOCX Page 'Domain Dictionary'</b><br>~12 key terms (subset)<br><br><b>Blueprint:</b> Domain_Dictionary.md (~19 terms, full)<br><br><b>Graph:</b> ? Not represented"
+  },
+
+  // --- Blueprint sections (right side, middle layer) ----------------
+  {
+    id: "ch0-principles",
+    parent: "BLUEPRINT",
+    label: "Ch0\nPrinciples",
+    category: "intent",
+    color: "#3b82f6",
+    desc: "<b>Blueprint Ch0</b><br>14 Architecture Principles, Evidence Standard A/B/C/D/E, Confidence H/M/L, Output Format, Standing Conventions<br><br><b>DOCX:</b> ? Not included<br><br><b>Graph:</b> ? Not represented"
+  },
+  {
+    id: "ch1-context",
+    parent: "BLUEPRINT",
+    label: "Ch1\nContext",
+    category: "intent",
+    color: "#3b82f6",
+    desc: "<b>Blueprint Ch1</b><br>Executive Summary, Business Profile, 3-Level Business Objectives (Vision/Outcomes/Architecture)<br><br><b>DOCX:</b> Partially in Executive Brief<br><br><b>Graph:</b> ? Not represented"
+  },
+  {
+    id: "ch2-current",
+    parent: "BLUEPRINT",
+    label: "Ch2\nCurrent State",
+    category: "intent",
+    color: "#3b82f6",
+    desc: "<b>Blueprint Ch2</b><br>System Context (C4 L1), Container Diagram (C4 L2), Deployment View, Runtime Flow Legend, Domain Boundary Observation (4 levels)<br><br><b>DOCX:</b> ? Not included<br><br><b>Graph:</b> ? High overlap (Hub v1/v2, deployment aliases)"
+  },
+  {
+    id: "ch3-business",
+    parent: "BLUEPRINT",
+    label: "Ch3\nBusiness Arch",
+    category: "intent",
+    color: "#3b82f6",
+    desc: "<b>Blueprint Ch3</b><br>Business Capability Map (BC-3.1 to BC-3.8), 6 Business Domains, AO-3.1 Two Value Streams, 3 Business Rules, AO-3.2 Dashboard Representativeness<br><br><b>DOCX:</b> Partially (Value Stream mention only)<br><br><b>Graph:</b> ?? Implicit (no value stream annotation)"
+  },
+  {
+    id: "ch4-ai",
+    parent: "BLUEPRINT",
+    label: "Ch4\nAI Arch",
+    category: "intent",
+    color: "#3b82f6",
+    desc: "<b>Blueprint Ch4</b><br>5 AI Capabilities, Agent Inventory (AG-4.1 to AG-4.5), AI Decision Flow, Memory Flow, BR?AI Mapping (BR-3.3 in prompt), AI Governance gaps<br><br><b>DOCX:</b> Partially (mentions '5 agents')<br><br><b>Graph:</b> ? Some agent nodes referenced"
+  },
+  {
+    id: "ch5-data",
+    parent: "BLUEPRINT",
+    label: "Ch5\nData Arch",
+    category: "intent",
+    color: "#3b82f6",
+    desc: "<b>Blueprint Ch5</b><br>Data Architecture Overview, Entity Inventory (26 tables), Ownership Matrix, AI Feedback Data Fragmentation (Major 5.1), hub_state JSON blob, dormant tables<br><br><b>DOCX:</b> Mentions '26 tables, RLS'<br><br><b>Graph:</b> ? Full table nodes (27 incl. line_users)"
+  },
+  {
+    id: "ch6-app",
+    parent: "BLUEPRINT",
+    label: "Ch6\nApp Arch",
+    category: "intent",
+    color: "#3b82f6",
+    desc: "<b>Blueprint Ch6</b><br>App Inventory (6 apps), Boundary Map, AI Runtime outside governance (Major 6.1), Hub v2 4-tier auth, AiGateway analysis<br><br><b>DOCX:</b> ? Not included<br><br><b>Graph:</b> ?? Partial (no /api/* layer)"
+  },
+  {
+    id: "ch7-integration",
+    parent: "BLUEPRINT",
+    label: "Ch7\nIntegration",
+    category: "intent",
+    color: "#3b82f6",
+    desc: "<b>Blueprint Ch7</b><br>Integration Inventory, End-to-End Traces A/B/C, Loop Closure Analysis, Intelligence Loop Maturity L0-L5, Major 7.1 No Cross-Agent Reuse<br><br><b>DOCX:</b> Maturity assessment table<br><br><b>Graph:</b> ? Strong overlap (data flow paths)"
+  },
+  {
+    id: "ch8-security",
+    parent: "BLUEPRINT",
+    label: "Ch8\nSecurity",
+    category: "intent",
+    color: "#3b82f6",
+    desc: "<b>Blueprint Ch8</b><br>Auth vs Auth, Security Boundary Model, Major 8.1 Privileged Credential Exposure, RLS Posture, AI-Specific Risks<br><br><b>DOCX:</b> Top Risk #1 (credential)<br><br><b>Graph:</b> ? service_role patterns shown"
+  },
+  {
+    id: "ch9-ops",
+    parent: "BLUEPRINT",
+    label: "Ch9\nOperations",
+    category: "intent",
+    color: "#3b82f6",
+    desc: "<b>Blueprint Ch9</b><br>Monitoring Inventory, Incident History (13/15 reactive), Major 9.1 Reactive Model, Deployment Confidence, Recovery, Maturity Inversion Pattern<br><br><b>DOCX:</b> Top Risk #2 (reactive)<br><br><b>Graph:</b> ?? Wake-up nodes shown but no monitoring detail"
+  },
+  {
+    id: "ch10-strategic",
+    parent: "BLUEPRINT",
+    label: "Ch10\nStrategic",
+    category: "decision",
+    color: "#0ea5e9",
+    desc: "<b>Blueprint Ch10</b><br>Cluster A (3 Options), Cluster B (3 Options), Cluster C (Security), Cluster D (Ops), 4 Decision Principles, Cross-Cluster Dependency Map<br><br><b>DOCX:</b> Decision #1 + #2 + Top 10<br><br><b>Graph:</b> ? Not represented"
+  },
+  {
+    id: "ch11-migration",
+    parent: "BLUEPRINT",
+    label: "Ch11\nMigration",
+    category: "migration",
+    color: "#f97316",
+    desc: "<b>Blueprint Ch11</b><br>Track A (S0-S2) + Track B (O1-O4), 2 Migration Principles, 3 Gates, Agent Migration Sequencing (AG-4.2 first)<br><br><b>DOCX:</b> Roadmap Summary (condensed)<br><br><b>Graph:</b> ? Not represented"
+  },
+  {
+    id: "ch12-roadmap",
+    parent: "BLUEPRINT",
+    label: "Ch12\nRoadmap",
+    category: "migration",
+    color: "#f97316",
+    desc: "<b>Blueprint Ch12</b><br>Sequencing View, Sequencing Rationale, 4 Roadmap Guardrails, Migration Risk Register<br><br><b>DOCX:</b> Roadmap Summary + Migration Risk<br><br><b>Graph:</b> ? Not represented"
+  },
+  {
+    id: "ch13-architecture-gov",
+    parent: "BLUEPRINT",
+    label: "Ch13\nArchitecture Gov",
+    category: "governance",
+    color: "#d946ef",
+    desc: "<b>Blueprint Ch13</b><br>Governance Objective, Architecture Governance Model, Minimum Agent Contract, ADR Lifecycle, Change Classification, 4 Roles, 6 KPIs, 3 Evolution Stages<br><br><b>DOCX:</b> Governance Model (subset)<br><br><b>Graph:</b> ? Not represented"
+  },
+
+  // --- Graph sections (far right, middle layer) ----------------------
+  {
+    id: "g-inputs",
+    parent: "GRAPH",
+    label: "Inputs\n(5 nodes)",
+    category: "state",
+    color: "#ef4444",
+    desc: "<b>Graph node group: input (blue)</b><br>LINE Seller, LINE Inspector, Telegram (Archi), Web Forms, FB Observation<br><br><b>Blueprint:</b> Ch2 §Figure 2.1 (System Context)<br><br><b>DOCX:</b> ? Not included"
+  },
+  {
+    id: "g-frontend",
+    parent: "GRAPH",
+    label: "Frontend\n(7 modules)",
+    category: "state",
+    color: "#ef4444",
+    desc: "<b>Graph node group: frontend (purple)</b><br>OS Dashboard, CRM, AI Content, Blog Runner, Land Analyzer, Fix & Flip Deals, Market Intel<br><br><b>Blueprint:</b> Ch6 §1 APP-6.1 (mentions only)<br><br><b>DOCX:</b> ? Not included"
+  },
+  {
+    id: "g-api-routes",
+    parent: "GRAPH",
+    label: "/api/* Routes\n(11 hops)",
+    category: "state",
+    color: "#ef4444",
+    desc: "<b>Graph node group: apiroute (sky)</b><br>/api/leads, /api/projects, /api/deals, /api/market-intel, /api/market-intel/calibration, /api/qc/accuracy, /api/content/performance, /api/quality-gate/accuracy, /api/property/*, /api/blog/*, /api/fb/publish<br><br><b>Blueprint:</b> ?? Partially in Ch6 §3 (no enumeration)<br><br><b>DOCX:</b> ? Not included"
+  },
+  {
+    id: "g-hub",
+    parent: "GRAPH",
+    label: "Hub v1\n(production)",
+    category: "state",
+    color: "#ef4444",
+    desc: "<b>Graph node: Hub v1 (orange)</b><br>34 routes, server.cjs on Railway, x-hub-token auth<br><br><b>Blueprint:</b> Ch2 §Deployment View + Ch6 §2<br><br><b>DOCX:</b> Mentions 'Hub v1/v2'"
+  },
+  {
+    id: "g-hub-v2",
+    parent: "GRAPH",
+    label: "Hub v2\n(shadow)",
+    category: "state",
+    color: "#ef4444",
+    desc: "<b>Graph note</b><br>Hub v2 exists but is shadow-only (not in production traffic). Has AiGateway, HealthMonitor, 4-tier auth — all mature but inert<br><br><b>Blueprint:</b> Ch6 §2 Maturity Inversion<br><br><b>DOCX:</b> Decision #2 (Hub Evolution)"
+  },
+  {
+    id: "g-fb-backend",
+    parent: "GRAPH",
+    label: "FB Backend\n(separate)",
+    category: "state",
+    color: "#ef4444",
+    desc: "<b>Graph node: FB Backend (red)</b><br>Separate Railway service (easygoing-friendship). Receives /api/fb/publish only, bypasses Hub entirely<br><br><b>Blueprint:</b> ?? NOT MENTIONED — needs amendment (R-006)<br><br><b>DOCX:</b> ? Not included"
+  },
+  {
+    id: "g-n8n",
+    parent: "GRAPH",
+    label: "n8n Workflows\n(12 active)",
+    category: "state",
+    color: "#ef4444",
+    desc: "<b>Graph node group: n8n (orange)</b><br>WF1 Article+Publish, WF2 Image+Patch, LINE Seller Intake v6, wf_qc_line 2, Market Intel Collector v2, Telegram?Market Intel, CRM Note Parser, Queue Auto-run, Content Queue Weekly Builder, Wake-up, System Health Check, FB Post Performance Tracker<br><br><b>Blueprint:</b> Ch6 AO-6.5 (~16, less granular)<br><br><b>DOCX:</b> ? Not included"
+  },
+  {
+    id: "g-supabase",
+    parent: "GRAPH",
+    label: "Supabase Tables\n(27 active)",
+    category: "state",
+    color: "#ef4444",
+    desc: "<b>Graph node group: data (green)</b><br>leads, properties, content_posts, post_performance, quality_gate_log, market_insights, area_memory, buyer_context_signals, content_frames, buyer_profiles, projects, reno_deals, qc_inspections, qc_defects, qc_daily_usage, qc_standards, sites, line_users, hub_state, hub_queue, market_listings<br><br><b>Blueprint:</b> Ch5 §2 (26 tables, +line_users discrepancy)<br><br><b>DOCX:</b> Mentions '26 tables, RLS'"
+  },
+  {
+    id: "g-legacy",
+    parent: "GRAPH",
+    label: "Legacy Tables\n(7 dormant)",
+    category: "state",
+    color: "#ef4444",
+    desc: "<b>Graph node group: legacy (gray)</b><br>fb_sellers, fb_listings, fb_listing_history, agent_reports (per Graph), construction_records, defect_log, seller_profiles<br><br><b>Blueprint:</b> Ch5 §2 (mentions 3 dormant, less complete)<br><br><b>DOCX:</b> ? Not included"
+  },
+  {
+    id: "g-outputs",
+    parent: "GRAPH",
+    label: "Outputs\n(5 channels)",
+    category: "state",
+    color: "#ef4444",
+    desc: "<b>Graph node group: output (pink)</b><br>FB Post, Blog (WP), Property Listing (WP), Telegram Alerts, LINE Reply<br><br><b>Blueprint:</b> Ch2 §Figure 2.1<br><br><b>DOCX:</b> ? Not included"
+  },
+];
+
+// Links: parent doc ? content topic, and content topic ? content topic (cross-doc references)
+const links = [
+  // DOCX content ? Blueprint content (identical or subset)
+  { source: "exec-brief", target: "ch1-context", type: "doc", label: "subset" },
+  { source: "exec-brief", target: "ch2-current", type: "doc", label: "subset" },
+  { source: "final-summary", target: "ch7-integration", type: "doc", label: "subset" },
+  { source: "top10-adr", target: "ch10-strategic", type: "doc", label: "subset" },
+  { source: "roadmap", target: "ch11-migration", type: "doc", label: "subset" },
+  { source: "roadmap", target: "ch12-roadmap", type: "doc", label: "subset" },
+  { source: "governance", target: "ch13-architecture-gov", type: "doc", label: "subset" },
+  { source: "domain-dict", target: "ch0-principles", type: "doc", label: "related" },
+
+  // Blueprint content ? Graph content (where Blueprint has detail but Graph has current state)
+  { source: "ch2-current", target: "g-hub", type: "section", label: "current" },
+  { source: "ch2-current", target: "g-hub-v2", type: "section", label: "current" },
+  { source: "ch5-data", target: "g-supabase", type: "section", label: "current" },
+  { source: "ch5-data", target: "g-legacy", type: "section", label: "current" },
+  { source: "ch6-app", target: "g-n8n", type: "section", label: "current" },
+  { source: "ch6-app", target: "g-frontend", type: "section", label: "current" },
+  { source: "ch7-integration", target: "g-supabase", type: "section", label: "flows" },
+  { source: "ch8-security", target: "g-api-routes", type: "section", label: "service_role" },
+  { source: "ch9-ops", target: "g-n8n", type: "section", label: "wake-up" },
+
+  // Graph content that's NEW (not in Blueprint/DOCX) — highlighted
+  { source: "g-fb-backend", target: "g-api-routes", type: "section", label: "/api/fb/publish" },
+];
+
+const svg = d3.select("svg");
+const width = window.innerWidth, height = window.innerHeight;
+const g = svg.append("g");
+
+const zoom = d3.zoom().scaleExtent([0.2, 3]).on("zoom", (e) => g.attr("transform", e.transform));
+svg.call(zoom);
+
+// Group nodes by parent for layout
+const docNodes = nodes.filter(n => n.type === "doc");
+const contentNodes = nodes.filter(n => n.type !== "doc");
+
+// Position content nodes in 3 columns under their parent docs
+const layoutGroups = {
+  DOCX: { cx: 250, items: contentNodes.filter(n => n.parent === "DOCX") },
+  BLUEPRINT: { cx: 700, items: contentNodes.filter(n => n.parent === "BLUEPRINT") },
+  GRAPH: { cx: 1150, items: contentNodes.filter(n => n.parent === "GRAPH") },
+};
+
+Object.entries(layoutGroups).forEach(([docId, grp]) => {
+  const startY = 480;
+  const spacing = 95;
+  grp.items.forEach((n, i) => {
+    n.x = grp.cx;
+    n.y = startY + i * spacing;
+    n.w = 110;
+    n.h = 50;
+  });
+});
+
+// Render links
+const linkData = links.map(l => ({ ...l }));
+const link = g.append("g").selectAll("line").data(linkData).join("line")
+  .attr("class", d => d.type === "doc" ? "link doc-link" : "link section-link");
+
+// Render nodes
+const nodeGroup = g.append("g").selectAll("g").data(nodes).join("g");
+
+// Rectangles for all nodes
+nodeGroup.append("rect")
+  .attr("class", "node")
+  .attr("x", d => -d.w / 2)
+  .attr("y", d => -d.h / 2)
+  .attr("width", d => d.w)
+  .attr("height", d => d.h)
+  .attr("fill", d => d.color)
+  .attr("fill-opacity", d => d.type === "doc" ? 1 : 0.85);
+
+// Labels
+nodeGroup.append("text")
+  .attr("class", d => "node-label" + (d.type === "doc" ? " title" : ""))
+  .attr("text-anchor", "middle")
+  .attr("y", d => d.type === "doc" ? 4 : 4)
+  .selectAll("tspan").data(d => d.label.split("\n")).join("tspan")
+  .attr("x", 0)
+  .attr("dy", (d, i, nodes) => i === 0 ? `-${(nodes.length - 1) * 0.6}em` : "1.2em");
+
+// Position
+nodeGroup.attr("transform", d => `translate(${d.x},${d.y})`);
+
+// Tooltip + highlight
+const tooltip = d3.select("#tooltip");
+nodeGroup
+  .on("mouseenter", function(event, d) {
+    tooltip.style("opacity", 1).html(`<b>${d.label.replace("\n", " ")}</b><br><br>${d.desc || ""}`);
+    d3.select(this).select("rect").attr("stroke", "#37352f").attr("stroke-width", 2.5);
+  })
+  .on("mousemove", (event) => {
+    tooltip.style("left", (event.pageX + 16) + "px").style("top", (event.pageY + 10) + "px");
+  })
+  .on("mouseleave", function() {
+    tooltip.style("opacity", 0);
+    d3.select(this).select("rect").attr("stroke", "#ffffff").attr("stroke-width", 1.5);
+  })
+  .on("click", function(event, d) {
+    event.stopPropagation();
+    highlight(d.id);
+  });
+
+let highlighted = null;
+function highlight(id) {
+  if (highlighted === id) { clearHighlight(); highlighted = null; return; }
+  highlighted = id;
+
+  // Find connected nodes
+  const connected = new Set([id]);
+  links.forEach(l => {
+    if (l.source === id) connected.add(l.target);
+    if (l.target === id) connected.add(l.source);
+  });
+
+  nodeGroup.select("rect").classed("dim", d => !connected.has(d.id));
+  nodeGroup.select("text").classed("dim", d => !connected.has(d.id));
+  link.classed("dim", l => !(connected.has(l.source) && connected.has(l.target)));
+}
+function clearHighlight() {
+  nodeGroup.select("rect").classed("dim", false);
+  nodeGroup.select("text").classed("dim", false);
+  link.classed("dim", false);
+}
+
+svg.on("click", (event) => {
+  if (event.target.tagName === "svg" || event.target.tagName === "rect") {
+    clearHighlight();
+    highlighted = null;
+  }
+});
+
+// Simple drag
+const drag = d3.drag()
+  .on("start", function(event, d) {
+    if (!event.active) return;
+    d3.select(this).raise();
+  })
+  .on("drag", function(event, d) {
+    d.x = event.x;
+    d.y = event.y;
+    d3.select(this).attr("transform", `translate(${d.x},${d.y})`);
+    link
+      .attr("x1", l => nodes.find(n => n.id === l.source).x)
+      .attr("y1", l => nodes.find(n => n.id === l.source).y)
+      .attr("x2", l => nodes.find(n => n.id === l.target).x)
+      .attr("y2", l => nodes.find(n => n.id === l.target).y);
+  });
+nodeGroup.call(drag);
+
+link
+  .attr("x1", d => nodes.find(n => n.id === d.source).x)
+  .attr("y1", d => nodes.find(n => n.id === d.source).y)
+  .attr("x2", d => nodes.find(n => n.id === d.target).x)
+  .attr("y2", d => nodes.find(n => n.id === d.target).y);
+</script>
+</body>
+</html>

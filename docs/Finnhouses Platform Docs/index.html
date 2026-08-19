@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Finnhouses / AP-Home Platform — เอกสารรวม</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #05070f; color: #e2e8f0; font-family: 'Segoe UI', system-ui, sans-serif;
+    height: 100vh; display: flex; flex-direction: column;
+  }
+  header {
+    padding: 14px 22px; background: #0a0d18; border-bottom: 1px solid rgba(255,255,255,.06);
+    display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+  }
+  header .title { font-size: 15px; font-weight: 800; color: #f1f5f9; }
+  header .sub { font-size: 10.5px; color: #475569; margin-top: 2px; }
+  nav {
+    display: flex; gap: 4px; padding: 10px 22px; background: #070a12;
+    border-bottom: 1px solid rgba(255,255,255,.06); flex-shrink: 0; overflow-x: auto;
+  }
+  nav button {
+    background: transparent; border: 1px solid rgba(255,255,255,.08); color: #94a3b8;
+    font-size: 12.5px; font-weight: 600; padding: 8px 16px; border-radius: 10px;
+    cursor: pointer; white-space: nowrap; transition: all .15s; display: flex; align-items: center; gap: 6px;
+  }
+  nav button:hover { background: rgba(255,255,255,.05); color: #e2e8f0; }
+  nav button.active { background: rgba(34,211,238,.1); border-color: rgba(34,211,238,.35); color: #22d3ee; }
+  .frame-wrap { flex: 1; position: relative; }
+  iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: none; display: none; background: #05070f; }
+  iframe.active { display: block; }
+  footer {
+    padding: 8px 22px; background: #070a12; border-top: 1px solid rgba(255,255,255,.06);
+    font-size: 10px; color: #334155; flex-shrink: 0;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="title">🏠 Finnhouses / AP-Home Platform — เอกสารรวม</div>
+    <div class="sub">รวมชุดเอกสารล่าสุด ไม่ซ้ำซ้อน — เลือกตัวล่าสุดจากทุก version ที่มีอยู่</div>
+  </div>
+  <div class="sub" style="text-align:right">รวบรวม 22 Jul 2026<br>จาก 9 ไฟล์ต้นฉบับ → 6 เอกสาร</div>
+</header>
+
+<nav id="tabs">
+  <button data-target="f-manual" class="active">📘 คู่มือการใช้งาน</button>
+  <button data-target="f-flow">🎬 System Flow</button>
+  <button data-target="f-arch">🏗️ Architecture</button>
+  <button data-target="f-workflows">🔧 Key Workflows</button>
+  <button data-target="f-mindmap">🗺️ Mind Map</button>
+  <button data-target="f-dataflow">🔀 Data Flow</button>
+</nav>
+
+<div class="frame-wrap">
+  <iframe id="f-manual" class="active" src="finnhouses-user-manual.html"></iframe>
+  <iframe id="f-flow" src="finnhouses-system-flow.html"></iframe>
+  <iframe id="f-arch" src="finnhouses-architecture.html"></iframe>
+  <iframe id="f-workflows" src="finnhouses-key-workflows.html"></iframe>
+  <iframe id="f-mindmap" src="finnhouses-mindmap.html"></iframe>
+  <iframe id="f-dataflow" src="finnhouses-dataflow.html"></iframe>
+</div>
+
+<footer>
+  ไฟล์ที่รวมไว้: finnhouses-user-manual-v4 · ap-home-system-flow · ap-home-architecture · finnhouses-platform-architecture-v3 · finnhouses-mindmap-v4 · finnhouses-platform-dataflow-mindmap-v4
+  — ไฟล์ที่ตัดออก (ซ้ำ/เก่ากว่า): user-manual-v3 (×2 ซ้ำกัน), platform-flowchart-v3 (draft เก่าของ Architecture), platform-dataflow-v3 (แทนที่ด้วย v4)
+</footer>
+
+<script>
+  const buttons = document.querySelectorAll('#tabs button');
+  const frames = document.querySelectorAll('iframe');
+  buttons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      buttons.forEach(b => b.classList.remove('active'));
+      frames.forEach(f => f.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById(btn.dataset.target).classList.add('active');
+    });
+  });
+</script>
+
+</body>
+</html>

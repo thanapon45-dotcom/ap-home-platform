@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Finnhouses Platform — Data Flow Mind Map v4</title>
+<style>
+  body { margin: 0; background: #080d18; display: flex; flex-direction: column; align-items: center; padding: 32px 16px; font-family: 'Segoe UI', sans-serif; }
+  h1 { color: #f1f5f9; font-size: 20px; margin-bottom: 4px; }
+  p  { color: #64748b; font-size: 13px; margin: 0 0 24px; }
+  svg { max-width: 100%; height: auto; }
+</style>
+</head>
+<body>
+<h1>Finnhouses Platform — Data Flow Mind Map</h1>
+<p>อัปเดต 22 Jul 2026 · Hub-and-Spoke · Hub v1 Live (v2 Shadow, ไม่รีบ cutover) · QC Line LIVE</p>
+
+<svg viewBox="0 0 1060 800" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, sans-serif">
+  <rect width="1060" height="800" fill="#080d18"/>
+
+  <!-- Vercel proxy ring -->
+  <circle cx="510" cy="390" r="130" fill="none" stroke="#1e293b" stroke-width="1.5" stroke-dasharray="6,5"/>
+  <text x="510" y="254" text-anchor="middle" font-size="8" fill="#334155" letter-spacing="1">▲ VERCEL PROXY LAYER</text>
+
+  <!-- CENTER → L1 lines -->
+  <line x1="510" y1="390" x2="210" y2="195" stroke="#60a5fa" stroke-width="2.5" opacity=".6"/>
+  <line x1="510" y1="390" x2="510" y2="100" stroke="#f97316" stroke-width="2.5" opacity=".6"/>
+  <line x1="510" y1="390" x2="810" y2="195" stroke="#e879f9" stroke-width="2.5" opacity=".6"/>
+  <line x1="510" y1="390" x2="810" y2="575" stroke="#34d399" stroke-width="2.5" opacity=".6"/>
+  <line x1="510" y1="390" x2="210" y2="575" stroke="#a78bfa" stroke-width="2.5" opacity=".6"/>
+
+  <!-- L1 → L2 INPUTS -->
+  <line x1="210" y1="195" x2="75" y2="108" stroke="#60a5fa" stroke-width="1.5" opacity=".45"/>
+  <line x1="210" y1="195" x2="65" y2="232" stroke="#60a5fa" stroke-width="1.5" opacity=".45"/>
+  <line x1="210" y1="195" x2="195" y2="62" stroke="#60a5fa" stroke-width="1.5" opacity=".45"/>
+  <line x1="210" y1="195" x2="152" y2="318" stroke="#60a5fa" stroke-width="1.5" opacity=".45"/>
+  <!-- L1 → L2 n8n -->
+  <line x1="510" y1="100" x2="340" y2="28" stroke="#f97316" stroke-width="1.5" opacity=".45"/>
+  <line x1="510" y1="100" x2="510" y2="20" stroke="#f97316" stroke-width="1.5" opacity=".45"/>
+  <line x1="510" y1="100" x2="678" y2="28" stroke="#f97316" stroke-width="1.5" opacity=".45"/>
+  <!-- L1 → L2 OUTPUTS -->
+  <line x1="810" y1="195" x2="930" y2="90" stroke="#e879f9" stroke-width="1.5" opacity=".45"/>
+  <line x1="810" y1="195" x2="955" y2="215" stroke="#e879f9" stroke-width="1.5" opacity=".45"/>
+  <line x1="810" y1="195" x2="948" y2="340" stroke="#e879f9" stroke-width="1.5" opacity=".45"/>
+  <line x1="810" y1="195" x2="910" y2="440" stroke="#e879f9" stroke-width="1.5" opacity=".45"/>
+  <!-- L1 → L2 DATA -->
+  <line x1="810" y1="575" x2="950" y2="535" stroke="#34d399" stroke-width="1.5" opacity=".45"/>
+  <line x1="810" y1="575" x2="930" y2="660" stroke="#34d399" stroke-width="1.5" opacity=".45"/>
+  <line x1="810" y1="575" x2="795" y2="710" stroke="#34d399" stroke-width="1.5" opacity=".45"/>
+  <!-- L1 → L2 MODULES -->
+  <line x1="210" y1="575" x2="72" y2="505" stroke="#a78bfa" stroke-width="1.5" opacity=".45"/>
+  <line x1="210" y1="575" x2="62" y2="632" stroke="#a78bfa" stroke-width="1.5" opacity=".45"/>
+  <line x1="210" y1="575" x2="175" y2="712" stroke="#a78bfa" stroke-width="1.5" opacity=".45"/>
+  <line x1="210" y1="575" x2="318" y2="722" stroke="#a78bfa" stroke-width="1.5" opacity=".45"/>
+  <line x1="210" y1="575" x2="420" y2="700" stroke="#a78bfa" stroke-width="1.5" opacity=".45"/>
+
+  <!-- CENTER -->
+  <circle cx="510" cy="390" r="74" fill="#150a02" stroke="#f97316" stroke-width="3"/>
+  <text x="510" y="378" text-anchor="middle" font-size="15" font-weight="800" fill="#f97316">🚂 HUB</text>
+  <text x="510" y="395" text-anchor="middle" font-size="10" fill="#fb923c">Railway · Express</text>
+  <text x="510" y="410" text-anchor="middle" font-size="9" fill="#64748b">:4000 · Orchestrator</text>
+
+  <!-- L1: INPUTS -->
+  <circle cx="210" cy="195" r="50" fill="#0d1f35" stroke="#60a5fa" stroke-width="2.5"/>
+  <text x="210" y="190" text-anchor="middle" font-size="12" font-weight="700" fill="#60a5fa">INPUTS</text>
+  <text x="210" y="207" text-anchor="middle" font-size="9" fill="#93c5fd">4 sources</text>
+  <!-- L1: n8n -->
+  <circle cx="510" cy="100" r="50" fill="#180f02" stroke="#f97316" stroke-width="2.5"/>
+  <text x="510" y="95" text-anchor="middle" font-size="12" font-weight="700" fill="#f97316">⚡ n8n</text>
+  <text x="510" y="112" text-anchor="middle" font-size="9" fill="#fdba74">Automation Layer</text>
+  <!-- L1: OUTPUTS -->
+  <circle cx="810" cy="195" r="50" fill="#200830" stroke="#e879f9" stroke-width="2.5"/>
+  <text x="810" y="190" text-anchor="middle" font-size="12" font-weight="700" fill="#e879f9">OUTPUTS</text>
+  <text x="810" y="207" text-anchor="middle" font-size="9" fill="#f0abfc">4 channels</text>
+  <!-- L1: DATA -->
+  <circle cx="810" cy="575" r="50" fill="#031a0e" stroke="#34d399" stroke-width="2.5"/>
+  <text x="810" y="570" text-anchor="middle" font-size="12" font-weight="700" fill="#34d399">DATA</text>
+  <text x="810" y="587" text-anchor="middle" font-size="9" fill="#6ee7b7">Supabase DB</text>
+  <!-- L1: MODULES -->
+  <circle cx="210" cy="575" r="50" fill="#110828" stroke="#a78bfa" stroke-width="2.5"/>
+  <text x="210" y="570" text-anchor="middle" font-size="12" font-weight="700" fill="#a78bfa">MODULES</text>
+  <text x="210" y="587" text-anchor="middle" font-size="9" fill="#c4b5fd">5 tools</text>
+
+  <!-- L2: INPUTS -->
+  <circle cx="75" cy="108" r="35" fill="#0d1f35" stroke="#60a5fa" stroke-width="1.5"/>
+  <text x="75" y="103" text-anchor="middle" font-size="10" fill="#60a5fa">🌐 Web</text>
+  <text x="75" y="116" text-anchor="middle" font-size="8" fill="#93c5fd">Budget Form</text>
+
+  <circle cx="65" cy="232" r="35" fill="#0d1f35" stroke="#60a5fa" stroke-width="1.5"/>
+  <text x="65" y="227" text-anchor="middle" font-size="10" fill="#60a5fa">💬 LINE</text>
+  <text x="65" y="240" text-anchor="middle" font-size="8" fill="#93c5fd">Seller Photos</text>
+
+  <circle cx="195" cy="62" r="35" fill="#0d1f35" stroke="#60a5fa" stroke-width="1.5"/>
+  <text x="195" y="57" text-anchor="middle" font-size="10" fill="#60a5fa">📘 FB</text>
+  <text x="195" y="70" text-anchor="middle" font-size="8" fill="#93c5fd">Posts · Intel</text>
+
+  <circle cx="152" cy="318" r="35" fill="#0d1f35" stroke="#60a5fa" stroke-width="1.5"/>
+  <text x="152" y="313" text-anchor="middle" font-size="10" fill="#60a5fa">👤 Archi</text>
+  <text x="152" y="326" text-anchor="middle" font-size="8" fill="#93c5fd">Manual Input</text>
+
+  <!-- L2: n8n -->
+  <circle cx="340" cy="28" r="36" fill="#180f02" stroke="#f97316" stroke-width="1.5"/>
+  <text x="340" y="23" text-anchor="middle" font-size="9" fill="#fdba74">LINE+FB</text>
+  <text x="340" y="35" text-anchor="middle" font-size="9" fill="#fdba74">Webhooks</text>
+
+  <circle cx="510" cy="20" r="36" fill="#180f02" stroke="#f97316" stroke-width="1.5"/>
+  <text x="510" y="15" text-anchor="middle" font-size="9" fill="#fdba74">⏰ Schedule</text>
+  <text x="510" y="27" text-anchor="middle" font-size="9" fill="#fdba74">09:05 daily</text>
+
+  <circle cx="678" cy="28" r="36" fill="#180f02" stroke="#f97316" stroke-width="1.5"/>
+  <text x="678" y="23" text-anchor="middle" font-size="9" fill="#fdba74">WF1 Article</text>
+  <text x="678" y="35" text-anchor="middle" font-size="9" fill="#fdba74">WF2 Image</text>
+
+  <!-- L2: OUTPUTS -->
+  <circle cx="930" cy="90" r="35" fill="#200830" stroke="#e879f9" stroke-width="1.5"/>
+  <text x="930" y="85" text-anchor="middle" font-size="10" fill="#e879f9">📘 FB Post</text>
+  <text x="930" y="98" text-anchor="middle" font-size="8" fill="#f0abfc">Finnhouses Page</text>
+
+  <circle cx="955" cy="215" r="35" fill="#200830" stroke="#e879f9" stroke-width="1.5"/>
+  <text x="955" y="210" text-anchor="middle" font-size="10" fill="#e879f9">📝 Blog</text>
+  <text x="955" y="223" text-anchor="middle" font-size="8" fill="#f0abfc">finnhouses.com</text>
+
+  <circle cx="948" cy="340" r="35" fill="#200830" stroke="#e879f9" stroke-width="1.5"/>
+  <text x="948" y="335" text-anchor="middle" font-size="10" fill="#e879f9">🏠 Property</text>
+  <text x="948" y="348" text-anchor="middle" font-size="8" fill="#f0abfc">WP Listing</text>
+
+  <circle cx="910" cy="440" r="35" fill="#200830" stroke="#e879f9" stroke-width="1.5"/>
+  <text x="910" y="435" text-anchor="middle" font-size="10" fill="#e879f9">✈️ Telegram</text>
+  <text x="910" y="448" text-anchor="middle" font-size="8" fill="#f0abfc">Alerts+Content</text>
+
+  <!-- L2: DATA -->
+  <circle cx="950" cy="535" r="36" fill="#031a0e" stroke="#34d399" stroke-width="1.5"/>
+  <text x="950" y="530" text-anchor="middle" font-size="9" fill="#34d399">leads</text>
+  <text x="950" y="543" text-anchor="middle" font-size="9" fill="#6ee7b7">new→closed</text>
+
+  <circle cx="930" cy="660" r="36" fill="#031a0e" stroke="#34d399" stroke-width="1.5"/>
+  <text x="930" y="655" text-anchor="middle" font-size="9" fill="#34d399">properties</text>
+  <text x="930" y="668" text-anchor="middle" font-size="9" fill="#6ee7b7">pending→live</text>
+
+  <circle cx="795" cy="710" r="36" fill="#031a0e" stroke="#34d399" stroke-width="1.5"/>
+  <text x="795" y="705" text-anchor="middle" font-size="9" fill="#34d399">market</text>
+  <text x="795" y="718" text-anchor="middle" font-size="9" fill="#6ee7b7">_insights</text>
+
+  <!-- L2: MODULES -->
+  <circle cx="72" cy="505" r="35" fill="#110828" stroke="#a78bfa" stroke-width="1.5"/>
+  <text x="72" y="500" text-anchor="middle" font-size="9" fill="#a78bfa">📊 Dashboard</text>
+  <text x="72" y="513" text-anchor="middle" font-size="8" fill="#c4b5fd">Live KPIs</text>
+
+  <circle cx="62" cy="632" r="35" fill="#110828" stroke="#a78bfa" stroke-width="1.5"/>
+  <text x="62" y="627" text-anchor="middle" font-size="9" fill="#a78bfa">📋 CRM</text>
+  <text x="62" y="640" text-anchor="middle" font-size="8" fill="#c4b5fd">Lead Kanban</text>
+
+  <circle cx="175" cy="712" r="35" fill="#110828" stroke="#a78bfa" stroke-width="1.5"/>
+  <text x="175" y="707" text-anchor="middle" font-size="9" fill="#a78bfa">✨ AI Content</text>
+  <text x="175" y="720" text-anchor="middle" font-size="8" fill="#c4b5fd">FB Studio</text>
+
+  <circle cx="318" cy="722" r="35" fill="#110828" stroke="#a78bfa" stroke-width="1.5"/>
+  <text x="318" y="717" text-anchor="middle" font-size="9" fill="#a78bfa">📝 Blog</text>
+  <text x="318" y="730" text-anchor="middle" font-size="8" fill="#c4b5fd">Runner</text>
+
+  <circle cx="420" cy="700" r="35" fill="#110828" stroke="#a78bfa" stroke-width="1.5"/>
+  <text x="420" y="695" text-anchor="middle" font-size="9" fill="#a78bfa">🧠 Market</text>
+  <text x="420" y="708" text-anchor="middle" font-size="8" fill="#c4b5fd">Intel</text>
+
+  <text x="530" y="778" text-anchor="middle" font-size="10" fill="#334155">Finnhouses Platform — Data Flow Mind Map v4 · อัปเดต 22 Jul 2026</text>
+</svg>
+</body>
+</html>

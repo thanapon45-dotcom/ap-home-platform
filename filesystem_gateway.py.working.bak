@@ -1,0 +1,1131 @@
+﻿from pathlib import Path
+import requests
+import json
+import re
+import time
+
+# ============================================================
+# AP-HOME OS — READ-ONLY AI FILESYSTEM GATEWAY
+# ============================================================
+
+ROOT = Path(
+    r"D:\ARCHI\01_PROJECTS\CORE\ap-home-platform"
+).resolve()
+
+OLLAMA_URL = "http://127.0.0.1:11434/api/chat"
+MODEL = "gemma4:12b"
+
+REQUEST_TIMEOUT = 300
+
+MAX_FILE_CHARS = 120_000
+MAX_TOTAL_CONTEXT_CHARS = 240_000
+
+# Smaller inference settings are intentional.
+FACT_NUM_PREDICT = 384
+COMPARE_NUM_PREDICT = 512
+
+# Keep each comparison request small.
+FACT_CHUNK_CHARS = 1_500
+COMPARE_CHUNK_CHARS = 2_500
+
+
+# ============================================================
+# FILESYSTEM SECURITY
+# ============================================================
+
+def safe_path(path: str) -> Path:
+
+    target = Path(path)
+
+    if not target.is_absolute():
+        target = ROOT / target
+
+    target = target.resolve()
+
+    try:
+        target.relative_to(ROOT)
+    except ValueError:
+        raise PermissionError(
+            f"Access denied: path is outside repository: {target}"
+        )
+
+    return target
+
+
+def read_file(path: str) -> str:
+
+    target = safe_path(path)
+
+    if not target.is_file():
+        raise FileNotFoundError(
+            f"File not found: {target}"
+        )
+
+    text = target.read_text(
+        encoding="utf-8",
+        errors="replace"
+    )
+
+    if len(text) > MAX_FILE_CHARS:
+
+        text = (
+            text[:MAX_FILE_CHARS]
+            + "\n\n[WARNING: FILE CONTENT TRUNCATED]\n"
+        )
+
+    return text
+
+
+# ============================================================
+# DOCUMENT DISCOVERY
+# ============================================================
+
+EXCLUDED_DIRS = {
+    "node_modules",
+    ".next",
+    ".git",
+    "dist",
+    "build",
+    "coverage",
+    ".venv",
+    "venv",
+}
+
+
+ALLOWED_EXTENSIONS = {
+    ".md",
+    ".mdx",
+    ".txt",
+    ".yaml",
+    ".yml",
+}
+
+
+def list_documents() -> list[str]:
+
+    results = []
+
+    for path in ROOT.rglob("*"):
+
+        if not path.is_file():
+            continue
+
+        if any(
+            part in EXCLUDED_DIRS
+            for part in path.parts
+        ):
+            continue
+
+        if path.suffix.lower() not in ALLOWED_EXTENSIONS:
+            continue
+
+        try:
+            relative = path.relative_to(ROOT)
+        except ValueError:
+            continue
+
+        results.append(str(relative))
+
+    return sorted(results)
+
+
+def find_documents(keyword: str) -> list[str]:
+
+    keyword = keyword.lower().strip()
+
+    results = []
+
+    for document in list_documents():
+
+        if keyword in document.lower():
+            results.append(document)
+
+    return results
+
+
+# ============================================================
+# TOOLS
+# ============================================================
+
+TOOLS = [
+
+    {
+        "type": "function",
+        "function": {
+            "name": "read_file",
+            "description": (
+                "Read a UTF-8 text file from the allowed "
+                "AP-Home OS repository. READ-ONLY."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "path": {
+                        "type": "string",
+                        "description": (
+                            "Absolute or repository-relative "
+                            "path of the file."
+                        )
+                    }
+                },
+                "required": ["path"]
+            }
+        }
+    },
+
+    {
+        "type": "function",
+        "function": {
+            "name": "list_documents",
+            "description": (
+                "List documentation files inside the repository."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {}
+            }
+        }
+    },
+
+    {
+        "type": "function",
+        "function": {
+            "name": "find_documents",
+            "description": (
+                "Find documentation files whose path contains "
+                "a keyword."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "keyword": {
+                        "type": "string"
+                    }
+                },
+                "required": ["keyword"]
+            }
+        }
+    }
+]
+
+
+# ============================================================
+# SYSTEM PROMPT
+# ============================================================
+
+SYSTEM_PROMPT = """
+คุณคือ AP-Home OS Read-Only Architecture Analyst
+
+Repository:
+D:\\ARCHI\\01_PROJECTS\\CORE\\ap-home-platform
+
+กฎ:
+
+1. ใช้ข้อมูลจากไฟล์ใน repository เท่านั้น
+2. ห้ามเติมข้อมูลจากความรู้ทั่วไป
+3. ห้ามแก้ไขไฟล์
+4. ห้ามสร้างไฟล์
+5. ห้ามลบไฟล์
+6. ห้ามสั่งรันคำสั่งระบบ
+7. หากไม่พบข้อมูล ให้ระบุว่าไม่พบข้อมูลในเอกสาร
+8. ต้องแยก:
+   - สิ่งที่เอกสารระบุ
+   - ข้อสรุปจากเอกสาร
+   - สิ่งที่ยังไม่มีหลักฐาน
+9. เมื่อเปรียบเทียบเอกสาร ต้องไม่ถือว่า
+   "ข้อมูลที่มีในเอกสารหนึ่งแต่ไม่มีอีกเอกสารหนึ่ง"
+   เป็น conflict โดยอัตโนมัติ
+10. Conflict ต้องเกิดจากข้อความหรือข้อกำหนด
+    ที่ขัดกันจริง
+"""
+
+
+# ============================================================
+# TOOL EXECUTION
+# ============================================================
+
+def execute_tool(
+    tool_name: str,
+    arguments: dict
+) -> str:
+
+    if tool_name == "read_file":
+
+        path = arguments.get("path")
+
+        if not path:
+            return "ERROR: missing path"
+
+        try:
+            return read_file(path)
+
+        except Exception as exc:
+            return f"ERROR: {exc}"
+
+
+    if tool_name == "list_documents":
+
+        try:
+            return "\n".join(
+                list_documents()
+            )
+
+        except Exception as exc:
+            return f"ERROR: {exc}"
+
+
+    if tool_name == "find_documents":
+
+        keyword = arguments.get("keyword")
+
+        if not keyword:
+            return "ERROR: missing keyword"
+
+        try:
+            return "\n".join(
+                find_documents(keyword)
+            )
+
+        except Exception as exc:
+            return f"ERROR: {exc}"
+
+
+    return f"ERROR: unknown tool: {tool_name}"
+
+
+# ============================================================
+# BASIC OLLAMA CALL
+# ============================================================
+
+def ollama_chat(
+    messages: list,
+    num_predict: int
+) -> str:
+
+    payload = {
+        "model": MODEL,
+        "messages": messages,
+        "stream": False,
+        "think": False,
+        "options": {
+            "num_predict": num_predict
+        }
+    }
+
+    started = time.time()
+
+    response = requests.post(
+        OLLAMA_URL,
+        json=payload,
+        timeout=REQUEST_TIMEOUT
+    )
+
+    elapsed = time.time() - started
+
+    response.raise_for_status()
+
+    data = response.json()
+
+    message = data.get(
+        "message",
+        {}
+    )
+
+    content = message.get(
+        "content",
+        ""
+    )
+
+    print(
+        f"[OLLAMA] {elapsed:.1f}s | "
+        f"{len(content):,} output chars",
+        flush=True
+    )
+
+    return content
+
+
+# ============================================================
+# SPLIT DOCUMENT
+# ============================================================
+
+def split_document(
+    text: str,
+    max_chars: int
+) -> list[str]:
+
+    sections = re.split(
+        r"\n(?=#{1,6}\s)",
+        text
+    )
+
+    chunks = []
+
+    current = ""
+
+    for section in sections:
+
+        section = section.strip()
+
+        if not section:
+            continue
+
+        if len(current) + len(section) + 2 <= max_chars:
+
+            if current:
+                current += "\n\n"
+
+            current += section
+
+        else:
+
+            if current:
+                chunks.append(current)
+
+            if len(section) <= max_chars:
+
+                current = section
+
+            else:
+
+                for i in range(
+                    0,
+                    len(section),
+                    max_chars
+                ):
+
+                    chunks.append(
+                        section[
+                            i:i + max_chars
+                        ]
+                    )
+
+                current = ""
+
+    if current:
+        chunks.append(current)
+
+    return chunks
+
+
+# ============================================================
+# FACT EXTRACTION
+# ============================================================
+
+def extract_facts(
+    document_name: str,
+    text: str
+) -> str:
+
+    chunks = split_document(
+        text,
+        FACT_CHUNK_CHARS
+    )
+
+    print(
+        f"[FACTS] {document_name}: "
+        f"{len(chunks)} chunks",
+        flush=True
+    )
+
+    facts = []
+
+    for index, chunk in enumerate(chunks, 1):
+
+        print(
+            f"[FACTS] {document_name} "
+            f"chunk {index}/{len(chunks)} "
+            f"({len(chunk):,} chars)",
+            flush=True
+        )
+
+        prompt = f"""
+อ่านเฉพาะส่วนนี้ของเอกสาร:
+
+FILE:
+{document_name}
+
+CONTENT:
+{chunk}
+
+ดึงเฉพาะข้อเท็จจริงที่สำคัญสำหรับ
+การตรวจ Architecture ได้แก่:
+
+- service
+- responsibility
+- communication
+- API / endpoint
+- data flow
+- database
+- authentication
+- hosting
+- ports
+- dependency
+- architectural rule
+
+ตอบเป็น bullet สั้น ๆ
+ห้ามวิเคราะห์
+ห้ามคาดเดา
+ห้ามเพิ่มข้อมูลที่ไม่มีในข้อความ
+"""
+
+        result = ollama_chat(
+            [
+                {
+                    "role": "system",
+                    "content": SYSTEM_PROMPT
+                },
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ],
+            FACT_NUM_PREDICT
+        )
+
+        if result.strip():
+
+            facts.append(
+                f"[{document_name} / chunk {index}]\n"
+                + result.strip()
+            )
+
+    combined = "\n\n".join(facts)
+
+    print(
+        f"[COMPARE] Facts {document_name}: "
+        f"{len(combined):,} chars",
+        flush=True
+    )
+
+    return combined
+
+
+# ============================================================
+# EXTRACT FACT LINES
+# ============================================================
+
+def fact_lines(text: str) -> list[str]:
+
+    lines = []
+
+    for line in text.splitlines():
+
+        line = line.strip()
+
+        if not line:
+            continue
+
+        if line.startswith(
+            (
+                "-",
+                "*",
+                "•"
+            )
+        ):
+
+            cleaned = re.sub(
+                r"^[-*•]\s*",
+                "",
+                line
+            ).strip()
+
+            if len(cleaned) >= 20:
+                lines.append(cleaned)
+
+    return lines
+
+
+# ============================================================
+# BUILD SMALL COMPARISON GROUPS
+# ============================================================
+
+def build_comparison_groups(
+    facts_a: str,
+    facts_b: str
+) -> list[tuple[str, str]]:
+
+    lines_a = fact_lines(facts_a)
+    lines_b = fact_lines(facts_b)
+
+    groups = []
+
+    group_size = 8
+
+    for i in range(
+        0,
+        len(lines_a),
+        group_size
+    ):
+
+        group_a = "\n".join(
+            "- " + x
+            for x in lines_a[
+                i:i + group_size
+            ]
+        )
+
+        groups.append(
+            (
+                group_a,
+                "\n".join(
+                    "- " + x
+                    for x in lines_b
+                )
+            )
+        )
+
+    return groups
+
+
+# ============================================================
+# COMPARE ONE SMALL GROUP
+# ============================================================
+
+def compare_group(
+    document_a: str,
+    document_b: str,
+    facts_a: str,
+    facts_b: str
+) -> str:
+
+    prompt = f"""
+เปรียบเทียบข้อเท็จจริงจากเอกสารสองชุดนี้
+
+DOCUMENT A:
+{document_a}
+
+DOCUMENT B:
+{document_b}
+
+FACTS A:
+{facts_a}
+
+FACTS B:
+{facts_b}
+
+ค้นหาเฉพาะ "CONFLICT" ที่เป็นการขัดกันจริง เช่น:
+
+- service เดียวกันมี responsibility ที่ขัดกัน
+- communication flow ขัดกัน
+- endpoint หรือ route เดียวกันถูกกำหนดต่างกัน
+- architecture rule ขัดกัน
+- database/state ownership ขัดกัน
+- authentication flow ขัดกัน
+- hosting/deployment responsibility ขัดกัน
+
+ห้ามถือว่า "A มีข้อมูลแต่ B ไม่มี"
+เป็น conflict
+
+ถ้าไม่พบ conflict ให้ตอบ:
+
+NO_CONFLICT
+
+ถ้าพบ ให้ตอบรูปแบบ:
+
+CONFLICT
+A: ...
+B: ...
+REASON: ...
+
+ตอบเฉพาะ conflict
+ห้ามเขียนบทวิเคราะห์ยาว
+"""
+
+    return ollama_chat(
+        [
+            {
+                "role": "system",
+                "content": SYSTEM_PROMPT
+            },
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ],
+        COMPARE_NUM_PREDICT
+    )
+
+
+# ============================================================
+# DOCUMENT COMPARISON
+# ============================================================
+
+def compare_documents(
+    path_a: str,
+    path_b: str
+) -> str:
+
+    print()
+    print(
+        "[MODE] DOCUMENT COMPARISON",
+        flush=True
+    )
+
+    print(
+        f"[COMPARE] Reading document A: {path_a}",
+        flush=True
+    )
+
+    document_a = read_file(path_a)
+
+    print(
+        f"[COMPARE] Document A: "
+        f"{len(document_a):,} chars",
+        flush=True
+    )
+
+    print(
+        f"[COMPARE] Reading document B: {path_b}",
+        flush=True
+    )
+
+    document_b = read_file(path_b)
+
+    print(
+        f"[COMPARE] Document B: "
+        f"{len(document_b):,} chars",
+        flush=True
+    )
+
+    # --------------------------------------------------------
+    # FACT EXTRACTION
+    # --------------------------------------------------------
+
+    print(
+        "[COMPARE] Step 1/3: "
+        "Extracting facts from document A...",
+        flush=True
+    )
+
+    facts_a = extract_facts(
+        path_a,
+        document_a
+    )
+
+    print(
+        "[COMPARE] Step 2/3: "
+        "Extracting facts from document B...",
+        flush=True
+    )
+
+    facts_b = extract_facts(
+        path_b,
+        document_b
+    )
+
+    # --------------------------------------------------------
+    # SMALL GROUP COMPARISON
+    # --------------------------------------------------------
+
+    print(
+        "[COMPARE] Step 3/3: "
+        "Comparing facts in small groups...",
+        flush=True
+    )
+
+    groups = build_comparison_groups(
+        facts_a,
+        facts_b
+    )
+
+    print(
+        f"[COMPARE] Comparison groups: "
+        f"{len(groups)}",
+        flush=True
+    )
+
+    conflicts = []
+
+    for index, (
+        group_a,
+        group_b
+    ) in enumerate(groups, 1):
+
+        print(
+            f"[COMPARE] Group "
+            f"{index}/{len(groups)}...",
+            flush=True
+        )
+
+        result = compare_group(
+            path_a,
+            path_b,
+            group_a,
+            group_b
+        )
+
+        result = result.strip()
+
+        if (
+            result
+            and "NO_CONFLICT" not in result
+        ):
+
+            conflicts.append(
+                result
+            )
+
+    # --------------------------------------------------------
+    # REPORT
+    # --------------------------------------------------------
+
+    print(
+        "[COMPARE] Building report...",
+        flush=True
+    )
+
+    if not conflicts:
+
+        return (
+            "## CONFLICTS\n\n"
+            "ไม่พบความขัดแย้งจากข้อเท็จจริง "
+            "ที่ตรวจเปรียบเทียบได้\n\n"
+            "## NOTE\n\n"
+            "การตรวจนี้ไม่ได้ถือว่า "
+            "ข้อมูลที่มีเฉพาะในเอกสารหนึ่ง "
+            "เป็นความขัดแย้ง"
+        )
+
+    report = [
+        "## CONFLICTS",
+        ""
+    ]
+
+    for index, conflict in enumerate(
+        conflicts,
+        1
+    ):
+
+        report.append(
+            f"### Conflict {index}"
+        )
+
+        report.append(
+            conflict
+        )
+
+        report.append("")
+
+    report.extend(
+        [
+            "## DIFFERENCES",
+            "",
+            "ความแตกต่างที่ไม่ใช่ conflict "
+            "จะไม่ถูกจัดเป็นความขัดแย้งโดยอัตโนมัติ"
+        ]
+    )
+
+    return "\n".join(report)
+
+
+# ============================================================
+# NORMAL AI QUESTION
+# ============================================================
+
+def ask_ollama(
+    user_message: str
+) -> str:
+
+    messages = [
+        {
+            "role": "system",
+            "content": SYSTEM_PROMPT
+        },
+        {
+            "role": "user",
+            "content": user_message
+        }
+    ]
+
+    total_context_chars = 0
+
+    while True:
+
+        payload = {
+            "model": MODEL,
+            "messages": messages,
+            "tools": TOOLS,
+            "stream": False,
+            "think": False,
+            "options": {
+                "num_predict": 768
+            }
+        }
+
+        response = requests.post(
+            OLLAMA_URL,
+            json=payload,
+            timeout=REQUEST_TIMEOUT
+        )
+
+        response.raise_for_status()
+
+        data = response.json()
+
+        message = data.get(
+            "message",
+            {}
+        )
+
+        tool_calls = message.get(
+            "tool_calls"
+        )
+
+        if not tool_calls:
+
+            return message.get(
+                "content",
+                ""
+            )
+
+        messages.append(message)
+
+        print(
+            f"[DEBUG] Tool calls: "
+            f"{len(tool_calls)}",
+            flush=True
+        )
+
+        for tool_call in tool_calls:
+
+            function = tool_call.get(
+                "function",
+                {}
+            )
+
+            tool_name = function.get(
+                "name"
+            )
+
+            arguments = function.get(
+                "arguments",
+                {}
+            )
+
+            if isinstance(
+                arguments,
+                str
+            ):
+
+                try:
+                    arguments = json.loads(
+                        arguments
+                    )
+
+                except json.JSONDecodeError:
+
+                    arguments = {}
+
+            print(
+                f"[DEBUG] Calling tool: "
+                f"{tool_name}",
+                flush=True
+            )
+
+            result = execute_tool(
+                tool_name,
+                arguments
+            )
+
+            print(
+                f"[DEBUG] Tool result: "
+                f"{len(result):,} chars",
+                flush=True
+            )
+
+            total_context_chars += len(
+                result
+            )
+
+            if (
+                total_context_chars
+                > MAX_TOTAL_CONTEXT_CHARS
+            ):
+
+                result = (
+                    result[:20_000]
+                    + "\n\n"
+                    "[WARNING: TOTAL DOCUMENT "
+                    "CONTEXT LIMIT REACHED]"
+                )
+
+            messages.append(
+                {
+                    "role": "tool",
+                    "tool_name": tool_name,
+                    "content": result
+                }
+            )
+
+
+# ============================================================
+# DETECT COMPARISON REQUEST
+# ============================================================
+
+def detect_comparison(
+    question: str
+) -> tuple[str, str] | None:
+
+    normalized = question.lower()
+
+    if (
+        "readme.md" not in normalized
+        or "architecture_v2.md" not in normalized
+    ):
+        return None
+
+    comparison_words = [
+        "ขัดแย้ง",
+        "ความขัดแย้ง",
+        "เปรียบเทียบ",
+        "compare",
+        "conflict",
+        "แตกต่าง"
+    ]
+
+    if not any(
+        word in normalized
+        for word in comparison_words
+    ):
+        return None
+
+    return (
+        "README.md",
+        "ARCHITECTURE_V2.md"
+    )
+
+
+# ============================================================
+# INTERACTIVE CLI
+# ============================================================
+
+def main():
+
+    print()
+    print("=" * 60)
+    print("AP-HOME OS — READ-ONLY AI")
+    print("=" * 60)
+    print(
+        f"Model : {MODEL}"
+    )
+    print(
+        f"Root  : {ROOT}"
+    )
+    print()
+    print(
+        "Read-only mode."
+    )
+    print(
+        "No file modification tools are available."
+    )
+    print()
+    print("Supported:")
+    print()
+    print(
+        "  อ่าน README.md แล้วสรุป"
+    )
+    print()
+    print(
+        "  ตรวจความขัดแย้งระหว่าง "
+        "README.md กับ ARCHITECTURE_V2.md"
+    )
+    print()
+    print(
+        "  เปรียบเทียบ README.md กับ "
+        "ARCHITECTURE_V2.md"
+    )
+    print()
+    print(
+        "Commands: exit / quit"
+    )
+    print("=" * 60)
+    print()
+
+    while True:
+
+        try:
+
+            question = input(
+                "> "
+            ).strip()
+
+        except (
+            EOFError,
+            KeyboardInterrupt
+        ):
+
+            print()
+            print("Bye.")
+            break
+
+        if not question:
+            continue
+
+        if question.lower() in {
+            "exit",
+            "quit"
+        }:
+
+            print("Bye.")
+            break
+
+        try:
+
+            comparison = detect_comparison(
+                question
+            )
+
+            if comparison:
+
+                answer = compare_documents(
+                    comparison[0],
+                    comparison[1]
+                )
+
+            else:
+
+                answer = ask_ollama(
+                    question
+                )
+
+            print()
+            print(answer)
+            print()
+
+        except requests.exceptions.Timeout:
+
+            print()
+            print(
+                "ERROR: Ollama request timed out."
+            )
+            print(
+                "การประมวลผลเอกสารใช้เวลานานเกิน "
+                f"{REQUEST_TIMEOUT} วินาที"
+            )
+            print()
+
+        except requests.exceptions.RequestException as exc:
+
+            print()
+            print(
+                f"ERROR: Ollama connection failed: "
+                f"{exc}"
+            )
+            print()
+
+        except Exception as exc:
+
+            print()
+            print(
+                f"ERROR: {exc}"
+            )
+            print()
+
+
+# ============================================================
+# ENTRY POINT
+# ============================================================
+
+if __name__ == "__main__":
+    main()

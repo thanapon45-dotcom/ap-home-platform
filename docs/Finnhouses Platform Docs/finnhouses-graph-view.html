@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Finnhouses Platform — Data Flow (Graph View)</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; width: 100%; height: 100%;
+    background: #ffffff; font-family: 'Segoe UI', -apple-system, sans-serif;
+    overflow: hidden;
+  }
+  #top {
+    position: absolute; top: 0; left: 0; right: 0;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 22px; z-index: 10; pointer-events: none;
+  }
+  #top .title { font-size: 15px; color: #37352f; font-weight: 600; pointer-events: auto; }
+  #top .sub { font-size: 11px; color: #9a9a97; margin-top: 2px; }
+  #controls {
+    position: absolute; top: 14px; right: 20px; display: flex; gap: 6px; z-index: 10;
+  }
+  #controls button {
+    background: #f6f6f5; border: 1px solid #e3e3e0; border-radius: 6px;
+    width: 30px; height: 30px; cursor: pointer; color: #6b6b68; font-size: 14px;
+  }
+  #controls button:hover { background: #ebebe9; }
+  #legend {
+    position: absolute; bottom: 16px; left: 20px; z-index: 10;
+    background: rgba(255,255,255,.9); border: 1px solid #e8e8e6; border-radius: 10px;
+    padding: 10px 14px; font-size: 11px; color: #6b6b68; line-height: 1.9;
+  }
+  #legend .row { display: flex; align-items: center; gap: 8px; }
+  #legend .dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+  #tooltip {
+    position: absolute; pointer-events: none; z-index: 20;
+    background: #202020; color: #f0f0ee; font-size: 11px; line-height: 1.6;
+    padding: 8px 11px; border-radius: 7px; max-width: 240px;
+    opacity: 0; transition: opacity .12s; box-shadow: 0 6px 20px rgba(0,0,0,.25);
+  }
+  svg { width: 100vw; height: 100vh; display: block; cursor: grab; }
+  svg:active { cursor: grabbing; }
+  .link { stroke: #d8d8d5; stroke-width: 1.2px; }
+  .link.dim { stroke: #ececea; }
+  .node-label {
+    font-size: 11px; fill: #37352f; pointer-events: none; user-select: none;
+    font-family: 'Segoe UI', sans-serif;
+  }
+  .node-label.dim { fill: #cfcfcc; }
+  .node-label.root { font-weight: 700; font-size: 13px; }
+  circle.node { cursor: pointer; stroke: #ffffff; stroke-width: 1.5px; }
+  circle.node.dim { opacity: .25; }
+</style>
+</head>
+<body>
+
+<div id="top">
+  <div>
+    <div class="title">Finnhouses Platform — Data Flow</div>
+    <div class="sub">Graph view · ลากจุดเพื่อจัดวางใหม่ · scroll เพื่อซูม · คลิกจุดเพื่อไฮไลต์เส้นทาง · อัปเดต 23 Jul 2026</div>
+  </div>
+</div>
+
+<div id="controls">
+  <button id="zoomIn" title="ซูมเข้า">+</button>
+  <button id="zoomOut" title="ซูมออก">−</button>
+  <button id="reset" title="รีเซ็ตมุมมอง">⤢</button>
+</div>
+
+<div id="legend"></div>
+<div id="tooltip"></div>
+
+<svg></svg>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script>
+// ── Data model — mirrors the existing static mind-map (Hub-and-Spoke) ──────
+// group colors are intentionally muted (Obsidian-style subtle tag tint)
+const GROUPS = {
+  hub:     { label: "Hub (Railway orchestrator)", color: "#f59e0b" },
+  input:   { label: "Inputs",                     color: "#3b82f6" },
+  n8n:     { label: "n8n Automation",              color: "#f97316" },
+  output:  { label: "Outputs",                     color: "#d946ef" },
+  data:    { label: "Data (Supabase)",             color: "#10b981" },
+  module:  { label: "Modules (Dashboard OS)",      color: "#8b5cf6" },
+};
+
+const nodes = [
+  { id: "HUB",        group: "hub",    desc: "Hub v1 (server.cjs) บน Railway — orchestrator กลาง รับ/ส่ง webhook ทุกเส้นทาง, x-hub-token auth" },
+
+  { id: "INPUTS",      group: "input",  desc: "จุดรับข้อมูลเข้าเข้าระบบทั้งหมด 4 ช่องทาง" },
+  { id: "Web Budget",  group: "input",  desc: "ฟอร์มคำนวณงบ (ปิดให้บริการแล้ว — ดู ADR-018)" },
+  { id: "LINE Seller", group: "input",  desc: "รูปทรัพย์จาก LINE OA ผู้ขาย/inspector" },
+  { id: "FB Posts",    group: "input",  desc: "ข้อมูล Market Intel ที่ observe จาก Facebook" },
+  { id: "Archi Manual",group: "input",  desc: "ข้อมูลตลาดที่ Archi พิมพ์เข้าเองผ่าน Market Intel" },
+
+  { id: "n8n",         group: "n8n",    desc: "Automation layer — ประมวลผล/สร้าง content/callback กลับ Hub" },
+  { id: "Webhooks",    group: "n8n",    desc: "LINE + FB webhook triggers" },
+  { id: "Schedule",    group: "n8n",    desc: "Cron รายวัน 09:00-09:05 — Blog/FB queue auto-run" },
+  { id: "WF1+WF2",     group: "n8n",    desc: "WF1 Article+Publish (AI Quality Gate) → WF2 Image+Patch" },
+
+  { id: "OUTPUTS",     group: "output", desc: "ช่องทางที่ระบบส่งผลลัพธ์ออกไป 4 ช่องทาง" },
+  { id: "FB Post",     group: "output", desc: "โพสต์ขึ้น Finnhouses Facebook Page" },
+  { id: "Blog",        group: "output", desc: "บทความขึ้น finnhouses.com ผ่าน WordPress" },
+  { id: "Property WP", group: "output", desc: "ประกาศขายทรัพย์ขึ้น WordPress Listing" },
+  { id: "Telegram",    group: "output", desc: "แจ้งเตือน + content draft ส่งเข้า Telegram" },
+
+  { id: "DATA",        group: "data",   desc: "Supabase — แหล่งข้อมูลกลางของทุกโมดูล" },
+  { id: "leads",       group: "data",   desc: "ตาราง leads — new → closed, business_unit: consult/list" },
+  { id: "properties",  group: "data",   desc: "ตาราง properties — pending → live" },
+  { id: "market_insights", group: "data", desc: "135 แถว, AI confidence 1-5 ดาว, มี Calibration feedback แล้ว" },
+  { id: "quality_gate_log", group: "data", desc: "log การตัดสินใจของ AI Quality Gate (ADR-021)" },
+  { id: "reno_deals",  group: "data",   desc: "Fix & Flip deal pipeline, เชื่อม Land Analyzer ROI (ADR-022)" },
+
+  { id: "MODULES",     group: "module", desc: "เครื่องมือที่ Archi ใช้งานจริงบน Dashboard OS" },
+  { id: "Dashboard",   group: "module", desc: "Overview + Live KPIs + Ops health" },
+  { id: "CRM",         group: "module", desc: "Lead Kanban — consult / list" },
+  { id: "AI Content",  group: "module", desc: "FB Content Studio — สร้างโพสต์ด้วย Claude" },
+  { id: "Blog Runner", group: "module", desc: "Queue จัดคิวบทความ + Quality Gate Accuracy tab" },
+  { id: "Market Intel",group: "module", desc: "บันทึกข้อมูลตลาด + Calibration feedback" },
+  { id: "Land Analyzer",group:"module", desc: "คำนวณ ROI ที่ดิน → เชื่อมเข้า Fix & Flip Deals ได้ (ADR-022)" },
+  { id: "Deals",       group: "module", desc: "Fix & Flip Kanban + ROI จริง vs ประเมิน" },
+];
+
+const links = [
+  ["HUB","INPUTS"], ["HUB","n8n"], ["HUB","OUTPUTS"], ["HUB","DATA"], ["HUB","MODULES"],
+
+  ["INPUTS","Web Budget"], ["INPUTS","LINE Seller"], ["INPUTS","FB Posts"], ["INPUTS","Archi Manual"],
+
+  ["n8n","Webhooks"], ["n8n","Schedule"], ["n8n","WF1+WF2"],
+
+  ["OUTPUTS","FB Post"], ["OUTPUTS","Blog"], ["OUTPUTS","Property WP"], ["OUTPUTS","Telegram"],
+
+  ["DATA","leads"], ["DATA","properties"], ["DATA","market_insights"], ["DATA","quality_gate_log"], ["DATA","reno_deals"],
+
+  ["MODULES","Dashboard"], ["MODULES","CRM"], ["MODULES","AI Content"], ["MODULES","Blog Runner"],
+  ["MODULES","Market Intel"], ["MODULES","Land Analyzer"], ["MODULES","Deals"],
+
+  // cross-links — the actual data relationships, not just hub-and-spoke
+  ["LINE Seller","Property WP"],
+  ["Archi Manual","market_insights"],
+  ["FB Posts","market_insights"],
+  ["WF1+WF2","Blog"],
+  ["WF1+WF2","quality_gate_log"],
+  ["Schedule","Blog Runner"],
+  ["CRM","leads"],
+  ["AI Content","FB Post"],
+  ["Blog Runner","Blog"],
+  ["Blog Runner","quality_gate_log"],
+  ["Market Intel","market_insights"],
+  ["Land Analyzer","reno_deals"],
+  ["Deals","reno_deals"],
+  ["Dashboard","leads"],
+  ["Dashboard","properties"],
+];
+
+// ── Build degree map for node sizing (more connections = bigger, like Obsidian) ──
+const degree = {};
+nodes.forEach(n => degree[n.id] = 0);
+links.forEach(([a,b]) => { degree[a]++; degree[b]++; });
+
+function nodeRadius(n) {
+  if (n.id === "HUB") return 22;
+  const d = degree[n.id] || 1;
+  return Math.min(16, 6 + d * 1.6);
+}
+
+// ── D3 setup ────────────────────────────────────────────────────────────────
+const svg = d3.select("svg");
+const width = window.innerWidth, height = window.innerHeight;
+
+const g = svg.append("g");
+
+const zoom = d3.zoom()
+  .scaleExtent([0.25, 4])
+  .on("zoom", (event) => g.attr("transform", event.transform));
+svg.call(zoom);
+
+const linkData = links.map(([source, target]) => ({ source, target }));
+
+const simulation = d3.forceSimulation(nodes)
+  .force("link", d3.forceLink(linkData).id(d => d.id).distance(d => {
+    if (d.source.id === "HUB" || d.target.id === "HUB") return 140;
+    return 70;
+  }).strength(0.7))
+  .force("charge", d3.forceManyBody().strength(-260))
+  .force("center", d3.forceCenter(width / 2, height / 2))
+  .force("collide", d3.forceCollide().radius(d => nodeRadius(d) + 26));
+
+const link = g.append("g")
+  .selectAll("line")
+  .data(linkData)
+  .join("line")
+  .attr("class", "link");
+
+const nodeGroup = g.append("g")
+  .selectAll("g")
+  .data(nodes)
+  .join("g")
+  .call(drag(simulation));
+
+const circles = nodeGroup.append("circle")
+  .attr("class", "node")
+  .attr("r", nodeRadius)
+  .attr("fill", d => GROUPS[d.group].color)
+  .attr("fill-opacity", d => d.id === "HUB" ? 1 : 0.85);
+
+const labels = nodeGroup.append("text")
+  .attr("class", d => "node-label" + (d.id === "HUB" ? " root" : ""))
+  .attr("x", d => nodeRadius(d) + 6)
+  .attr("y", 4)
+  .text(d => d.id);
+
+const tooltip = d3.select("#tooltip");
+
+nodeGroup
+  .on("mouseenter", (event, d) => {
+    tooltip.style("opacity", 1).html(`<b>${d.id}</b><br>${d.desc || ""}`);
+  })
+  .on("mousemove", (event) => {
+    tooltip.style("left", (event.pageX + 16) + "px").style("top", (event.pageY + 10) + "px");
+  })
+  .on("mouseleave", () => tooltip.style("opacity", 0))
+  .on("click", (event, d) => highlight(d.id));
+
+// ── Highlight connected subgraph on click ───────────────────────────────────
+let highlighted = null;
+function highlight(id) {
+  if (highlighted === id) { highlighted = null; clearHighlight(); return; }
+  highlighted = id;
+  const connected = new Set([id]);
+  linkData.forEach(l => {
+    if (l.source.id === id) connected.add(l.target.id);
+    if (l.target.id === id) connected.add(l.source.id);
+  });
+  circles.classed("dim", d => !connected.has(d.id));
+  labels.classed("dim", d => !connected.has(d.id));
+  link.classed("dim", l => !(connected.has(l.source.id) && connected.has(l.target.id)));
+}
+function clearHighlight() {
+  circles.classed("dim", false);
+  labels.classed("dim", false);
+  link.classed("dim", false);
+}
+svg.on("click", (event) => { if (event.target.tagName === "svg") { highlighted = null; clearHighlight(); } });
+
+simulation.on("tick", () => {
+  link
+    .attr("x1", d => d.source.x).attr("y1", d => d.source.y)
+    .attr("x2", d => d.target.x).attr("y2", d => d.target.y);
+  nodeGroup.attr("transform", d => `translate(${d.x},${d.y})`);
+});
+
+function drag(sim) {
+  function dragstarted(event, d) {
+    if (!event.active) sim.alphaTarget(0.25).restart();
+    d.fx = d.x; d.fy = d.y;
+  }
+  function dragged(event, d) { d.fx = event.x; d.fy = event.y; }
+  function dragended(event, d) {
+    if (!event.active) sim.alphaTarget(0);
+    d.fx = null; d.fy = null;
+  }
+  return d3.drag().on("start", dragstarted).on("drag", dragged).on("end", dragended);
+}
+
+// ── Controls ────────────────────────────────────────────────────────────────
+d3.select("#zoomIn").on("click", () => svg.transition().call(zoom.scaleBy, 1.3));
+d3.select("#zoomOut").on("click", () => svg.transition().call(zoom.scaleBy, 0.75));
+d3.select("#reset").on("click", () => svg.transition().call(zoom.transform, d3.zoomIdentity));
+
+// ── Legend ──────────────────────────────────────────────────────────────────
+const legend = d3.select("#legend");
+Object.entries(GROUPS).forEach(([key, g2]) => {
+  const row = legend.append("div").attr("class", "row");
+  row.append("div").attr("class", "dot").style("background", g2.color);
+  row.append("div").text(g2.label);
+});
+
+window.addEventListener("resize", () => {
+  simulation.force("center", d3.forceCenter(window.innerWidth / 2, window.innerHeight / 2));
+  simulation.alpha(0.3).restart();
+});
+</script>
+</body>
+</html>
