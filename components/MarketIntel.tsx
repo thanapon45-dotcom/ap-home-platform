@@ -289,13 +289,13 @@ function InsightsTab() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
-
-  const areas = ["ทั้งหมด", ...Array.from(new Set(insights.map(i => i.area)))];
-  const cats  = ["ทั้งหมด", ...Array.from(new Set(insights.map(i => i.category)))];
+  const norm = (s: string | null | undefined) => (s ?? "").normalize("NFC").trim();
+  const areas = ["ทั้งหมด", ...Array.from(new Set(insights.map(i => norm(i.area))))];
+  const cats  = ["ทั้งหมด", ...Array.from(new Set(insights.map(i => norm(i.category))))];
 
   const filtered = insights.filter(i =>
-    (filterArea === "ทั้งหมด" || i.area === filterArea) &&
-    (filterCat === "ทั้งหมด" || i.category === filterCat)
+    (filterArea === "ทั้งหมด" || norm(i.area) === norm(filterArea)) &&
+    (filterCat === "ทั้งหมด" || norm(i.category) === norm(filterCat))
   );
 
   return (
