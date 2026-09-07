@@ -308,7 +308,7 @@ function InsightsTab() {
         </select>
         <select value={filterCat} onChange={e => setFilterCat(e.target.value)}
           style={{ ...selectStyle, width: "auto", minWidth: 160, fontSize: 12 }}>
-          {cats.map(c => <option key={c}>{c === "ทั้งหมด" ? "ทั้งหมด" : (CATEGORY_TH[c] ?? c)}</option>)}
+          {cats.map(c => <option key={c}value={c}>{c === "ทั้งหมด" ? "ทั้งหมด" : (CATEGORY_TH[c] ?? c)}</option>)}
         </select>
         <button onClick={load} style={{ padding: "8px 14px", borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer", background: "rgba(34,211,238,.1)", color: "#22d3ee", border: "1px solid rgba(34,211,238,.25)" }}>
           🔄 Refresh
