@@ -2174,6 +2174,9 @@ async function runHealthMonitor() {
 
 // ══════════════════════════════════════════════════════════════════════════════
 
+const boqRouter = require('./boq.routes');
+app.use('/api/boq', boqRouter);
+
 app.listen(PORT, HUB_HOST, async () => {
   const state = await readState();
   await writeState(state);
@@ -2195,5 +2198,3 @@ app.listen(PORT, HUB_HOST, async () => {
   console.log(`Health monitor: every ${HEALTH_INTERVAL_MS / 60000} min → Telegram`);
 });
  
-const boqRouter = require('./boq.routes');
-app.use('/api/boq', requireHubToken, boqRouter);
