@@ -2196,4 +2196,4 @@ app.listen(PORT, HUB_HOST, async () => {
 });
  
 const boqRouter = require('./boq.routes');
-app.use('/api/boq', requireHubToken, boqRouter);
+app.use('/api/boq', boqRouter);
