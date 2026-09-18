@@ -22,7 +22,7 @@ const HUB_SECRET = process.env.HUB_SECRET || '';
 
 async function forward(req: NextRequest, pathParts: string[], method: string) {
   const isWrite = method !== 'GET';
-  const hubPath = `${isWrite ? '/action' : '/api'}/boq/${pathParts.join('/')}`;
+  const hubPath = `/api/boq/${pathParts.join('/')}`;
   const search = new URL(req.url).search; // preserve ?search=&category=&status= ฯลฯ
   const target = `${HUB_URL}${hubPath}${search}`;
 

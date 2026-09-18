@@ -85,8 +85,7 @@ interface Project {
 }
 
 interface Summary {
-  project: Project;
-  category_breakdown: {
+  category_summary: {
     category_id: string;
     category_name: string;
     overhead_percent: number;
@@ -96,10 +95,8 @@ interface Summary {
     overhead_amount: number;
     total_with_overhead: number;
   }[];
-  grand_total_before_overhead: number;
   grand_total: number;
   price_per_sqm: number | null;
-  item_count: number;
 }
 
 // ----------------------------------------------------------------------------
@@ -164,13 +161,13 @@ export default function BOQTreeBuilder() {
   // ---- load: projects + categories (ครั้งเดียวตอนเปิดหน้า) --------------------
   const loadProjects = useCallback(async () => {
     const data = await api('projects');
-    setProjects(data);
-    if (!projectId && data.length) setProjectId(data[0].id);
+    setProjects(data.items || []);
+    if (!projectId && data.items?.length) setProjectId(data.items[0].id);
   }, [projectId]);
 
   const loadCategories = useCallback(async () => {
     const data = await api('categories');
-    setCategories(data);
+    setCategories(data.items || []);
   }, []);
 
   useEffect(() => {
@@ -184,12 +181,9 @@ export default function BOQTreeBuilder() {
     setLoading(true);
     setError(null);
     try {
-      const [items, sum] = await Promise.all([
-        api(`projects/${pid}/line-items`),
-        api(`projects/${pid}/summary`),
-      ]);
-      setLineItems(items);
-      setSummary(sum);
+      const data = await api(`projects/${pid}`);
+      setLineItems(data.line_items || []);
+      setSummary(data.summary);
     } catch (e: any) {
       setError(e.message);
     } finally {
@@ -302,7 +296,7 @@ export default function BOQTreeBuilder() {
     };
     const created = await api('projects', { method: 'POST', body: JSON.stringify(body) });
     await loadProjects();
-    setProjectId(created.id);
+    setProjectId(created.item.id);
     setShowNewProject(false);
   };
 
@@ -688,8 +682,8 @@ function AddItemForm({
     debounceRef.current = setTimeout(async () => {
       setSearching(true);
       try {
-        const data = await api(`catalog?search=${encodeURIComponent(search)}&active=true`);
-        setResults(data);
+        const data = await api(`catalog?q=${encodeURIComponent(search)}&active=true`);
+        setResults(data.items || []);
       } catch (e: any) {
         setErr(e.message);
       } finally {
@@ -1131,8 +1125,8 @@ function SummaryBar({ summary }: { summary: Summary }) {
     <div className="rounded-3xl border border-slate-800 bg-slate-900/90 shadow-2xl p-5 sticky bottom-4 backdrop-blur">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-wrap gap-6">
-          <Stat label="จำนวนรายการ" value={String(summary.item_count)} />
-          <Stat label="ก่อนค่าดำเนินการ" value={baht(summary.grand_total_before_overhead)} />
+
+
           <Stat label="รวมทั้งหมด" value={baht(summary.grand_total)} accent="cyan" />
           {summary.price_per_sqm != null && (
             <Stat label="ราคา/ตร.ม." value={baht(summary.price_per_sqm)} accent="amber" />
@@ -1158,7 +1152,7 @@ function SummaryBar({ summary }: { summary: Summary }) {
               </tr>
             </thead>
             <tbody>
-              {summary.category_breakdown.map((c) => (
+              {summary.category_summary.map((c) => (
                 <tr key={c.category_id} className="border-t border-slate-800/60">
                   <td className="py-1.5 text-slate-300">{c.category_name}</td>
                   <td className="py-1.5 text-right text-slate-400">{baht(c.subtotal)}</td>
