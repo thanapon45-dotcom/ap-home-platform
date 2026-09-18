@@ -8,6 +8,7 @@ const NAV = [
   { href: "/ai-content",    icon: "✨", label: "AI Content",    desc: "FB content engine" },
   { href: "/marketing",     icon: "📰", label: "Blog Runner",   desc: "n8n → finnhouses.com" },
   { href: "/land-analyzer", icon: "🗺️", label: "Land Analyzer", desc: "วิเคราะห์ที่ดิน" },
+  { href: "/boq",           icon: "📋", label: "BOQ",           desc: "ถอดราคา BOQ" },
   // "/budget" ปิดให้บริการแล้ว (session 29, ADR-018 follow-up) — เคยเป็นเครื่องมือคำนวณ
   // ต้นทุนสร้างบ้านใหม่สำหรับ Unit 1 ที่เลิกทำแล้ว ตัด nav entry ออก หน้ายังอยู่ (แสดงข้อความปิด)
   // เผื่อมีลิงก์เก่า/โฆษณาเก่าชี้มา
