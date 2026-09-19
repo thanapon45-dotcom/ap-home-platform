@@ -90,6 +90,22 @@ const TOOLS = [
     },
   },
   {
+    name: "get_deals",
+    description:
+      "ดึงรายการ Fix & Flip deals จริงจาก Supabase (ตาราง reno_deals, Business Unit 3 — 60% ของรายได้) — ต้องเรียก tool นี้ทุกครั้งที่ผู้ใช้ถามถึงดีล/ทรัพย์ที่กำลังพัฒนาอยู่ในระบบจริง ห้ามคำนวณ ROI จากตัวเลขที่ผู้ใช้พิมพ์มาเองโดยไม่เช็คก่อนว่ามีดีลนี้บันทึกไว้จริงหรือไม่ (ถ้าผู้ใช้แค่ถามสมมติฐาน/what-if ไม่ต้องเรียก)",
+    input_schema: {
+      type: "object",
+      properties: {
+        stage: {
+          type: "string",
+          enum: ["evaluating", "renovating", "listed", "closed"],
+          description: "กรองตาม stage ของ Kanban ใน /deals",
+        },
+        limit: { type: "number", description: "จำนวนสูงสุด (default 20)" },
+      },
+    },
+  },
+  {
     name: "run_fb_queue_next",
     description:
       "[WRITE] สั่งให้ Hub โพสต์ FB post ตัวถัดไปในคิว (POST /action/fb/queue/run-next) — ระบบจะขอ confirm จากผู้ใช้ก่อน execute จริงเสมอ",
@@ -191,6 +207,14 @@ async function executeTool(name: string, input: Record<string, unknown>) {
       params.set("limit", String(Number(input.limit) || 10));
       return await hubGet(`/api/qc/list?${params.toString()}`);
     }
+    case "get_deals": {
+      const limit = Number(input.limit) || 20;
+      let query =
+        `select=id,name,property_address,stage,purchase_price,reno_budget,reno_cost,list_price,sale_price,roi_pct,days_to_sell,land_project_id,created_at,updated_at` +
+        `&order=created_at.desc&limit=${limit}`;
+      if (input.stage) query += `&stage=eq.${encodeURIComponent(String(input.stage))}`;
+      return await supabaseSelect("reno_deals", query);
+    }
     case "run_fb_queue_next": {
       return await hubPost("/action/fb/queue/run-next");
     }
@@ -222,7 +246,7 @@ async function callClaude(messages: unknown[]) {
     },
     body: JSON.stringify({
       model: MODEL,
-      max_tokens: 1024,
+      max_tokens: 4096,
       system: SYSTEM_PROMPT,
       tools: TOOLS,
       messages,
@@ -289,9 +313,15 @@ export async function POST(req: NextRequest) {
 
       if (response.stop_reason !== "tool_use") {
         const textBlock = response.content.find((b: any) => b.type === "text");
+        let text = textBlock?.text || "";
+        const truncated = response.stop_reason === "max_tokens";
+        if (truncated) {
+          text += "\n\n⚠️ _คำตอบถูกตัดเพราะยาวเกิน max_tokens — พิมพ์ \"พูดต่อ\" เพื่อขอคำตอบส่วนที่เหลือ หรือถามให้เจาะจง/สั้นลง_";
+        }
         return NextResponse.json({
           done: true,
-          text: textBlock?.text || "",
+          text,
+          truncated,
           messages: currentMessages,
         });
       }
