@@ -2,7 +2,7 @@
 
 > **Canonical source** สำหรับ business model, business units และบทบาทของ AP-Home Platform OS
 > เอกสารนี้อธิบาย **ธุรกิจจริง + ระบบที่พัฒนาและใช้งานอยู่จริง** ไม่ใช่ roadmap หรือความสามารถที่ยังไม่ได้สร้าง
-> **อัปเดตล่าสุด: 2026-09-19** — ตรวจเทียบกับ source code, API routes, Supabase usage และ decision records ใน repository
+> **อัปเดตล่าสุด: 2026-09-19 (Claude re-audit)** — ตรวจเทียบกับ source code, API routes, Supabase usage และ decision records ใน repository อีกรอบ; แก้ 1 จุดที่พบผิดจริง — "Budget Tool / public lead capture" ใน Unit 2 ยังอ้างว่าใช้งานได้ทั้งที่ `/budget` ถูกปิดไปแล้วตั้งแต่ 2026-07-23 (ADR-018) — ดู section 2 (Unit 2)
 
 ---
 
@@ -81,7 +81,8 @@
 - **AI Content Studio** — content สำหรับงานขายและการตลาด
 - **CRM** — Lead Pipeline, Overview และ Follow Up/Nurture
 - **Market Intelligence** — เก็บ observation และสกัด market signals
-- **Budget Tool / public lead capture** — รับข้อมูลความต้องการของผู้สนใจเข้าสู่ระบบ
+
+> **Public lead capture:** ปัจจุบัน**ไม่มี** public lead-capture channel เหลืออยู่ — `/budget` (เดิมคือฟอร์มคำนวณ "สร้างบ้านใหม่" ของ Unit 1) ถูกปิดตั้งแต่ 2026-07-23 (ADR-018 update) เหลือแค่หน้าแจ้งปิดให้บริการ ไม่มีฟอร์มกรอกข้อมูลแล้ว และถูกตัดออกจาก Sidebar nav ด้วย ตอนนี้ lead เข้าสู่ระบบผ่าน CRM manual entry / CSV import เท่านั้น (`app/api/leads/route.ts` ยังใช้งานได้แต่ไม่มี public UI ตัวไหนเรียกมันแล้ว — ต้องแก้ comment stale ในไฟล์นั้นด้วยถ้ามีโอกาส)
 
 ---
 
