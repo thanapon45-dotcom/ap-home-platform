@@ -1,168 +1,309 @@
 # Business Model — บจก.อาชิดา (Achida Co., Ltd.)
 
-> **Canonical source** สำหรับ company structure, vision, business units, และ intelligence loop ของ AP-Home Platform OS
-> ไฟล์อื่น (memory/CLAUDE.md, AI_TEAM.md, context_brief.md) ควร **link มาที่นี่** แทนการ copy เนื้อหาซ้ำ
-> อัปเดตล่าสุด: 2026-07-20 (session 26, ต่อ) — **Business Unit 1 (รับสร้างบ้าน) ยืนยันจาก Archi ว่า discontinued แล้ว** ส่วน **Business Unit 3 (Fix & Flip) ยืนยันแล้วว่ายังทำอยู่จริง และเป็นสัดส่วนใหญ่ที่สุด** — Archi ให้สัดส่วนธุรกิจจริงตอนนี้คือ **Develop/Fix & Flip 60% · ที่ปรึกษา/ตรวจสอบงานก่อสร้าง (Unit 4) 30% · โบรกเกอร์ (Unit 2) 10%** — ดู note ใต้หัวข้อ Unit 1 และ Unit 3 ด้านล่าง + `docs/decisions.md` ADR-010, ADR-011
+> **Canonical source** สำหรับ business model, business units และบทบาทของ AP-Home Platform OS
+> เอกสารนี้อธิบาย **ธุรกิจจริง + ระบบที่พัฒนาและใช้งานอยู่จริง** ไม่ใช่ roadmap หรือความสามารถที่ยังไม่ได้สร้าง
+> **อัปเดตล่าสุด: 2026-09-19** — ตรวจเทียบกับ source code, API routes, Supabase usage และ decision records ใน repository
 
 ---
 
-## Vision
+## 1. Business Profile
 
-> 🎯 **Develop to "AI-native Human-Centered Real Estate Intelligence Operating System"**
+**บริษัท:** บจก.อาชิดา (Achida Co., Ltd.)  
+**Marketing Brand:** Finnhouses  
+**Platform:** AP-Home Platform OS
 
-สร้างระบบปฏิบัติการด้านอสังหาริมทรัพย์ที่ขับเคลื่อนด้วย AI โดยมีมนุษย์เป็นศูนย์กลาง เพื่อช่วยให้การซื้อ ขาย สร้าง และลงทุนอสังหาริมทรัพย์มีประสิทธิภาพ โปร่งใส และตัดสินใจได้จากข้อมูลจริง
+ธุรกิจที่ยัง active มี 3 หน่วย:
 
----
+| Business Unit | สัดส่วนธุรกิจ | บทบาท |
+|---|---:|---|
+| **Unit 3 — Fix & Flip / Develop** | **60%** | ซื้อทรัพย์/ที่ดิน → ประเมิน → รีโนเวท → ขาย |
+| **Unit 4 — Consulting / Inspection** | **30%** | ที่ปรึกษาและตรวจสอบงานก่อสร้าง/คุณภาพ |
+| **Unit 2 — Brokerage / Agency** | **10%** | รับฝากขายบ้านและที่ดิน |
 
-## Core Platform: AP-Home Platform OS
+### Unit 1 — รับสร้างบ้านใหม่
+**DISCONTINUED**
 
-แพลตฟอร์มกลางที่รวบรวม 7 Intelligence Modules เพื่อสร้างฐานข้อมูลและองค์ความรู้เฉพาะทางด้านอสังหาริมทรัพย์ในประเทศไทย:
-
-1. Market Intelligence
-2. Property Intelligence
-3. Construction Intelligence
-4. Buyer Intelligence
-5. Seller Intelligence
-6. Renovation Intelligence
-7. AI Automation Workflow
-
-### Platform Structure — 2 Pillars (Archi's mental model, ยืนยัน 2026-07-20 session 26 ต่อ)
-
-Archi แบ่ง product/tool ของแพลตฟอร์มออกเป็น 2 กลุ่มใหญ่ตามการใช้งานจริง — นี่คือกรอบคิดหลักที่ควรใช้อ้างอิงเวลาจัดหมวดหมู่ feature ใหม่ๆ:
-
-**1. การตลาดและขาย (Marketing & Sales)** — เครื่องมือหาลูกค้า/ปิดดีล/สร้าง content
-- AI Content Studio (FB Content Studio, Blog Runner, Listing generator, Market Intel tab)
-- CRM (Lead pipeline)
-- OS Dashboard (ภาพรวม)
-- สนับสนุน: Unit 2 (โบรกเกอร์) โดยตรง + การตลาดฝั่งขายของ Unit 3 (Fix & Flip)
-
-**2. การบริหารงานก่อสร้าง (Construction Management)** — เครื่องมือวิเคราะห์/ควบคุมงานหน้างาน
-- Land Analyzer (วิเคราะห์ที่ดิน — ใช้ตอนประเมินซื้อทรัพย์เข้า Fix & Flip)
-- Budget Tool (คำนวณงบสร้างบ้าน/รีโนเวท)
-- QC (LINE OA → GPT-4o Vision — ตรวจงานก่อสร้าง)
-- สนับสนุน: Unit 3 (Fix & Flip) ฝั่งปฏิบัติการ + Unit 4 (ที่ปรึกษา/ตรวจสอบ) โดยตรง (QC คือ product implementation ของ Unit 4)
-
-> หมายเหตุ (ยืนยันจาก Archi): 7 Intelligence Modules ด้านบน**ไม่ได้แยกคนละ pillar** แต่**เชื่อมโยงข้อมูลซึ่งกันและกันทั้งหมด** เพื่อใช้เป็นกลยุทธ์ในการบริหารภาพรวม — เช่น Market Intelligence ป้อนทั้ง AI Content Studio (ฝั่งขาย) และ Land Analyzer (ฝั่งประเมินซื้อที่ดิน), Construction Intelligence จาก QC ป้อนกลับเข้า Renovation Intelligence ที่ใช้ตัดสินใจ Fix & Flip ครั้งถัดไป, Buyer Intelligence จากฝั่งขายป้อนกลับเข้า Property Intelligence ที่ใช้ประเมินทรัพย์ใหม่ — ทั้ง 2 pillar (การตลาดและขาย / การบริหารงานก่อสร้าง) ดึงและป้อนข้อมูลเข้า loop เดียวกันตลอดเวลา ไม่ใช่ silo แยกขาดจากกัน
+บริษัท **ไม่ได้ทำธุรกิจรับสร้างบ้านใหม่ให้ลูกค้า** แล้ว Unit 1 จึงมีไว้เพื่อ historical record เท่านั้น และ **ห้ามใช้เป็น business positioning, AI persona, content rule หรือ default business unit ปัจจุบัน**
 
 ---
 
-## Business Units
+## 2. Business Units
 
-### 1. รับสร้างบ้าน (House Construction) — ⚠️ DISCONTINUED (ยืนยัน 2026-07-20, session 26)
+### Unit 3 — Fix & Flip / Develop — 60%
 
-> Archi ยืนยันตรงๆ ว่า**ไม่ทำธุรกิจรับเหมาก่อสร้าง (สร้างบ้านใหม่ให้ลูกค้า)** — หน่วยธุรกิจนี้ไม่ใช่ของจริงอีกต่อไป เหลือไว้ในเอกสารเพื่อ historical record เท่านั้น ห้ามใช้เป็น reference สำหรับ content/prompt/persona ใดๆ อีก (แก้แล้วใน `components/AIContent.tsx` — ดู `docs/decisions.md` ADR-010) ธุรกิจจริงตอนนี้มี 3 หน่วย: **Unit 3 (Fix & Flip / Develop)**, **Unit 4 (ที่ปรึกษา/ตรวจสอบงานก่อสร้าง)**, **Unit 2 (โบรกเกอร์)** — ดู สัดส่วนธุรกิจ ใต้หัวข้อ Unit 3
+ธุรกิจหลักของบริษัท
 
-| | |
-|---|---|
-| **พื้นที่ให้บริการ (เดิม)** | กรุงเทพมหานคร, นนทบุรี, ปทุมธานี, สมุทรปราการ, นครปฐม |
-| **กลุ่มลูกค้า (เดิม)** | เจ้าของที่ดิน, ครอบครัวรายได้สูง, ผู้ต้องการสร้างบ้านตั้งแต่ 5 ล้านบาทขึ้นไป |
+**รูปแบบธุรกิจ**
+1. คัดเลือกทรัพย์/ที่ดินที่มีโอกาสสร้างผลตอบแทน
+2. วิเคราะห์ทำเล ราคา และศักยภาพ
+3. ประเมินต้นทุนและ ROI
+4. เข้าสู่กระบวนการรีโนเวท
+5. ประกาศขาย
+6. ติดตามการขาย
+7. เก็บ actual performance กลับเข้าสู่ระบบ
 
-**Value Proposition (เดิม — ไม่ใช้แล้ว):**
-- ออกแบบและสร้างบ้าน
-- ควบคุมงบประมาณ
-- ใช้ AI วิเคราะห์ต้นทุนและความต้องการลูกค้า
-- ระบบติดตามงานก่อสร้างแบบดิจิทัล
+**ระบบที่รองรับจริง**
+- **Land Analyzer** — วิเคราะห์ที่ดิน/ทำเล, ราคา, ROI และบันทึกเป็น project
+- **Fix & Flip Deals** (`/deals`) — pipeline 4 stages: ประเมิน → รีโนเวท → ประกาศขาย → ปิดดีล
+- **Land Analyzer → Deals link** — project สามารถสร้าง deal พร้อมเชื่อม `land_project_id`
+- **ROI Actual vs Estimate** — เปรียบเทียบ ROI ที่ประเมินกับผลจริงเมื่อมีข้อมูล
+- **Budget / cost calculation** — คำนวณต้นทุนที่เกี่ยวข้องกับการพัฒนา/รีโนเวท
+- **BOQ** (`/boq`) — จัดทำ BOQ แบบ tree ต่อ project, เลือกวัสดุ/แรงงานจาก master catalog, กรอก quantity และคำนวณยอดรวม/overhead
+- **Properties / Listing / Content** — สนับสนุนการนำทรัพย์เข้าสู่ตลาดและการขาย
 
----
+> **BOQ v1 limitation:** quantity เป็นการกรอกด้วยมนุษย์ ยังไม่มี automatic quantity takeoff จาก DWG/CAD ในหน้าหลัก; CAD staging/approve และ payment milestones เป็นขอบเขตแยก
 
-### 2. รับฝากขายบ้านและที่ดิน (Brokerage & Agency) — **สัดส่วนธุรกิจ 10%** (ยืนยัน 2026-07-20)
+### Unit 4 — Consulting / Inspection — 30%
 
-| | |
-|---|---|
-| **พื้นที่ให้บริการ** | ปทุมธานี, นนทบุรี |
+บริการที่ปรึกษาและตรวจสอบงานก่อสร้าง
 
-**Value Proposition:**
-- วิเคราะห์ราคาตลาดด้วย AI
-- วางกลยุทธ์การตลาดเฉพาะทรัพย์
-- สร้างคอนเทนต์อัตโนมัติ
-- คัดกรองผู้ซื้อคุณภาพ
-- ลดระยะเวลาการขาย
-
-**เป้าหมาย:** สร้างฐานข้อมูล Buyer Intelligence + Seller Intelligence + Property Intelligence เพื่อใช้ต่อยอดธุรกิจอื่น
-
----
-
-### 3. รีโนเวทเพื่อขาย (Fix & Flip / "Develop") — **สัดส่วนธุรกิจ 60% — หน่วยธุรกิจหลัก** (ยืนยัน 2026-07-20, session 26 ต่อ)
-
-> Archi ยืนยันว่าหน่วยนี้ยังทำอยู่จริง และเป็นสัดส่วนใหญ่ที่สุดของธุรกิจตอนนี้ (60% ของทั้งหมด) — เดิมเอกสารเคยบันทึกว่าสถานะยังไม่ยืนยัน (มีความเสี่ยงสับสนกับ Unit 1 ที่ discontinued เพราะทั้งคู่เกี่ยวกับงานก่อสร้าง) แต่ตอนนี้ยืนยันชัดแล้วว่า Fix & Flip (ซื้อทรัพย์มาปรับปรุงแล้วขาย) **ไม่ใช่** การรับเหมาสร้างบ้านใหม่ให้ลูกค้า (Unit 1) — คนละแบบธุรกิจกัน ห้ามสับสน
-
-| | |
-|---|---|
-| **พื้นที่ลงทุน** | ปทุมธานี, นนทบุรี |
-
-**กลยุทธ์:** ซื้อทรัพย์ที่มี
-- ส่วนลดจากราคาตลาด
-- ศักยภาพในการเพิ่มมูลค่า
-- ทำเลที่มี Demand สูง
-
-แล้วใช้ข้อมูลจาก AP-Home Platform OS เพื่อ: ประเมินมูลค่า, คาดการณ์ Demand, คำนวณกำไร, บริหารความเสี่ยง
-
-**เป้าหมาย:** สร้าง Inventory ที่บริษัทเป็นเจ้าของเอง
-
-> **Tooling (เพิ่ม 2026-07-22)**: ก่อนหน้านี้ Unit 3 ไม่มีเครื่องมือ dedicated ติดตามดีล (Land Analyzer/Budget Tool เป็นแค่ calculator ครั้งเดียว ไม่มี pipeline state) — สร้างโมดูล **"Fix & Flip Deals"** (`/deals` ใน AP-Home Platform OS) แล้ว: Kanban board 4 stage (ประเมิน → รีโนเวท → ประกาศขาย → ปิดดีล) พร้อม summary metrics (เงินทุนที่ใช้อยู่, ROI เฉลี่ยดีลที่ปิดแล้ว) ต่อยอดจากตาราง Supabase `reno_deals` ที่มีอยู่แล้ว ดู `docs/decisions.md` ADR-014
-
----
-
-### 4. ที่ปรึกษาและตรวจสอบงานก่อสร้าง — **สัดส่วนธุรกิจ 30%** (ยืนยัน 2026-07-20)
-
-**บริการ:**
+**บริการหลัก**
 - ตรวจบ้านก่อนโอน
 - ตรวจงานระหว่างก่อสร้าง
-- ตรวจรับงานผู้รับเหมา
+- ตรวจรับงาน
 - วิเคราะห์ BOQ
-- ตรวจคุณภาพวัสดุ
+- ตรวจคุณภาพวัสดุและงานก่อสร้าง
 
-**กลุ่มลูกค้า:** เจ้าของบ้าน, นักลงทุนอสังหาฯ, ผู้ซื้อบ้านใหม่, ผู้ว่าจ้างผู้รับเหมา
+**ระบบที่รองรับจริง**
+- **QC Line** — รับภาพจาก LINE OA และวิเคราะห์ด้วย AI Vision
+- **QC Accuracy Dashboard** — ติดตามผลการตรวจและ feedback ของ inspector
+- **QC reference standards** — ใช้ภาพมาตรฐานประกอบการตรวจในระบบที่รองรับ
+- **BOQ** — ใช้ประกอบการวิเคราะห์/ตรวจสอบต้นทุนและรายการก่อสร้าง
 
-> QC Line (LINE OA → GPT-4o Vision) คือ product implementation ของหน่วยธุรกิจนี้ — ดู CLAUDE.md / AI_TEAM.md section 16 สำหรับรายละเอียดทางเทคนิค
+> QC เป็น product implementation ของ Unit 4 และอยู่ใน Construction Management pillar
+
+### Unit 2 — Brokerage / Agency — 10%
+
+รับฝากขายบ้านและที่ดิน โดยเน้นปทุมธานีและนนทบุรี
+
+**ระบบที่รองรับจริง**
+- **Properties** — ข้อมูลทรัพย์
+- **AI Content Studio** — content สำหรับงานขายและการตลาด
+- **CRM** — Lead Pipeline, Overview และ Follow Up/Nurture
+- **Market Intelligence** — เก็บ observation และสกัด market signals
+- **Budget Tool / public lead capture** — รับข้อมูลความต้องการของผู้สนใจเข้าสู่ระบบ
 
 ---
 
-## AP-Home Platform OS — Intelligence Loop
+## 3. AP-Home Platform OS
 
-> ⚠️ **หมายเหตุ (2026-07-20)**: diagram ด้านล่างยังมี node "รับสร้างบ้าน" อยู่ตามของเดิม แต่หน่วยธุรกิจนั้น discontinued แล้ว (ดู Unit 1 ด้านบน) — Unit 3 (Fix & Flip) ยืนยันแล้วว่ายังทำอยู่จริงและเป็นหน่วยธุรกิจหลัก (60%) แต่ diagram นี้ยังไม่ได้ redesign ใหม่ให้ตรงกับ 3 หน่วยจริง (Fix & Flip 60% / ที่ปรึกษา 30% / โบรกเกอร์ 10%) — เป็นงาน follow-up ที่ยังไม่ได้ทำ
+AP-Home Platform OS เป็นระบบกลางสำหรับเก็บข้อมูล วิเคราะห์ และสนับสนุนการทำงานของทั้ง 3 business units
 
-ธุรกิจทั้ง 4 หน่วยป้อนข้อมูลเข้า-ออกจากกันเป็นวงจรผ่าน Platform กลาง:
+### Platform Structure — 2 Pillars
 
-```
-รับฝากขาย
-   ↓
-Property Data + Buyer Data
-   ↓
+ระบบแบ่งตาม **ลักษณะการใช้งานจริง** เป็น 2 กลุ่ม:
+
+### Pillar A — Marketing & Sales
+- AI Content Studio
+  - Keyword / content generation
+  - Blog
+  - Listing
+  - History
+  - Queue
+  - Market Intel
+- CRM / Lead Pipeline
+- Properties / Listing
+- Fix & Flip Deals ฝั่งขาย
+- OS Dashboard / Overview
+
+**รองรับ:** Unit 2 โดยตรง + ฝั่งการขายของ Unit 3
+
+### Pillar B — Construction Management
+- Land Analyzer
+- Budget / Cost Calculation
+- BOQ
+- QC Line
+- QC Accuracy / feedback
+
+**รองรับ:** Unit 3 ฝั่งพัฒนา/รีโนเวท + Unit 4 โดยตรง
+
+> 2 pillars เป็นวิธีจัดหมวด **เครื่องมือ** ไม่ใช่การแยกข้อมูลออกเป็น silo
+
+---
+
+## 4. Intelligence / Data Layer
+
+ระบบไม่ได้สร้าง intelligence เป็นโมดูลแยกขาดจากกัน แต่ใช้ข้อมูลร่วมกันเป็นวงจร
+
+### Market Intelligence — LIVE
+Market Intelligence Collector v2 รับ observation จาก Facebook/manual input แล้วสกัด structured signals: demand, price, offer, finance, value, location, urgency, seller_motivation และ liquidity
+
+ข้อมูลถูกเก็บใน `content_frames` พร้อม `signals`, `positioned_content`, `ai_summary` และ `collector_version`
+
+### Property Intelligence
+ใช้ข้อมูลทรัพย์และผลการวิเคราะห์จาก Properties / Land Analyzer / Deals เพื่อสนับสนุนการประเมินทรัพย์
+
+### Buyer / Lead Intelligence
+CRM เก็บ lead, stage, score, source และข้อมูลประกอบการติดตามลูกค้า
+
+> **สำคัญ:** Fix & Flip deals ไม่ถูกจัดเป็น CRM `business_unit` แบบ lead โดยตรง Unit 3 ใช้ Deals pipeline เป็นระบบหลักสำหรับดีลลงทุน/พัฒนา
+
+### Construction / Quality Intelligence
+ข้อมูลจาก QC และ BOQ ใช้สนับสนุนการควบคุมคุณภาพ ต้นทุน และการตัดสินใจด้านงานก่อสร้าง/รีโนเวท
+
+### Renovation / Investment Intelligence
+Fix & Flip Deals รวม purchase, renovation budget, list price, actual spend, actual ROI, estimated ROI และ deal stage
+
+---
+
+## 5. Current Operating Loop
+
+ระบบปัจจุบันควรเข้าใจเป็น **data loop** ไม่ใช่ flow แบบเส้นตรงระหว่าง business units:
+
+```text
+Market / Property Data
+        ↓
 Market Intelligence
-   ↓
-รีโนเวทเพื่อขาย
-   ↓
-Investment Intelligence
-   ↓
-รับสร้างบ้าน
-   ↓
-Construction Intelligence
-   ↓
-ที่ปรึกษาและตรวจงาน
-   ↓
-Quality Intelligence
-   ↓
-กลับเข้าสู่ AP-Home Platform OS
+        ↓
+Land / Property Evaluation
+        ↓
+Fix & Flip Deal
+        ↓
+BOQ / Cost / Renovation
+        ↓
+QC / Quality Data
+        ↓
+Sale / Listing / CRM
+        ↓
+Buyer / Sales / Market Feedback
+        ↓
+Market Intelligence
+        ↺
 ```
 
-หลักการ: **ทุก business unit ทั้งสร้างและใช้ intelligence จากหน่วยอื่น** — ไม่มี business unit ไหนที่ทำงานแบบ isolated silo ข้อมูลจากการฝากขาย (property/buyer) ป้อนเข้า market intelligence ที่ใช้ตัดสินใจซื้อทรัพย์มารีโนเวท ข้อมูลก่อสร้างจากการรับสร้างบ้านป้อนเข้า construction intelligence ที่ใช้ตรวจงานให้ลูกค้ารายอื่น และวนกลับเข้า platform กลางเสมอ
+อีกด้านหนึ่ง:
 
-ดู `AI_TEAM.md` section 4.1 (Knowledge Principles) และ section 17 (Future Vision) สำหรับหลักการที่ platform ต้องรองรับ loop นี้ในสถาปัตยกรรมโค้ด
+```text
+Consulting / Inspection
+        ↓
+QC + BOQ + Inspection Data
+        ↓
+Construction / Renovation Knowledge
+        ↓
+Fix & Flip decisions
+        ↓
+ผลจริงของ Deal
+        ↓
+กลับเข้าสู่ Intelligence Layer
+```
+
+**หลักการ:** ข้อมูลจากการทำงานจริงของธุรกิจถูกสะสมกลับเข้าสู่ platform เพื่อใช้ในการตัดสินใจครั้งถัดไป
 
 ---
 
-## หน่วยงานที่เกี่ยวข้อง (ไม่ใช่ business unit แต่เป็น marketing brand)
+## 6. Content & Publishing System
 
-**Finnhouses** คือ marketing brand ที่ใช้ที่ website (finnhouses.com) + content เท่านั้น — ไม่ใช่ชื่อบริษัท ชื่อบริษัทคือ บจก.อาชิดา (Achida Co., Ltd.) — ปัจจุบัน Finnhouses ผูกกับ "รับสร้างบ้าน" เป็นหลัก แบรนด์อื่นสำหรับ business unit อื่นยังไม่ได้กำหนด
+### AI Content Studio
+สร้างและจัดการ content สำหรับ Facebook, Blog, Property Listing และ Market Intelligence
+
+ระบบมี buyer-segment context และ Taste Library สำหรับอ้างอิง content ที่เคยเลือกไว้
+
+**Business positioning rule:** content ต้องไม่อ้างว่า Finnhouses รับสร้างบ้านใหม่เอง เพราะ Unit 1 discontinued แล้ว
+
+### Blog Automation
+n8n workflow ใช้สำหรับรับงานจาก platform → สร้างบทความ → publish ไป WordPress → สร้าง/patch featured image → ส่งสถานะกลับ platform
+
+### WF1 AI Quality Gate
+WF1 มี AI content-quality gate สำหรับตรวจ business/brand guardrail, ภาษาไทย และ unsupported claims ก่อน publish
+
+> **สถานะที่ต้องเขียนอย่างระมัดระวัง:** quality gate ใน WF1 มี implementation แล้ว แต่ workflow feedback-log `11_gate_log` ต้องถือสถานะตามการ import/activate จริง ไม่ควรระบุว่า active หากยังไม่ได้ activate ใน n8n
 
 ---
 
-## Cross-reference
+## 7. CRM Business Classification
 
-| ต้องการดู | ไปที่ |
+CRM ไม่ได้ใช้แทน Business Units ทั้งระบบ
+
+สำหรับ **CRM leads** ระบบปัจจุบันจำแนกเป็น:
+- `consult` — Consulting / Inspection
+- `list` — Brokerage / Listing
+
+**Fix & Flip (`reno`) ไม่ใช่ CRM lead classification** เพราะ Unit 3 ใช้ Deals pipeline เป็นระบบหลัก
+
+ดังนั้น:
+- **Business Unit ของบริษัท:** 3 หน่วย — Unit 3 / Unit 4 / Unit 2
+- **CRM lead classification:** `consult` / `list`
+- **Fix & Flip pipeline:** `reno_deals`
+
+สามสิ่งนี้ต้องไม่ถูกตีความว่าเป็น enum เดียวกัน
+
+---
+
+## 8. Technical Operating Model
+
+AP-Home Platform OS ปัจจุบันประกอบด้วย:
+- **Next.js / Vercel** — dashboard และ web application
+- **Backend Hub / Railway** — backend orchestration/API
+- **n8n / Railway** — workflow automation
+- **Supabase** — primary data layer
+- **WordPress / Finnhouses** — publishing destination
+- **Facebook** — publishing / market observation source
+- **LINE OA** — QC / operational input
+- **AI providers** — content, analysis และ vision ตาม workflow
+
+### API boundary
+Browser/client ไม่ควรเข้าถึง secret หรือ external backend โดยตรงในกรณีที่ระบบกำหนดให้ผ่าน server proxy
+
+รูปแบบที่ใช้อยู่จริงมีทั้ง:
+1. **Next.js API proxy → Hub/backend**
+2. **Next.js server route → Supabase service role**
+
+จึงต้องอธิบาย data flow ตาม implementation ของแต่ละ route ไม่เหมารวมว่าทุกอย่างผ่าน Hub เดียว
+
+---
+
+## 9. What Is NOT the Current Business Model
+
+สิ่งต่อไปนี้ **ไม่ใช่ธุรกิจปัจจุบัน**:
+- รับสร้างบ้านใหม่ให้ลูกค้า
+- วาง Finnhouses เป็นบริษัทรับเหมาก่อสร้างบ้านใหม่
+- ใช้ Unit 1 เป็น default business unit
+- อธิบาย Fix & Flip ว่าเป็น CRM lead unit
+- อ้างว่า BOQ v1 มี automatic DWG quantity takeoff
+- อ้างว่า AI/automation คือธุรกิจหลักของบริษัท
+
+AI และ automation เป็น **เครื่องมือของระบบ** ส่วน asset ระยะยาวของ AP-Home คือ **ข้อมูล + โครงสร้างข้อมูล + feedback จากการทำธุรกิจจริง**
+
+---
+
+## 10. Strategic Model
+
+```text
+                 AP-HOME PLATFORM OS
+                         │
+          ┌──────────────┴──────────────┐
+          │                             │
+   Marketing & Sales          Construction Management
+          │                             │
+   Content / CRM /             Land / Budget / BOQ /
+   Properties / Deals          QC / Inspection
+          │                             │
+          └────────── Data Layer ───────┘
+                         │
+              Market / Property /
+          Buyer / Construction /
+             Investment Data
+                         │
+                   Intelligence
+                         │
+                  Decision Support
+                         ↺
+```
+
+เป้าหมายเชิงกลยุทธ์คือทำให้ **ข้อมูลจากการดำเนินธุรกิจจริงสะสมเป็น real-estate intelligence moat** เมื่อเวลาผ่านไป ไม่ใช่การสร้าง AI feature จำนวนมากโดยไม่มี data loop รองรับ
+
+---
+
+## 11. Source of Truth / Related Documents
+
+| ต้องการดู | เอกสาร/ระบบ |
 |---|---|
-| สถานะเทคนิคปัจจุบัน (Hub v1/v2, URLs, bugs) | `CLAUDE.md` |
-| Engineering governance / architecture rules | `AI_TEAM.md` |
-| Business Units table แบบสั้น (สำหรับ quick reference) | `memory/Claude md/CLAUDE.md` (link มาไฟล์นี้) |
-| Pending tasks | `HANDOFF.md` |
+| Business model | `docs/BUSINESS_MODEL.md` |
+| Technical current state | `CLAUDE.md` |
+| Engineering governance | `docs/AI_TEAM.md` |
+| Decisions / ADR history | `docs/decisions.md`, `docs/v2/04-decisions/accepted/` |
+| Current implementation | source code + API routes |
+| Current workflow definitions | `memory/n8n-workflows/` |
+| Intelligence architecture | `docs/v2/07-departments/` |
+
+> **กฎของเอกสารนี้:** ถ้า business model หรือ feature ในเอกสารขัดกับระบบที่ deploy/ใช้งานจริง ให้ตรวจ source code, workflow และ decision record ก่อนแก้เอกสาร ห้ามเดาจากเอกสารเก่า
