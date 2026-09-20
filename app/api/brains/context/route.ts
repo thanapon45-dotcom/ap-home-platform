@@ -42,11 +42,15 @@ export async function GET(req: NextRequest) {
   try {
     const areaFilter = area ? `&area=eq.${encodeURIComponent(area)}` : "";
 
-    const [marketInsights, areaMemory, buyerSignals, deals, qc, content] =
+    const [marketInsights, marketSummary, areaMemory, buyerSignals, deals, qc, content] =
       await Promise.all([
         select(
           "market_insights",
           `select=area,insight,category,confidence,source_type,created_at&order=created_at.desc&limit=${limit}${areaFilter}`
+        ),
+        select(
+          "market_intelligence_summary",
+          `select=area,category,insight_count,avg_confidence,verified_count,latest_at&order=insight_count.desc&limit=${limit}${area ? `&area=eq.${encodeURIComponent(area)}` : ""}`
         ),
         select(
           "area_memory",
@@ -81,6 +85,7 @@ export async function GET(req: NextRequest) {
       generated_at: new Date().toISOString(),
       scope: area || "all",
       market: {
+        summary: marketSummary,
         recent_insights: marketInsights,
         verified_insights: marketVerified,
         area_memory: areaMemory,
