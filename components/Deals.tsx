@@ -253,7 +253,7 @@ export default function Deals() {
               ⚠️ ยังไม่มีข้อมูลพอสรุป — ยังไม่มีดีลไหนกรอกทั้งตัวเลขประเมินและตัวเลขจริงครบคู่ (กดปุ่ม &quot;ใส่ต้นทุน/ราคาขายจริง&quot; ที่การ์ดดีลเพื่อเริ่มเก็บข้อมูล)
             </div>
           ) : (
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <div>
                 <div style={{ fontSize: 10, color: "#64748b" }}>ต้นทุนรีโนเวท เกิน/ต่ำกว่างบเฉลี่ย (n={metrics.costComparableCount})</div>
                 <div style={{ fontSize: 18, fontWeight: 800, color: (metrics.avgCostVariancePct ?? 0) > 0 ? "#f43f5e" : "#10b981" }}>
@@ -264,12 +264,6 @@ export default function Deals() {
                 <div style={{ fontSize: 10, color: "#64748b" }}>ราคาขายจริง สูง/ต่ำกว่าประกาศเฉลี่ย (n={metrics.priceComparableCount})</div>
                 <div style={{ fontSize: 18, fontWeight: 800, color: (metrics.avgPriceVariancePct ?? 0) >= 0 ? "#10b981" : "#f43f5e" }}>
                   {metrics.avgPriceVariancePct == null ? "—" : `${metrics.avgPriceVariancePct > 0 ? "+" : ""}${metrics.avgPriceVariancePct.toFixed(1)}%`}
-                </div>
-              </div>
-              <div>
-                <div style={{ fontSize: 10, color: "#64748b" }}>ROI จริง สูง/ต่ำกว่าที่ประเมินไว้ตอนวิเคราะห์ที่ดิน (n={metrics.roiComparableCount})</div>
-                <div style={{ fontSize: 18, fontWeight: 800, color: (metrics.avgRoiVariancePct ?? 0) >= 0 ? "#10b981" : "#f43f5e" }}>
-                  {metrics.avgRoiVariancePct == null ? "ยังไม่มีข้อมูลพอสรุป" : `${metrics.avgRoiVariancePct > 0 ? "+" : ""}${metrics.avgRoiVariancePct.toFixed(1)} จุด`}
                 </div>
               </div>
             </div>
