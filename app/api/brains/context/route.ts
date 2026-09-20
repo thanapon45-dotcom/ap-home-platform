@@ -62,7 +62,7 @@ export async function GET(req: NextRequest) {
         ),
         select(
           "reno_deals",
-          `select=id,name,area_name,property_address,stage,purchase_price,reno_budget,reno_cost,list_price,sale_price,roi_pct,days_to_sell,land_project_id,site_id,created_at,updated_at&order=updated_at.desc&limit=${limit}${area ? `&area_name=eq.${encodeURIComponent(area)}` : ""}`
+          `select=id,name,area_name,property_address,stage,purchase_price,reno_budget,reno_cost,list_price,sale_price,roi_pct,days_to_sell,site_id,created_at,updated_at&order=updated_at.desc&limit=${limit}${area ? `&area_name=eq.${encodeURIComponent(area)}` : ""}`
         ),
         select(
           "qc_inspections",
@@ -96,7 +96,6 @@ export async function GET(req: NextRequest) {
         deals,
         closed_deals: dealsClosed,
         count: deals.length,
-        linked_to_land_projects: deals.filter((r: any) => r.land_project_id != null).length,
       },
       construction: {
         qc_recent: qc,
