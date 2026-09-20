@@ -24,6 +24,9 @@ const HUB_URL = process.env.HUB_URL || process.env.NEXT_PUBLIC_HUB_URL || "";
 const HUB_SECRET = process.env.HUB_SECRET || "";
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || "";
+const APP_BASE_URL =
+  process.env.NEXT_PUBLIC_APP_URL ||
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
 
 const MODEL = "claude-sonnet-4-6";
 
@@ -226,7 +229,7 @@ async function executeTool(name: string, input: Record<string, unknown>) {
       const params = new URLSearchParams();
       if (input.area) params.set("area", String(input.area));
       params.set("limit", String(Number(input.limit) || 10));
-      const res = await fetch(`${process.env.VERCEL_URL ? "https://" + process.env.VERCEL_URL : ""}/api/brains/context?${params.toString()}`, {
+      const res = await fetch(`${APP_BASE_URL}/api/brains/context?${params.toString()}`, {
         headers: { "x-brains-source": "assistant" },
         cache: "no-store",
       });
