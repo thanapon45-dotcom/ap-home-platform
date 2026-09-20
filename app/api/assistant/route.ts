@@ -239,7 +239,7 @@ async function executeTool(name: string, input: Record<string, unknown>) {
     case "get_deals": {
       const limit = Number(input.limit) || 20;
       let query =
-        `select=id,name,property_address,stage,purchase_price,reno_budget,reno_cost,list_price,sale_price,roi_pct,days_to_sell,land_project_id,created_at,updated_at` +
+        `select=id,name,property_address,stage,purchase_price,reno_budget,reno_cost,list_price,sale_price,roi_pct,days_to_sell,created_at,updated_at` +
         `&order=created_at.desc&limit=${limit}`;
       if (input.stage) query += `&stage=eq.${encodeURIComponent(String(input.stage))}`;
       return await supabaseSelect("reno_deals", query);
