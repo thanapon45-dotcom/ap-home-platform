@@ -32,7 +32,8 @@ const SYSTEM_PROMPT = `คุณคือ AP-Home Assistant ผู้ช่ว�
 ⚠️ บริษัท**เลิกรับสร้างบ้านใหม่แล้ว** (Unit 1 discontinued ตาม ADR-010) — ห้ามตอบว่า Finnhouses รับสร้างบ้านใหม่ให้ลูกค้าเองเด็ดขาด แม้ผู้ใช้จะถามนำก็ตาม
 
 หน้าที่:
-- ตอบคำถามเกี่ยวกับสถานะ platform, leads, market intel, QC โดยดึงข้อมูลจริงผ่าน tools เท่านั้น ห้ามเดาตัวเลขหรือสถานะ
+- ตอบคำถามเกี่ยวกับสถานะ platform, leads, market intel, QC, Deals และภาพรวมข้ามโมดูลโดยดึงข้อมูลจริงผ่าน tools เท่านั้น ห้ามเดาตัวเลขหรือสถานะ
+- สำหรับคำถามที่ต้องใช้บริบทหลายฝ่าย ให้เรียก get_brains_context ก่อน แล้วจึงเจาะ tool เฉพาะโมดูลเมื่อจำเป็น
 - สั่งงาน (run_fb_queue_next, run_blog_now) ได้เมื่อผู้ใช้ขอ แต่ระบบจะบังคับให้ผู้ใช้กด confirm เองก่อน execute จริงเสมอ — คุณแค่เรียก tool ตามปกติ ไม่ต้องกังวลเรื่อง gate
 
 กฎการตอบ:
@@ -88,6 +89,18 @@ const TOOLS = [
         from: { type: "string", description: "ISO date เช่น 2026-08-01" },
         to: { type: "string", description: "ISO date" },
         limit: { type: "number", description: "จำนวนสูงสุด (default 10)" },
+      },
+    },
+  },
+  {
+    name: "get_brains_context",
+    description:
+      "ดึง Shared Business Context จาก /api/brains/context — รวม Market, Investment/Deals, QC และ Content ในคำขอเดียว. ใช้เป็นตัวอ่านข้ามโมดูลสำหรับคำถามเชิงภาพรวม/ความสัมพันธ์ข้ามฝ่าย และต้องถือข้อมูลว่างเป็นว่าง ห้ามสร้าง relationship ที่ไม่มีหลักฐาน",
+    input_schema: {
+      type: "object",
+      properties: {
+        area: { type: "string", description: "กรองตามทำเลเมื่อมีข้อมูล เช่น รังสิต, ลำลูกกา, ลาดหลุมแก้ว" },
+        limit: { type: "number", description: "จำนวนสูงสุดต่อแหล่งข้อมูล (default 10)" },
       },
     },
   },
@@ -208,6 +221,17 @@ async function executeTool(name: string, input: Record<string, unknown>) {
       if (input.to) params.set("to", String(input.to));
       params.set("limit", String(Number(input.limit) || 10));
       return await hubGet(`/api/qc/list?${params.toString()}`);
+    }
+    case "get_brains_context": {
+      const params = new URLSearchParams();
+      if (input.area) params.set("area", String(input.area));
+      params.set("limit", String(Number(input.limit) || 10));
+      const res = await fetch(`${process.env.VERCEL_URL ? "https://" + process.env.VERCEL_URL : ""}/api/brains/context?${params.toString()}`, {
+        headers: { "x-brains-source": "assistant" },
+        cache: "no-store",
+      });
+      if (!res.ok) throw new Error(`Brains context failed: HTTP ${res.status}`);
+      return res.json();
     }
     case "get_deals": {
       const limit = Number(input.limit) || 20;
