@@ -23,7 +23,7 @@ const DEFAULT: Form = { landPrice: "", landSize: "", devCost: 2000, plots: "", a
 type Project = {
   id: string; name: string; type: string; pin: { lat: number; lng: number } | null; result: number; created_at: string;
   land_price: number | null; build_cost: number | null; area: number | null; plots: number | null;
-  market_price: number | null; roi: number | null;
+  market_price: number | null; roi: number | null; area_name: string | null;
 };
 
 function Field({ label, sub, children }: { label: string; sub?: string; children: React.ReactNode }) {
@@ -63,6 +63,7 @@ export default function LandAnalyzer() {
   const [form, setForm] = useState<Form>(DEFAULT);
   const [pin, setPin]   = useState<{ lat: number; lng: number } | null>(null);
   const [pname, setPname] = useState("");
+  const [areaName, setAreaName] = useState("");
   const [saving, setSaving] = useState(false);
   const [projects, setProjects] = useState<Project[]>([]);
   const [showList, setShowList] = useState(false);
@@ -124,6 +125,7 @@ export default function LandAnalyzer() {
         list_price: p.market_price ?? null,
         notes: `สร้างจาก Land Analyzer (ROI ประเมิน ${p.roi != null ? Number(p.roi).toFixed(1) + "%" : "—"})`,
         land_project_id: p.id,
+        area_name: p.area_name ?? null,
         stage: "evaluating",
       }),
     });
@@ -160,6 +162,7 @@ export default function LandAnalyzer() {
         roi: c.roi,
         lat: pin?.lat ?? null,
         lng: pin?.lng ?? null,
+        area_name: areaName.trim() || null,
         notes: form.note || null,
         created_at: new Date().toISOString(),
       }),
@@ -167,7 +170,7 @@ export default function LandAnalyzer() {
     const json = await res.json();
     setSaving(false);
     if (!res.ok || json.ok === false) { msg("บันทึกไม่สำเร็จ: " + (json.error ?? `HTTP ${res.status}`), false); }
-    else { msg("บันทึกสำเร็จ ✓"); setPname(""); loadProjects(); }
+    else { msg("บันทึกสำเร็จ ✓"); setPname(""); setAreaName(""); loadProjects(); }
   };
 
   return (
@@ -255,6 +258,8 @@ export default function LandAnalyzer() {
           <div style={{ fontSize: 13, fontWeight: 700, color: "#6366f1", textTransform: "uppercase", letterSpacing: ".12em" }}>📍 ปักหมุดตำแหน่ง</div>
           <MapPicker pin={pin} onPin={setPin} />
           {pin && <div style={{ fontSize: 11, color: "#22d3ee" }}>📍 {pin.lat.toFixed(5)}, {pin.lng.toFixed(5)}</div>}
+          <input value={areaName} onChange={e => setAreaName(e.target.value)} placeholder="ทำเล/พื้นที่ เช่น ลาดหลุมแก้ว, รังสิต (ไม่บังคับ — ใช้จับคู่กับ Market Intelligence)"
+            style={{ ...inputStyle }} />
 
           {/* Save */}
           <div style={{ display: "flex", gap: 8, marginTop: 4 }}>

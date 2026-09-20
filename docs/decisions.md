@@ -551,3 +551,28 @@ Archi อัปโหลดไฟล์ workflow มาให้ตรวจ →
 **Related**: ADR-005 (max_tokens truncation ที่เคยเจอมาก่อนใน Market Intel Collector v2 — root cause เดียวกัน), ADR-010/012 (business model correction รอบแรกของ AI Content Studio), ADR-014/017/022 (Deals module ที่ tool ใหม่นี้ต่อยอด), ADR-018 (ปิด `/budget`)
 
 **หมายเหตุ**: repo ถูกเปิด public ชั่วคราวเพื่อให้ session นี้เข้าถึงได้ (ไม่ได้ผ่าน connector ปกติ) — ควรเช็คว่าเปลี่ยนกลับเป็น private แล้วหลัง session นี้จบ และ revoke personal access token ที่ใช้ push ด้วย
+
+## ADR-026 — เชื่อม 3 จุดข้ามระบบ (Land Analyzer, Deals, Market Intelligence, AI Content Studio) — infra รอข้อมูลจริง ไม่ใช่ "Brain กลาง"
+
+**Date**: 2026-09-19 (session 33)
+**Status**: Implemented (ยังไม่ได้ verify รันจริง — ดู caveat ด้านล่าง)
+
+**Context**: ต่อจาก ADR-025 (business-model audit) — Archi ถามว่าระบบตอนนี้เชื่อมกันแบบ "Brain กลาง" (Marketing Intelligence / Marketing / Construction Management / Invest ทุกโดเมนคุยผ่าน Brain เดียว) หรือเปล่า ตรวจโค้ดจริงแล้วพบว่า **ไม่มี** — มีแค่คู่เดียวที่เชื่อมกันจริง (Land Analyzer ↔ Deals ผ่าน `land_project_id`) นอกนั้นแยกขาดสนิท รวมถึงจุดที่เอกสารเก่าเคยอ้างว่าเชื่อม (Market Intelligence → AI Content Studio) จริงๆ แล้วเป็นแค่ write-only tab ไม่เคย read กลับเข้า content generation เลย
+
+ตรวจลึกอีกชั้นก่อนลงมือพบว่า **`reno_deals` มี 0 แถวจริง** (ยืนยันซ้ำจาก ADR-022) และ `qc_inspections` มีแค่ 20 แถว test batch เดียวจาก Jun 2026 — เชื่อมระบบที่แทบไม่มีข้อมูลจะไม่สร้างมูลค่าทันที แต่ Archi ยืนยันเหตุผลว่าต้องการสร้างไว้**ล่วงหน้าเพื่อการใช้งานในอนาคต จะได้ไม่ต้องย้อนกลับมาแก้ทีหลัง** — ตรงกับ pattern "honest low-data-state" ที่ใช้มาแล้วใน ADR-015 (QC Accuracy) และ ADR-022 (Deal ROI panel)
+
+**Decision**: เสนอ 4 connection เรียงตามความเสี่ยง แล้วทำ 3 จุดที่ไม่ต้องแก้ schema ก่อน ข้ามจุดที่ 4 (QC ↔ Deals) เพราะ `docs/BUSINESS_MODEL.md` ระบุชัดว่า QC เป็น product implementation ของ **Unit 4** (ที่ปรึกษา/ตรวจสอบให้ลูกค้าภายนอก) ไม่ใช่ Unit 3 (Fix & Flip) — เชื่อมสองอันนี้เข้าด้วยกันอาจขัดกับ business model ที่ออกแบบไว้ตั้งแต่แรก ไม่ใช่แค่เรื่อง "ยังไม่เชื่อม"
+
+**ไม่สร้าง Brain กลางใหม่** (เช่นอัปเกรด Backend Hub ให้ทุกโดเมนต้องผ่าน) — ประเมินว่าเกินความจำเป็นตอนนี้: ทีมเล็กมาก ประวัติการแก้บั๊กใน `decisions.md` เต็มไปด้วยปัญหาจาก service เพิ่มเติมที่ integrate กันอยู่แล้ว (n8n `$env` block, RLS ผิด, webhook path ผิด, missing auth header ข้าม service) เพิ่ม service ใหม่ = จุดพังใหม่ ไม่คุ้มกับ use case ที่ยังไม่มีจริงตอนนี้ (ไม่มี cross-domain automated decision ใดๆ ที่ต้องการ) — แนะนำให้ **AI Chat Assistant** (`/api/assistant`) เป็นผู้สมัคร "Brain แบบ AI-native" แทนถ้าจะทำในอนาคต เพราะอ่านข้ามโดเมนได้อยู่แล้ว ตรงกับ vision เดิมของแพลตฟอร์ม (AI-native) มากกว่าสร้าง pipeline กลไกแยก
+
+**สิ่งที่ทำจริง (3 จุด)**:
+1. **Schema**: เพิ่ม `area_name` (text) ลง `projects` และ `reno_deals` — ทั้งสองตารางไม่เคยมี field ทำเลที่ match กับ `market_insights.area` ได้มาก่อน (`projects` มีแค่ lat/lng, `reno_deals` มีแค่ free-text `property_address`) — เขียนเป็น SQL migration ที่ `docs/migrations/2026-09-19_area_name_columns.sql` **ต้องรันเองใน Supabase SQL editor** (Claude ไม่มี network path ไป `*.supabase.co` จาก sandbox นี้ รันเองไม่ได้)
+2. **Land Analyzer → Deals**: เพิ่มช่อง "ทำเล/พื้นที่" (optional text input) ในฟอร์ม + ส่ง `area_name` เข้า `/api/projects` POST + propagate ต่อเข้า `/api/deals` POST ตอนกด "สร้างดีล Fix & Flip" จากโปรเจกต์ (`createDealFromProject`)
+3. **Deals → Market Intelligence**: แก้ `PATCH /api/deals/[id]` — เมื่อ `stage` เปลี่ยนเป็น `"closed"` จะ insert 1 row เข้า `market_insights` อัตโนมัติ (`area` จาก `area_name`/`property_address`, `confidence: 5` เพราะเป็นข้อมูลจริงที่ยืนยันแล้วไม่ใช่ AI เดา, `source_type: "deal_closed"`, `category: "price_behavior"`) — **awaited จริง ไม่ใช่ fire-and-forget** เพราะ Vercel serverless function อาจ kill background work ที่ไม่ await ทันทีที่ response ส่งออกไป (เช็คแล้วว่า repo นี้ไม่มี `waitUntil()` helper ใช้ที่ไหนเลย) — wrap ด้วย try/catch เพื่อไม่ให้การเขียน signal ล้มเหลวแล้วทำให้ปิดดีลไม่ได้
+4. **Market Intelligence → AI Content Studio**: แก้ `KeywordTab` ใน `components/AIContent.tsx` — เพิ่ม `useEffect` fetch `market_insights` ล่าสุด (ผ่าน `/api/market-intel/insights` ที่มีอยู่แล้ว) filter `confidence >= 3`, เอา 5 แถวล่าสุด, inject เข้า system prompt เป็น reference block ต่อจาก Taste Library — เขียนกฎกำกับชัดเจนว่าให้ paraphrase ไม่ใช่ copy คำต่อคำ และไม่ต้องฝืนใช้ถ้าไม่เกี่ยวข้อง — เป็น read-only best-effort เหมือนกัน ถ้า fetch fail การ generate content ยังทำงานปกติ
+
+**⚠️ Caveat สำคัญ**: ทุกจุดข้างต้นเขียนจากการอ่าน schema/โค้ดที่มีอยู่เท่านั้น **ไม่เคยถูกรันทดสอบจริงกับ Supabase เลยสักครั้ง** เพราะ sandbox ของ session นี้ไม่มี network path ไป `*.supabase.co`, Vercel, หรือ Railway — Archi ต้อง (1) รัน SQL migration ก่อน (2) ทดสอบ Land Analyzer → สร้างดีล → ปิดดีล → เช็คว่า `market_insights` มีแถวใหม่จริง (3) ทดสอบ generate content ใน AI Content Studio แล้วดูว่า market signal โผล่ในผลลัพธ์ไหม ก่อนเชื่อว่า 3 จุดนี้ทำงานถูกต้อง
+
+**Files**: `components/LandAnalyzer.tsx`, `app/api/deals/[id]/route.ts`, `components/AIContent.tsx`, `docs/migrations/2026-09-19_area_name_columns.sql`
+
+**Related**: ADR-005 (source_type/confidence schema ของ market_insights), ADR-014/017/022 (Deals module), ADR-015 (honest low-data-state pattern ต้นแบบ), ADR-025 (business-model audit ก่อนหน้าใน session เดียวกัน)

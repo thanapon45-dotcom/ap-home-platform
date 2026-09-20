@@ -315,6 +315,25 @@ function KeywordTab({ onSave, starredRefs }: { onSave: (item: ContentItem) => vo
   const [buyerSeg, setBuyerSeg]   = useState("resale");
   const [awareness, setAwareness] = useState("problem_aware");
   const [timing, setTiming]       = useState("none");
+  // Connect Market Intelligence -> AI Content Studio (session 33+): fetch recent,
+  // reasonably-confident real signals to ground content in actual market context
+  // instead of only the Taste Library (which is curated FB post examples, not
+  // market data). Read-only, best-effort — an empty/failed fetch just means no
+  // extra context gets injected, generation still works normally.
+  const [marketSignals, setMarketSignals] = useState<{ area: string; insight: string }[]>([]);
+  useEffect(() => {
+    fetch("/api/market-intel/insights")
+      .then(r => r.json())
+      .then(j => {
+        if (j.ok === false || !Array.isArray(j.data)) return;
+        const rows = (j.data as { area: string | null; insight: string | null; confidence: number | null }[])
+          .filter(r => r.insight && (r.confidence == null || r.confidence >= 3))
+          .slice(0, 5)
+          .map(r => ({ area: r.area ?? "ไม่ระบุพื้นที่", insight: r.insight as string }));
+        setMarketSignals(rows);
+      })
+      .catch(() => { /* best-effort — content generation must still work without this */ });
+  }, []);
 
   const finalKeyword  = custom.trim() || keyword;
   const selectedTone  = TONES.find(t => t.value === tone) ?? TONES[0];
@@ -401,6 +420,11 @@ ${refsToUse.length > 0 ? `
 ── ตัวอย่าง Reference ที่ "ใช่" สำหรับ Finnhouses ──
 เรียนรู้ tone, pattern และความรู้สึกจากตัวอย่างเหล่านี้ — ห้ามคัดลอกคำต่อคำ แต่ให้ output มีคุณภาพในระดับเดียวกัน:
 ${refsToUse.slice(0, 2).map((r, i) => `[${i + 1}]${r.note ? ` — "${r.note}"` : ""}\n${r.content}`).join("\n\n")}
+` : ""}
+${marketSignals.length > 0 ? `
+── สัญญาณตลาดล่าสุด (จาก Market Intelligence — ข้อมูลจริง ไม่ใช่สมมติฐาน) ──
+ใช้ประกอบ hook/บริบทได้ถ้าเกี่ยวข้องกับ keyword หรือกลุ่มลูกค้าที่เลือกอยู่ ห้ามยกมาทั้งประโยคเหมือนกันเป๊ะ ให้ paraphrase เป็นธรรมชาติ ถ้าไม่เกี่ยวข้องเลยก็ไม่ต้องฝืนใช้:
+${marketSignals.map(m => `• [${m.area}] ${m.insight}`).join("\n")}
 ` : ""}
 กฎภาษาที่เข้มงวด:
 ❌ ห้ามใช้สรรพนาม "ชั้น" "ผม" "ฉัน" — เขียนในนามแบรนด์ ไม่ใช่ตัวบุคคล
