@@ -26,18 +26,11 @@ type Deal = {
   notes: string | null;
   created_at: string;
   updated_at: string | null;
-  land_project_id: string | null;
   site_id: string | null;
 };
 
 type Site = { id: string; code: string; name: string; type: string | null; stage: string | null; active: boolean };
 
-// ADR-022 (session 29, item #3 of the "system proves itself correct" plan) —
-// deals can optionally be linked back to the Land Analyzer project they came
-// from (via the "🔗 สร้างดีล Fix & Flip" button there). When linked, we can
-// compare the project's estimated ROI against this deal's actual ROI once
-// it closes — reusing the same variance() pattern as cost/price above.
-type LandProject = { id: string; roi: number | null };
 
 const STAGES: { key: Stage; label: string; color: string; bg: string }[] = [
   { key: "evaluating", label: "กำลังประเมิน", color: "#f59e0b", bg: "rgba(245,158,11,.08)" },
@@ -84,7 +77,6 @@ function variance(estimate: number | null | undefined, actual: number | null | u
 
 export default function Deals() {
   const [deals, setDeals] = useState<Deal[]>([]);
-  const [landProjects, setLandProjects] = useState<Record<string, LandProject>>({});
   const [sites, setSites] = useState<Site[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -105,18 +97,6 @@ export default function Deals() {
     setDeals(rows);
     setLoading(false);
 
-    const projectIds = Array.from(new Set(rows.map(d => d.land_project_id).filter(Boolean))) as string[];
-    if (projectIds.length > 0) {
-      const pRes = await fetch(`/api/projects?ids=${projectIds.join(",")}`);
-      const pJson = await pRes.json();
-      if (pJson.ok !== false) {
-        const map: Record<string, LandProject> = {};
-        for (const p of (pJson.data ?? []) as LandProject[]) map[p.id] = p;
-        setLandProjects(map);
-      }
-    } else {
-      setLandProjects({});
-    }
   }, []);
 
   useEffect(() => {
@@ -148,26 +128,13 @@ export default function Deals() {
       ? priceComparable.reduce((s, d) => s + ((Number(d.sale_price) - Number(d.list_price)) / Number(d.list_price)) * 100, 0) / priceComparable.length
       : null;
 
-    // ROI estimate (Land Analyzer, at land-purchase time) vs actual ROI (this deal, at sale) —
-    // only counts deals linked to a project AND with both numbers present.
-    const roiComparable = deals.filter(d => {
-      const proj = d.land_project_id ? landProjects[d.land_project_id] : null;
-      return proj?.roi != null && d.roi_pct != null;
-    });
-    const avgRoiVariancePct = roiComparable.length
-      ? roiComparable.reduce((s, d) => {
-          const proj = landProjects[d.land_project_id as string];
-          return s + (Number(d.roi_pct) - Number(proj.roi));
-        }, 0) / roiComparable.length
-      : null;
 
     return {
       activeCount: active.length, closedCount: closed.length, capitalDeployed, avgRoi,
-      avgCostVariancePct, avgPriceVariancePct, avgRoiVariancePct,
+      avgCostVariancePct, avgPriceVariancePct,
       costComparableCount: costComparable.length, priceComparableCount: priceComparable.length,
-      roiComparableCount: roiComparable.length,
     };
-  }, [deals, landProjects]);
+  }, [deals]);
 
   const createDeal = async () => {
     if (!form.name.trim()) { msg("กรุณาใส่ชื่อดีล", false); return; }
@@ -281,7 +248,7 @@ export default function Deals() {
         {/* Estimate accuracy — actual vs estimated, honest low-data state (same pattern as QC Accuracy dashboard) */}
         <div style={{ marginTop: 12, background: "rgba(255,255,255,.02)", border: "1px solid rgba(255,255,255,.05)", borderRadius: 14, padding: "14px 16px" }}>
           <div style={{ fontSize: 11, color: "#64748b", textTransform: "uppercase", letterSpacing: ".08em", marginBottom: 8 }}>ความแม่นยำของการประมาณการ (จริง vs ที่ประเมินไว้)</div>
-          {metrics.costComparableCount === 0 && metrics.priceComparableCount === 0 && metrics.roiComparableCount === 0 ? (
+          {metrics.costComparableCount === 0 && metrics.priceComparableCount === 0 ? (
             <div style={{ fontSize: 12, color: "#f59e0b", background: "rgba(245,158,11,.08)", border: "1px solid rgba(245,158,11,.2)", borderRadius: 8, padding: "8px 12px" }}>
               ⚠️ ยังไม่มีข้อมูลพอสรุป — ยังไม่มีดีลไหนกรอกทั้งตัวเลขประเมินและตัวเลขจริงครบคู่ (กดปุ่ม &quot;ใส่ต้นทุน/ราคาขายจริง&quot; ที่การ์ดดีลเพื่อเริ่มเก็บข้อมูล)
             </div>
@@ -420,20 +387,6 @@ export default function Deals() {
 
                     {d.roi_pct != null && (
                       <div style={{ fontSize: 13, fontWeight: 800, color: Number(d.roi_pct) >= 20 ? "#10b981" : "#f59e0b" }}>ROI จริง {Number(d.roi_pct).toFixed(1)}%</div>
-                    )}
-
-                    {d.land_project_id && landProjects[d.land_project_id]?.roi != null && (
-                      <div style={{ fontSize: 10, color: "#64748b" }}>
-                        🔗 ROI ประเมิน (Land Analyzer) {Number(landProjects[d.land_project_id].roi).toFixed(1)}%
-                        {d.roi_pct != null && (() => {
-                          const v = variance(landProjects[d.land_project_id!].roi, d.roi_pct);
-                          return v ? (
-                            <span style={{ color: v.diff >= 0 ? "#10b981" : "#f43f5e", marginLeft: 6 }}>
-                              ({v.diff >= 0 ? "+" : ""}{v.diff.toFixed(1)} จุด)
-                            </span>
-                          ) : null;
-                        })()}
-                      </div>
                     )}
 
                     {isEditing ? (
