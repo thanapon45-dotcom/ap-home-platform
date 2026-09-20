@@ -66,7 +66,7 @@ export async function GET(req: NextRequest) {
         ),
         select(
           "qc_inspections",
-          `select=id,site_id,pass,severity,confidence,status,human_feedback,created_at&order=created_at.desc&limit=${limit}`
+          `select=id,site_id,deal_id,pass,severity,confidence,status,human_feedback,created_at&order=created_at.desc&limit=${limit}`
         ),
         select(
           "content_frames",
