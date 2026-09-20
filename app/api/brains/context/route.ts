@@ -28,8 +28,8 @@ async function select(table: string, query: string) {
  * Read-only shared business context for AP-Home modules and AI Assistant.
  * This is an aggregation layer, not a new source-of-truth table.
  *
- * Honest low-data-state is preserved: empty relationships are returned as
- * empty arrays / zero counts instead of inferred links.
+ * buyer_context_signals has no area column in the production schema,
+ * so area filtering is intentionally not applied to that table.
  */
 export async function GET(req: NextRequest) {
   if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
@@ -42,39 +42,33 @@ export async function GET(req: NextRequest) {
   try {
     const areaFilter = area ? `&area=eq.${encodeURIComponent(area)}` : "";
 
-    const [
-      marketInsights,
-      areaMemory,
-      buyerSignals,
-      deals,
-      qc,
-      content,
-    ] = await Promise.all([
-      select(
-        "market_insights",
-        `select=area,insight,category,confidence,source_type,created_at&order=created_at.desc&limit=${limit}${areaFilter}`
-      ),
-      select(
-        "area_memory",
-        `select=area,memory_type,memory_text,confidence,verified,updated_at&order=updated_at.desc&limit=${limit}${area ? `&area=eq.${encodeURIComponent(area)}` : ""}`
-      ),
-      select(
-        "buyer_context_signals",
-        `select=lead_id,area,trigger_type,awareness,emotional_need,content_angle,channel,created_at&order=created_at.desc&limit=${limit}${area ? `&area=eq.${encodeURIComponent(area)}` : ""}`
-      ),
-      select(
-        "reno_deals",
-        `select=id,name,area_name,property_address,stage,purchase_price,reno_budget,reno_cost,list_price,sale_price,roi_pct,days_to_sell,land_project_id,created_at,updated_at&order=updated_at.desc&limit=${limit}${area ? `&area_name=eq.${encodeURIComponent(area)}` : ""}`
-      ),
-      select(
-        "qc_inspections",
-        `select=id,site_id,pass,severity,confidence,status,human_feedback,created_at&order=created_at.desc&limit=${limit}`
-      ),
-      select(
-        "content_frames",
-        `select=id,frame_type,target_segment,keyword,channel,engagement_score,collector_version,created_at&order=created_at.desc&limit=${limit}`
-      ),
-    ]);
+    const [marketInsights, areaMemory, buyerSignals, deals, qc, content] =
+      await Promise.all([
+        select(
+          "market_insights",
+          `select=area,insight,category,confidence,source_type,created_at&order=created_at.desc&limit=${limit}${areaFilter}`
+        ),
+        select(
+          "area_memory",
+          `select=area,memory_type,memory_text,confidence,verified,updated_at&order=updated_at.desc&limit=${limit}${area ? `&area=eq.${encodeURIComponent(area)}` : ""}`
+        ),
+        select(
+          "buyer_context_signals",
+          `select=lead_id,trigger_type,awareness_level,emotional_need,content_angle,channel,created_at&order=created_at.desc&limit=${limit}`
+        ),
+        select(
+          "reno_deals",
+          `select=id,name,area_name,property_address,stage,purchase_price,reno_budget,reno_cost,list_price,sale_price,roi_pct,days_to_sell,land_project_id,created_at,updated_at&order=updated_at.desc&limit=${limit}${area ? `&area_name=eq.${encodeURIComponent(area)}` : ""}`
+        ),
+        select(
+          "qc_inspections",
+          `select=id,site_id,pass,severity,confidence,status,human_feedback,created_at&order=created_at.desc&limit=${limit}`
+        ),
+        select(
+          "content_frames",
+          `select=id,frame_type,target_segment,keyword,channel,engagement_score,collector_version,created_at&order=created_at.desc&limit=${limit}`
+        ),
+      ]);
 
     const qcFeedback = qc.filter((r: any) => r.human_feedback != null);
     const dealsClosed = deals.filter((r: any) => r.stage === "closed");
@@ -94,7 +88,7 @@ export async function GET(req: NextRequest) {
         buyer_context_signals_linked_to_leads: buyerLinked.length,
       },
       investment: {
-        deals: deals,
+        deals,
         closed_deals: dealsClosed,
         count: deals.length,
         linked_to_land_projects: deals.filter((r: any) => r.land_project_id != null).length,
