@@ -45,8 +45,9 @@
 **ระบบที่รองรับจริง**
 - **Land Analyzer** — วิเคราะห์ที่ดิน/ทำเล, ราคา, ROI และบันทึกเป็น project
 - **Fix & Flip Deals** (`/deals`) — pipeline 4 stages: ประเมิน → รีโนเวท → ประกาศขาย → ปิดดีล
-- **Land Analyzer → Deals link** — project สามารถสร้าง deal พร้อมเชื่อม `land_project_id`
-- **ROI Actual vs Estimate** — เปรียบเทียบ ROI ที่ประเมินกับผลจริงเมื่อมีข้อมูล
+- **Land Analyzer** และ **Fix & Flip Deals** เป็นโมดูลแยกกัน — ไม่มี FK หรือปุ่มสร้าง Deal ข้ามกัน
+- **ROI Actual vs Estimate** — ใช้ตัวเลขประมาณการและตัวเลขจริงที่บันทึกใน Deal เอง
+
 - **Budget / cost calculation** — คำนวณต้นทุนที่เกี่ยวข้องกับการพัฒนา/รีโนเวท
 - **BOQ** (`/boq`) — จัดทำ BOQ แบบ tree ต่อ project, เลือกวัสดุ/แรงงานจาก master catalog, กรอก quantity และคำนวณยอดรวม/overhead
 - **Properties / Listing / Content** — สนับสนุนการนำทรัพย์เข้าสู่ตลาดและการขาย
