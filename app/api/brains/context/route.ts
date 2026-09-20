@@ -50,7 +50,7 @@ export async function GET(req: NextRequest) {
         ),
         select(
           "area_memory",
-          `select=area,memory_type,memory_text,confidence,verified,updated_at&order=updated_at.desc&limit=${limit}${area ? `&area=eq.${encodeURIComponent(area)}` : ""}`
+          `select=area,memory,memory_type,confidence,is_active,last_verified,updated_at&order=updated_at.desc&limit=${limit}${area ? `&area=eq.${encodeURIComponent(area)}` : ""}`
         ),
         select(
           "buyer_context_signals",
