@@ -576,3 +576,21 @@ Archi อัปโหลดไฟล์ workflow มาให้ตรวจ →
 **Files**: `components/LandAnalyzer.tsx`, `app/api/deals/[id]/route.ts`, `components/AIContent.tsx`, `docs/migrations/2026-09-19_area_name_columns.sql`
 
 **Related**: ADR-005 (source_type/confidence schema ของ market_insights), ADR-014/017/022 (Deals module), ADR-015 (honest low-data-state pattern ต้นแบบ), ADR-025 (business-model audit ก่อนหน้าใน session เดียวกัน)
+
+
+## ADR-027 — Remove Land Analyzer ↔ Deals coupling
+
+**Date**: 2026-09-20
+**Status**: Done ✅
+
+**Decision**: Land Analyzer (`projects`) และ Fix & Flip Deals (`reno_deals`) เป็นโมดูลแยกกัน ไม่มี `land_project_id` FK และไม่มี one-click flow จาก Land Analyzer ไปสร้าง Deal. Deal ใช้ข้อมูลของตัวเองสำหรับ purchase/renovation/list/sale/ROI และใช้ `site_id` เพื่อเชื่อมกับ operational Site/QC เมื่อเป็นงานเดียวกัน.
+
+**Implementation**:
+- ลบปุ่มสร้าง Deal จาก `components/LandAnalyzer.tsx`
+- ลบ Land Analyzer project lookup / ROI comparison จาก `components/Deals.tsx`
+- ลบ `land_project_id` ออกจาก Brains และ Assistant deal context
+- ลบ `?ids=` special mode จาก `app/api/projects/route.ts`
+- Production: ล้างค่า test link ก่อนลบคอลัมน์
+- Supabase: ลบ FK และคอลัมน์ `reno_deals.land_project_id`
+
+**Verify**: production schema ไม่มี `land_project_id`; Deal ↔ Site ↔ QC ยังใช้ `site_id` / `deal_id` ต่อได้ และ Brains ไม่สร้าง relationship เอง.
