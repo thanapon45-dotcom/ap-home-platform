@@ -315,24 +315,21 @@ function KeywordTab({ onSave, starredRefs }: { onSave: (item: ContentItem) => vo
   const [buyerSeg, setBuyerSeg]   = useState("resale");
   const [awareness, setAwareness] = useState("problem_aware");
   const [timing, setTiming]       = useState("none");
-  // Connect Market Intelligence -> AI Content Studio (session 33+): fetch recent,
-  // reasonably-confident real signals to ground content in actual market context
-  // instead of only the Taste Library (which is curated FB post examples, not
-  // market data). Read-only, best-effort — an empty/failed fetch just means no
-  // extra context gets injected, generation still works normally.
+  // Market Intelligence flows through Brains so Content consumes the shared
+  // intelligence layer instead of coupling directly to the Market module.
   const [marketSignals, setMarketSignals] = useState<{ area: string; insight: string }[]>([]);
   useEffect(() => {
-    fetch("/api/market-intel/insights")
+    fetch("/api/brains/context?limit=5")
       .then(r => r.json())
       .then(j => {
-        if (j.ok === false || !Array.isArray(j.data)) return;
-        const rows = (j.data as { area: string | null; insight: string | null; confidence: number | null }[])
+        if (j.ok === false || !Array.isArray(j.market?.recent_insights)) return;
+        const rows = (j.market.recent_insights as { area: string | null; insight: string | null; confidence: number | null }[])
           .filter(r => r.insight && (r.confidence == null || r.confidence >= 3))
           .slice(0, 5)
           .map(r => ({ area: r.area ?? "ไม่ระบุพื้นที่", insight: r.insight as string }));
         setMarketSignals(rows);
       })
-      .catch(() => { /* best-effort — content generation must still work without this */ });
+      .catch(() => { /* best-effort — content generation must still work without shared context */ });
   }, []);
 
   const finalKeyword  = custom.trim() || keyword;
