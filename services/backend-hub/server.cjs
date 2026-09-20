@@ -1863,6 +1863,18 @@ async function qcResolveSite(caption, lineUserId) {
   return null;
 }
 
+// Resolve the current active Deal through the operational Site.
+// This is intentionally conservative: if more than one non-closed deal shares
+// the site, leave deal_id null rather than guessing.
+async function qcResolveDeal(siteId) {
+  if (!siteId) return null;
+  const r = await supabaseRequest(
+    `reno_deals?site_id=eq.${encodeURIComponent(siteId)}&stage=neq.closed&select=id,name,stage&order=updated_at.desc&limit=2`
+  );
+  if (!r.ok || !Array.isArray(r.data) || r.data.length !== 1) return null;
+  return r.data[0];
+}
+
 async function qcUpsertLineUser(lineUserId) {
   if (!lineUserId) return;
   await supabaseUpsert("line_users", { line_id: lineUserId, last_seen_at: new Date().toISOString() }, "line_id");
@@ -2009,11 +2021,13 @@ app.post("/api/qc/ingest", async (req, res) => {
 
   await qcUpsertLineUser(line_user_id);
   const site = await qcResolveSite(caption, line_user_id);
+  const deal = await qcResolveDeal(site?.id);
 
   const ins = await supabaseInsert("qc_inspections", {
     line_message_id, line_user_id, photo_url,
     caption: caption || null,
     site_id: site?.id || null,
+    deal_id: deal?.id || null,
     status: "processing"
   });
   if (!ins.ok) return res.status(500).json({ error: "db_error", detail: ins.error });
@@ -2057,6 +2071,7 @@ app.post("/api/qc/ingest", async (req, res) => {
   res.json({
     inspection_id: inspection.id,
     site_code: site?.code || null,
+    deal_id: deal?.id || null,
     pass: ai.pass, severity: ai.severity, confidence: ai.confidence,
     ai_summary: ai.ai_summary, defects: ai.defects,
     latency_ms: Date.now() - started
