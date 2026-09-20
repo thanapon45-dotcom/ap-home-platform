@@ -93,7 +93,6 @@ export default function LandAnalyzer() {
     return { sa, ca, caSqm, tdc, tlp, lppu, totalBuild, totalCost, costPer, sellPrice, marketPremium, totalRev, totalProfit, roi };
   }, [form, caPct, sellPct]);
 
-  const [creatingDealId, setCreatingDealId] = useState<string | null>(null);
 
   const loadProjects = useCallback(async () => {
     const res = await fetch("/api/projects");
@@ -102,38 +101,6 @@ export default function LandAnalyzer() {
   }, []);
 
   useEffect(() => { loadProjects(); }, [loadProjects]);
-
-  // Item #3 of the "system proves itself correct" follow-up plan (ADR-022):
-  // one-click link from a saved Land Analyzer project into a Fix & Flip deal
-  // (reno_deals.land_project_id) so the estimated ROI here can later be
-  // compared against the deal's actual ROI once it closes (Deals.tsx already
-  // has the actual-vs-estimate UI from Phase 3 — this just gives it a second
-  // estimate source besides reno_budget/list_price).
-  const createDealFromProject = async (p: Project) => {
-    setCreatingDealId(p.id);
-    const plots = Number(p.plots) || 0;
-    const area = Number(p.area) || 0;
-    const buildCost = Number(p.build_cost) || 0;
-    const totalBuild = plots > 0 && area > 0 && buildCost > 0 ? plots * area * buildCost : null;
-    const res = await fetch("/api/deals", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: p.name,
-        purchase_price: p.land_price ?? null,
-        reno_budget: totalBuild,
-        list_price: p.market_price ?? null,
-        notes: `สร้างจาก Land Analyzer (ROI ประเมิน ${p.roi != null ? Number(p.roi).toFixed(1) + "%" : "—"})`,
-        land_project_id: p.id,
-        area_name: p.area_name ?? null,
-        stage: "evaluating",
-      }),
-    });
-    const json = await res.json();
-    setCreatingDealId(null);
-    if (!res.ok || json.ok === false) { msg("สร้างดีลไม่สำเร็จ: " + (json.error ?? `HTTP ${res.status}`), false); return; }
-    msg("สร้างดีล Fix & Flip แล้ว — ไปดูที่แท็บ Deals ✓");
-  };
 
   const save = async () => {
     if (!pname.trim()) { msg("กรุณาใส่ชื่อโปรเจค", false); return; }
@@ -216,14 +183,6 @@ export default function LandAnalyzer() {
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 <div style={{ fontSize: 18, fontWeight: 800, color: (p.result ?? 0) >= 20 ? "#10b981" : "#f59e0b" }}>{p.result ?? 0}%</div>
-                <button
-                  onClick={() => createDealFromProject(p)}
-                  disabled={creatingDealId === p.id}
-                  title="สร้างดีล Fix & Flip จากโปรเจคนี้ — เชื่อม ROI ที่ประเมินไว้เข้ากับ Deal Pipeline"
-                  style={{ background: "rgba(16,185,129,.1)", border: "1px solid rgba(16,185,129,.25)", borderRadius: 8, padding: "5px 10px", color: "#10b981", fontSize: 11, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}
-                >
-                  {creatingDealId === p.id ? "กำลังสร้าง..." : "🔗 สร้างดีล Fix & Flip"}
-                </button>
               </div>
             </div>
           ))}
