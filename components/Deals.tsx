@@ -27,7 +27,10 @@ type Deal = {
   created_at: string;
   updated_at: string | null;
   land_project_id: string | null;
+  site_id: string | null;
 };
+
+type Site = { id: string; code: string; name: string; type: string | null; stage: string | null; active: boolean };
 
 // ADR-022 (session 29, item #3 of the "system proves itself correct" plan) —
 // deals can optionally be linked back to the Land Analyzer project they came
@@ -58,7 +61,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 const emptyForm = {
-  name: "", property_address: "", purchase_price: "", reno_budget: "", list_price: "", notes: "",
+  name: "", property_address: "", purchase_price: "", reno_budget: "", list_price: "", notes: "", site_id: "",
 };
 
 const emptyActuals = { reno_cost: "", sale_price: "" };
@@ -82,6 +85,7 @@ function variance(estimate: number | null | undefined, actual: number | null | u
 export default function Deals() {
   const [deals, setDeals] = useState<Deal[]>([]);
   const [landProjects, setLandProjects] = useState<Record<string, LandProject>>({});
+  const [sites, setSites] = useState<Site[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(emptyForm);
@@ -115,7 +119,12 @@ export default function Deals() {
     }
   }, []);
 
-  useEffect(() => { loadDeals(); }, [loadDeals]);
+  useEffect(() => {
+    loadDeals();
+    fetch("/api/sites").then(r => r.json()).then(j => {
+      if (j.ok !== false) setSites((j.data ?? []) as Site[]);
+    }).catch(() => {});
+  }, [loadDeals]);
 
   const byStage = useMemo(() => {
     const map: Record<Stage, Deal[]> = { evaluating: [], renovating: [], listed: [], closed: [] };
@@ -173,6 +182,7 @@ export default function Deals() {
         reno_budget: form.reno_budget ? Number(form.reno_budget) : null,
         list_price: form.list_price ? Number(form.list_price) : null,
         notes: form.notes || null,
+        site_id: (form as typeof emptyForm & { site_id?: string }).site_id || null,
         stage: "evaluating",
       }),
     });
@@ -321,6 +331,18 @@ export default function Deals() {
               <input type="number" value={form.list_price} onChange={e => setForm(f => ({ ...f, list_price: e.target.value }))} style={inputStyle} />
             </Field>
           </div>
+          <Field label="Site (ใช้เชื่อม QC)">
+            <select
+              value={(form as typeof emptyForm).site_id}
+              onChange={e => setForm({ ...form, site_id: e.target.value })}
+              style={inputStyle}
+            >
+              <option value="">— ยังไม่ผูก Site —</option>
+              {sites.filter(s => s.active).map(s => (
+                <option key={s.id} value={s.id}>{s.code} — {s.name}</option>
+              ))}
+            </select>
+          </Field>
           <Field label="หมายเหตุ">
             <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} style={{ ...inputStyle, minHeight: 60, resize: "vertical", fontFamily: "inherit" }} />
           </Field>
