@@ -334,14 +334,11 @@ Invoke-RestMethod -Method POST -Uri "https://ap-home-platform-production.up.rail
 - [x] Verify: `npx tsc --noEmit` ผ่านสะอาด
 - [ ] รอ Archi เริ่มใช้งานจริง (สร้างดีล + กรอกตัวเลขจริงอย่างน้อย 1 ดีล) เพื่อดูว่าการ์ด "ความแม่นยำของการประมาณการ" ออกค่าที่สมเหตุสมผลไหม — ตอนนี้ยังเป็น "ยังไม่มีข้อมูลพอสรุป" เพราะ 0 แถว
 
-### Land Analyzer → Fix & Flip Deals link (ADR-022, session 29 ต่อๆๆๆๆๆ, Jul 23) — DONE
-- [x] item #3 ของแผน 3 ข้อที่ Archi อนุมัติ "ทำทั้ง 3 อันเลย เรียงตามลำดับ" — Land Analyzer มี ROI ประเมิน (`projects.roi`) แต่ไม่เคยเชื่อมกับ Fix & Flip Deals เลย ทั้งที่ Deals มี actual-vs-estimate UI พร้อมอยู่แล้ว (Phase 3/ADR-017)
-- [x] เพิ่มคอลัมน์ `reno_deals.land_project_id uuid references projects(id) on delete set null` (optional link, ไม่บังคับ)
-- [x] `LandAnalyzer.tsx` — เพิ่มปุ่ม "🔗 สร้างดีล Fix & Flip" ต่อโปรเจคที่บันทึกไว้ → สร้างดีลใหม่พร้อมเชื่อม `land_project_id`, คำนวณ `reno_budget` จาก plots×area×build_cost อัตโนมัติ
-- [x] `app/api/projects/route.ts` GET เพิ่ม `?ids=` filter (เดิมคืนแค่ 20 แถวล่าสุด พลาดโปรเจคเก่าที่ถูกเชื่อมได้) — `Deals.tsx` ใช้ query เฉพาะโปรเจคที่ถูกอ้างถึงจริง
-- [x] `Deals.tsx` — badge ต่อการ์ด "🔗 ROI ประเมิน (Land Analyzer) X% (+/-Y จุด)" + คอลัมน์ที่ 3 ในการ์ดสรุปพอร์ต (ROI จริง vs ประเมิน) พร้อม honest empty-state เหมือนเดิม
-- [x] Verify: `npx tsc --noEmit` ผ่านสะอาด, `get_advisors` ไม่มี WARN/ERROR ใหม่ (เหลือ `rls_enabled_no_policy` INFO เดิมตาม convention)
-- [ ] รอ Archi เริ่มใช้ปุ่ม "🔗 สร้างดีล" จริงจาก Land Analyzer แล้วปิดดีลอย่างน้อย 1 ดีล เพื่อดูว่าคอลัมน์ ROI variance ออกค่าที่สมเหตุสมผลไหม — ตอนนี้ยังเป็น "ยังไม่มีข้อมูลพอสรุป"
+### Land Analyzer ↔ Fix & Flip Deals link — removed
+- [x] ยกเลิก `reno_deals.land_project_id` และ FK ไป `projects` เพราะไม่ใช่ relationship ที่ต้องการใน architecture ปัจจุบัน
+- [x] ลบปุ่มสร้าง Deal จาก Land Analyzer และลบ ROI comparison ที่อาศัย Land Analyzer project ออกจาก Deals
+- [x] ลบ `?ids=` special lookup จาก `/api/projects` ซึ่งมีไว้รองรับ relationship นี้โดยเฉพาะ
+- [x] ล้างค่า test link ใน production ก่อน drop column
 
 ### Market Intel confidence calibration (ADR-023, session 29 ต่อๆๆๆๆๆๆ, Jul 23) — DONE
 - [x] item #3 สุดท้ายของแผน 3 ข้อ — `market_insights` มี 135 แถวจริง (คนละสถานการณ์กับ quality_gate_log ที่เริ่มจาก 0) พร้อม AI confidence score 1-5 ดาวต่อ insight แต่ไม่เคยมีใครยืนยันย้อนหลังว่าคะแนนนั้นแม่นจริงไหม — คำถามที่ตอบไม่ได้: 5 ดาวแม่นกว่า 3 ดาวจริงหรือเปล่า (calibration ไม่ใช่แค่ accuracy เฉยๆ)
