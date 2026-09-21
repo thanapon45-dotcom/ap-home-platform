@@ -110,7 +110,7 @@ const nodes = [
   { id: "CRM",          group: "frontend", desc: "/crm — Lead Kanban (consult/list), เขียน leads ผ่าน /api/leads (service_role)" },
   { id: "AI Content",   group: "frontend", desc: "/ai-content — FB Content Studio ใช้ Claude Sonnet สร้างโพสต์ + ปุ่มโพสต์ตรงผ่าน FB Backend" },
   { id: "Blog Runner",  group: "frontend", desc: "/marketing — คุมคิวบทความผ่าน Hub v1 (/action/blog/queue/*)" },
-  { id: "Land Analyzer",group: "frontend", desc: "/land-analyzer — คำนวณ ROI ที่ดิน, เขียน projects, มีปุ่มสร้างดีลเชื่อม reno_deals" },
+  { id: "Land Analyzer",group: "frontend", desc: "/land-analyzer — คำนวณการลงทุน Build-to-Sell และเขียนผลลง projects; ไม่มี flow สร้าง Deal" },
   { id: "Fix & Flip Deals", group: "frontend", desc: "/deals — Kanban ดีล renovation-for-resale, actual-vs-estimate ROI" },
   { id: "Market Intel", group: "frontend", desc: "/market-intel — บันทึกตลาด + Calibration feedback, เขียนตรงเข้า Supabase (service_role) ไม่ผ่าน Hub" },
 
@@ -140,7 +140,7 @@ const nodes = [
   { id: "content_frames", group: "data", desc: "140 แถว — Positioned Content ที่ AI สร้างจาก market insight" },
   { id: "buyer_profiles", group: "data", desc: "3 แถว" },
   { id: "projects",     group: "data", desc: "1 แถว — โปรเจคที่บันทึกจาก Land Analyzer" },
-  { id: "reno_deals",   group: "data", desc: "2 แถว — Fix & Flip deal pipeline, เชื่อม land_project_id ได้" },
+  { id: "reno_deals",   group: "data", desc: "2 แถว — Fix & Flip / Renovate-to-Resell deal pipeline, ใช้ reno_deals และ site_id" },
   { id: "qc_inspections", group: "data", desc: "20 แถว — ผลตรวจ QC + human_feedback" },
   { id: "qc_defects",   group: "data", desc: "5 แถว" },
   { id: "qc_daily_usage", group: "data", desc: "4 แถว" },
@@ -157,7 +157,7 @@ const nodes = [
   // (2) thin proxy → Hub v1 (verified: /api/property/* just forwards to Hub, adds nothing)
   { id: "/api/leads", group: "apiroute", desc: "service_role → leads โดยตรง ไม่ผ่าน Hub — ใช้ร่วมกันโดย CRM (Kanban) และ OS Dashboard (lead counts)" },
   { id: "/api/projects", group: "apiroute", desc: "service_role → projects โดยตรง — Land Analyzer บันทึกผลวิเคราะห์ที่ดิน" },
-  { id: "/api/deals", group: "apiroute", desc: "service_role → reno_deals โดยตรง — ใช้ร่วมกันโดย Land Analyzer (ปุ่มสร้างดีล) และ Fix & Flip Deals (Kanban + actual-vs-estimate)" },
+  { id: "/api/deals", group: "apiroute", desc: "service_role → reno_deals โดยตรง — ใช้โดย Fix & Flip Deals (Kanban + actual-vs-estimate)" },
   { id: "/api/market-intel", group: "apiroute", desc: "POST → forward เข้า n8n webhook (Market Intel Collector v2) ตรงๆ — ไม่แตะ Supabase เลย คนละแบบกับ hop อื่นในกลุ่มนี้" },
   { id: "/api/market-intel/calibration", group: "apiroute", desc: "GET calibration + PATCH feedback → service_role → market_insights โดยตรง — ใช้ร่วมกันโดยหน้า /market-intel (Calibration tab) และ OS Dashboard (embedded Market Intel sub-tab)" },
   { id: "/api/qc/accuracy", group: "apiroute", desc: "service_role → qc_inspections โดยตรง — คำนวณ % ความแม่นยำ (ADR-015)" },
@@ -232,7 +232,7 @@ const links = [
   ["CRM", "/api/leads"], ["/api/leads", "leads"],
   ["AI Content", "/api/fb/publish"], ["/api/fb/publish", "FB Backend"], ["FB Backend", "FB Post"],
   ["Land Analyzer", "/api/projects"], ["/api/projects", "projects"],
-  ["Land Analyzer", "/api/deals"], ["/api/deals", "reno_deals"],
+  
   ["Fix & Flip Deals", "/api/deals"],
   ["Market Intel", "/api/market-intel"], ["/api/market-intel", "Market Intel Collector v2"],
   ["Market Intel", "/api/market-intel/calibration"], ["/api/market-intel/calibration", "market_insights"],
