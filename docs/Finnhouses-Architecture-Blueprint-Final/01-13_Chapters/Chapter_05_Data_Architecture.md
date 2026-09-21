@@ -30,7 +30,8 @@ Supabase functions as the primary business and intelligence data System of Recor
 | `area_memory` | BD-3.6 Market/Buyer Sensing | AG-4.4 | Medium |
 | `qc_inspections`, `qc_defects`, `qc_standards` | BD-3.4 Construction Quality | AG-4.3, QC dashboard | High |
 | `quality_gate_log` | BD-3.8 AI Governance | AG-4.2, Quality Gate dashboard | High |
-| `reno_deals`, `projects` | Fix & Flip (BD-3.3-adjacent) | Deals UI, Land Analyzer | Medium |
+| `reno_deals` | BD-3.3 Fix & Flip / Renovate-to-Resell | Deals UI, Brains | High |
+| `projects` | BD-3.7 Build-to-Sell Development | Land Analyzer, Brains | High |
 | `hub_state` | Hub v1 (cross-cutting, no clean domain owner) | Dashboard Overview | Low |
 
 ## 4. Current Data Flow (representative — AI feedback path)
@@ -95,3 +96,26 @@ RLS enabled on all 28 tables (Evidence A, confirmed 2026-08-07). No documented r
 **ADR-Candidate-5.6 — Schema Lifecycle Governance**: Should every table require lifecycle metadata (`status`, `owner`, `created_for`, `deprecated_at`, `replacement_table`)? Decision Drivers: future maintenance cost, schema clarity, migration safety.
 
 **Cross-chapter convergence note**: ADR-Candidate-5.1↔4.1(-adjacent), 5.3↔4.4, and 5.4↔4.2 describe the same underlying decisions from two vantage points (AI-agent-level vs. data-level) — recommend resolving each pair together in Chapter 10/11.
+
+
+## 9. Investment Stream Boundary — Build-to-Sell vs Renovate-to-Resell
+
+The production data model treats these as separate investment streams:
+
+```
+Build-to-Sell
+Land Analyzer
+    ↓
+projects
+
+Renovate-to-Resell
+Fix & Flip Deals
+    ↓
+reno_deals
+    ↓
+sites
+    ↓
+QC
+```
+
+There must be no identity/FK relationship from `reno_deals` to `projects`. Cross-module intelligence may be exposed through Brains, but Brains must not infer that a Deal belongs to a Land Analyzer project without explicit evidence.
