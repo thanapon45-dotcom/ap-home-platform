@@ -192,7 +192,7 @@ Workflow ใหม่ `Finnhouses — Market Intelligence Collector v2 (ADR-005)
 **2. Business model correction — เลิกอ้างอิง "รับสร้างบ้าน" ทั้งหมด**
 - Archi ยืนยันตรงๆ ระหว่างคุยเรื่อง keyword ว่า **ไม่ทำธุรกิจรับเหมาก่อสร้าง** — ลูกค้าจริงมีแค่ 2 กลุ่ม: ซื้อ/ฝากขายบ้าน + ที่ปรึกษา/inspector งานก่อสร้าง
 - รีแบรนด์ `components/AIContent.tsx` ทั้งไฟล์: `BRAND_FACTS`, `KEYWORDS` (แทนที่ทั้งชุด), `BUYER_SEGMENTS` (3→2), ลบ `STYLES` selector ทิ้งทั้งหมด (house design style ไม่เกี่ยวกับธุรกิจแล้ว), เขียน system prompt ทุกจุดใหม่ (`KeywordTab`/`BlogConvertTab`/`ListingTab`) + `FB_QUEUE_TEMPLATES` (manual queue templates ที่โพสต์ตรงเข้า FB ได้ — เจอ fabricated claims เก่าที่ขัดกฎ "ห้ามปั้นตัวเลข" อยู่แล้วด้วย เช่น "ประสบการณ์สร้างบ้านกว่า 50 หลัง")
-- อัปเดต `docs/BUSINESS_MODEL.md` — mark Business Unit 1 (รับสร้างบ้าน) เป็น **DISCONTINUED** (ยังไม่ยืนยันสถานะ Unit 3 Fix & Flip — ต้องถาม Archi ต่อ)
+- อัปเดต `docs/BUSINESS_MODEL.md` — mark Business Unit 1 (รับสร้างบ้าน) เป็น **DISCONTINUED** และยืนยัน Unit 3 Fix & Flip เป็น active
 - ดู `docs/decisions.md` ADR-010
 
 **3. Deploy gotcha ที่เจอระหว่างทาง — Vercel "Redeploy" ปุ่มใน dashboard rebuild commit เก่า**
@@ -221,7 +221,7 @@ Workflow ใหม่ `Finnhouses — Market Intelligence Collector v2 (ADR-005)
 
 **3. Platform Structure — 2 Pillars (กรอบคิดของ Archi)**
 - Archi อธิบายว่าแพลตฟอร์มแบ่งเป็น 2 ส่วน: การตลาดและขาย (AI Content Studio, CRM, OS Dashboard) กับ การบริหารงานก่อสร้าง (Land Analyzer, Budget Tool, QC)
-- เพิ่ม section นี้ใน `docs/BUSINESS_MODEL.md` พร้อม note ตามที่ Archi ยืนยันเพิ่มว่า **7 Intelligence Modules ไม่ได้แยกคนละ pillar แต่เชื่อมโยงข้อมูลกันทั้งหมดเพื่อใช้เป็นกลยุทธ์บริหารภาพรวม** (เช่น Construction Intelligence จาก QC ป้อนกลับเข้า Renovation Intelligence ที่ใช้ตัดสินใจ Fix & Flip ครั้งถัดไป)
+- เพิ่ม section นี้ใน `docs/BUSINESS_MODEL.md` พร้อม note ตามที่ Archi ยืนยันเพิ่มว่า **7 Intelligence Modules ไม่ได้แยกคนละ pillar แต่เชื่อมโยงข้อมูลผ่าน shared context/Brains ตามหลักฐานที่มี; ไม่ได้หมายความว่าทุกโมดูลต้องมี FK ตรงถึงกัน** (เช่น Construction Intelligence จาก QC ป้อนกลับเข้า Renovation Intelligence ที่ใช้ตัดสินใจ Fix & Flip ครั้งถัดไป)
 - ดู `docs/decisions.md` ADR-013
 
 **4. Deprioritized items — confirm จาก Archi**
