@@ -1,3 +1,14 @@
+# CURRENT PRODUCTION ARCHITECTURE — 2026-09-21
+
+- Land Analyzer = **Build-to-Sell** → `projects`
+- Fix & Flip Deals = **Renovate-to-Resell** → `reno_deals`
+- These are separate investment streams. **No `reno_deals.land_project_id` exists in production.**
+- Fix & Flip operational links: `reno_deals.site_id → sites.id`, `qc_inspections.deal_id → reno_deals.id`, `qc_inspections.site_id → sites.id`.
+- AI Assistant uses `get_brains_context` → `/api/brains/context` for shared cross-module context.
+- Historical ADR-022 Land Analyzer → Deals coupling is superseded by ADR-027.
+
+> Source of truth: live production schema + current source code + verified runtime. Historical notes below must not be interpreted as current architecture.
+
 # AP-Home Platform — Claude Reference
 
 อ่านก่อนทุก session ใหม่ อย่า assume ว่า system ทำงานอย่างไร — ดูที่นี่เท่านั้น
@@ -334,11 +345,14 @@ Invoke-RestMethod -Method POST -Uri "https://ap-home-platform-production.up.rail
 - [x] Verify: `npx tsc --noEmit` ผ่านสะอาด
 - [ ] รอ Archi เริ่มใช้งานจริง (สร้างดีล + กรอกตัวเลขจริงอย่างน้อย 1 ดีล) เพื่อดูว่าการ์ด "ความแม่นยำของการประมาณการ" ออกค่าที่สมเหตุสมผลไหม — ตอนนี้ยังเป็น "ยังไม่มีข้อมูลพอสรุป" เพราะ 0 แถว
 
-### Land Analyzer ↔ Fix & Flip Deals link — removed
-- [x] ยกเลิก `reno_deals.land_project_id` และ FK ไป `projects` เพราะไม่ใช่ relationship ที่ต้องการใน architecture ปัจจุบัน
-- [x] ลบปุ่มสร้าง Deal จาก Land Analyzer และลบ ROI comparison ที่อาศัย Land Analyzer project ออกจาก Deals
-- [x] ลบ `?ids=` special lookup จาก `/api/projects` ซึ่งมีไว้รองรับ relationship นี้โดยเฉพาะ
-- [x] ล้างค่า test link ใน production ก่อน drop column
+### Land Analyzer ↔ Fix & Flip Deals — production boundary finalized (2026-09-21)
+- [x] Land Analyzer = Build-to-Sell → `projects`
+- [x] Fix & Flip Deals = Renovate-to-Resell → `reno_deals`
+- [x] Removed `reno_deals.land_project_id` and its FK from production
+- [x] Removed Land Analyzer → Deal creation flow and ROI comparison
+- [x] Deal ↔ Site ↔ QC remains via `site_id` / `deal_id`
+- [x] Brains does not infer a Land Project ↔ Deal identity
+
 
 ### Market Intel confidence calibration (ADR-023, session 29 ต่อๆๆๆๆๆๆ, Jul 23) — DONE
 - [x] item #3 สุดท้ายของแผน 3 ข้อ — `market_insights` มี 135 แถวจริง (คนละสถานการณ์กับ quality_gate_log ที่เริ่มจาก 0) พร้อม AI confidence score 1-5 ดาวต่อ insight แต่ไม่เคยมีใครยืนยันย้อนหลังว่าคะแนนนั้นแม่นจริงไหม — คำถามที่ตอบไม่ได้: 5 ดาวแม่นกว่า 3 ดาวจริงหรือเปล่า (calibration ไม่ใช่แค่ accuracy เฉยๆ)
@@ -348,7 +362,8 @@ Invoke-RestMethod -Method POST -Uri "https://ap-home-platform-production.up.rail
 - [x] Verify: `npx tsc --noEmit` ผ่านสะอาด, `get_advisors` ไม่มี WARN/ERROR ใหม่
 - [ ] รอ Archi เริ่มกดยืนยัน ✅/❌ สะสม ≥10 ครั้งในหน้า Calibration เพื่อดูว่า AI confidence score แม่นจริงไหม
 
-**สรุปแผน 3 ข้อ "ระบบพิสูจน์ตัวเองว่าทำงานถูก" (จาก session 29 audit) — เสร็จครบทั้ง 3 ข้อแล้ว**: #1 WF1 Quality Gate feedback loop (ADR-021, รอ Archi import n8n (11_gate_log)) · #2 Land Analyzer → Deals link (ADR-022, ใช้งานได้ทันที) · #3 Market Intel calibration (ADR-023, ใช้งานได้ทันที)
+**Historical plan note:** the old 3-item plan included ADR-022 Land Analyzer → Deals. That coupling was later removed and is superseded by ADR-027; do not treat the historical plan text as current architecture.
+
 
 ### CRM/Overview — business_unit ยังผูก Unit 1 ที่เลิกทำแล้ว (ADR-018, session 29 ต่อ) — DONE
 - [x] Archi เจอการ์ด "รับสร้างบ้าน" ใน Overview ยังโชว์ Leads=1 ทั้งที่ Unit 1 เลิกทำไปแล้ว → ตรวจพบ 3 จุด: `CRM.tsx` (type/ฟอร์ม ไม่มีตัวเลือก Unit 4 เลย, default="build"), `DashboardOS.tsx` (fallback lead ที่ไม่มี business_unit ไปกอง "build"), `app/budget/page.tsx` (public lead form เขียน "build" ตรงๆ) — เปลี่ยน enum ทั้งหมดเป็น `"reno"|"list"|"consult"` (ตัด build, เพิ่ม consult=Unit 4) + fallback ทุกจุดเป็น "reno" (60% ของรายได้จริง) แทน
