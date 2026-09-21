@@ -66,7 +66,7 @@ returns on existing investments.
 - ADR-014: Fix and Flip Deals module - ../../04-decisions/accepted/ADR-014.md
 - ADR-017: Fix and Flip Deal ROI (actual-vs-estimate) - ../../04-decisions/accepted/ADR-017.md
 - ADR-019: Remove reno from CRM - ../../04-decisions/accepted/ADR-019.md
-- ADR-022: Land Analyzer to Fix and Flip Deals link - ../../04-decisions/accepted/ADR-022.md
+- ADR-027: Land Analyzer (Build-to-Sell) and Fix & Flip (Renovate-to-Resell) are separate investment streams - ../../04-decisions/accepted/ADR-027.md
 
 ---
 
