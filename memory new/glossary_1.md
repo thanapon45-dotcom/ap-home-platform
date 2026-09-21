@@ -1,3 +1,5 @@
+> **CURRENT PRODUCTION OVERRIDE — 2026-09-21:** This memory snapshot contains historical material. For current architecture use: Land Analyzer = Build-to-Sell → projects; Fix & Flip = Renovate-to-Resell → reno_deals; no reno_deals.land_project_id exists in production; operational Fix & Flip links are reno_deals.site_id → sites.id and qc_inspections.deal_id/site_id; AI Assistant uses /api/brains/context for shared cross-module context. Historical ADR-022 coupling is superseded by ADR-027.
+
 # Glossary — AP-Home Platform
 
 ---
