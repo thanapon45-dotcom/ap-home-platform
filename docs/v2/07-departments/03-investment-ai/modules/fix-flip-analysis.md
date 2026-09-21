@@ -16,7 +16,7 @@ Fix and Flip Analysis tracks deals through 4 stages:
 
 For each deal: track actual vs estimated costs (purchase, renovation, sale),
 calculate variance to improve future estimates, visual progress bar (budget
-spent vs allocated), optional link to source Land Analyzer project.
+spent vs allocated). Fix & Flip deals are independent from Land Analyzer projects.
 
 ---
 
@@ -28,7 +28,7 @@ spent vs allocated), optional link to source Land Analyzer project.
 | Actual vs Estimate variance | 100% | Purchase, renovation, sale price (ADR-017) |
 | ROI calculation (auto) | 100% | (sale - invested) / invested times 100 |
 | Budget tracking | 100% | Progress bar (spent/allocated) |
-| Link to Land Analyzer project | 100% | land_project_id FK (ADR-022) |
+| Link to Land Analyzer project | 0% / not applicable | Intentionally independent; no FK to `projects` (ADR-027) |
 | Portfolio metrics | 100% | Capital deployed, avg ROI closed |
 
 ---
@@ -46,7 +46,7 @@ of fake percentages. This avoids fake precision from small samples.
 reno_deals table key fields: name, property_address, stage
 (evaluating/renovating/listed/closed), purchase_price, reno_budget
 (estimate), reno_cost (actual), list_price (estimate), sale_price (actual),
-roi_pct (computed), land_project_id (FK to projects, added in ADR-022).
+roi_pct (computed), site_id (FK to sites for operational execution/QC).
 
 ---
 
@@ -55,7 +55,7 @@ roi_pct (computed), land_project_id (FK to projects, added in ADR-022).
 - ADR-014: Fix and Flip Deals module - ../../../04-decisions/accepted/ADR-014.md
 - ADR-017: Fix and Flip Deal ROI (actual-vs-estimate tracking) - ../../../04-decisions/accepted/ADR-017.md
 - ADR-019: Remove reno from CRM - ../../../04-decisions/accepted/ADR-019.md
-- ADR-022: Land Analyzer to Fix and Flip Deals link - ../../../04-decisions/accepted/ADR-022.md
+- ADR-027: Land Analyzer and Fix & Flip are separate investment streams - ../../../04-decisions/accepted/ADR-027.md
 
 ---
 
