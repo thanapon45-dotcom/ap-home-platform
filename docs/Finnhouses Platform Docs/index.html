@@ -15,7 +15,7 @@
     display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
   }
   header .title { font-size: 15px; font-weight: 800; color: #f1f5f9; }
-  header .sub { font-size: 10.5px; color: #475569; margin-top: 2px; }
+  header .sub { font-size: 10.5px; color: #94a3b8; margin-top: 2px; }
   nav {
     display: flex; gap: 4px; padding: 10px 22px; background: #070a12;
     border-bottom: 1px solid rgba(255,255,255,.06); flex-shrink: 0; overflow-x: auto;
@@ -32,7 +32,7 @@
   iframe.active { display: block; }
   footer {
     padding: 8px 22px; background: #070a12; border-top: 1px solid rgba(255,255,255,.06);
-    font-size: 10px; color: #334155; flex-shrink: 0;
+    font-size: 10px; color: #94a3b8; flex-shrink: 0;
   }
 </style>
 </head>
@@ -41,13 +41,14 @@
 <header>
   <div>
     <div class="title">🏠 Finnhouses / AP-Home Platform — เอกสารรวม</div>
-    <div class="sub">รวมชุดเอกสารล่าสุด ไม่ซ้ำซ้อน — เลือกตัวล่าสุดจากทุก version ที่มีอยู่</div>
+    <div class="sub">เปิดสถานะล่าสุดก่อน · คู่มือและผังเดิมเก็บไว้เป็นเอกสารอ้างอิงย้อนหลัง</div>
   </div>
-  <div class="sub" style="text-align:right">รวบรวม 22 Jul 2026<br>จาก 9 ไฟล์ต้นฉบับ → 6 เอกสาร</div>
+  <div class="sub" style="text-align:right">อัปเดต 21 Sep 2026<br>สถานะปัจจุบัน + เอกสารย้อนหลัง 6 ฉบับ</div>
 </header>
 
-<nav id="tabs">
-  <button data-target="f-manual" class="active">📘 คู่มือการใช้งาน</button>
+<nav id="tabs" aria-label="เลือกเอกสาร">
+  <button data-target="f-current" class="active" aria-pressed="true">สถานะปัจจุบัน · 21 ก.ย. 2026</button>
+  <button data-target="f-manual">📘 คู่มือการใช้งาน</button>
   <button data-target="f-flow">🎬 System Flow</button>
   <button data-target="f-arch">🏗️ Architecture</button>
   <button data-target="f-workflows">🔧 Key Workflows</button>
@@ -55,28 +56,31 @@
   <button data-target="f-dataflow">🔀 Data Flow</button>
 </nav>
 
+<p id="doc-status" style="padding:10px 22px;color:#cbd5e1;font-size:13px">สถานะที่ทบทวนล่าสุดจากโค้ด, ADR และข้อมูลเจ้าของระบบ — ยังไม่ใช่การตรวจ runtime ทุกบริการ</p>
 <div class="frame-wrap">
-  <iframe id="f-manual" class="active" src="finnhouses-user-manual.html"></iframe>
-  <iframe id="f-flow" src="finnhouses-system-flow.html"></iframe>
-  <iframe id="f-arch" src="finnhouses-architecture.html"></iframe>
-  <iframe id="f-workflows" src="finnhouses-key-workflows.html"></iframe>
-  <iframe id="f-mindmap" src="finnhouses-mindmap.html"></iframe>
-  <iframe id="f-dataflow" src="finnhouses-dataflow.html"></iframe>
+  <iframe id="f-current" class="active" title="สถานะปัจจุบัน AP-Home Platform" src="ap_home_platform_os_map.html"></iframe>
+  <iframe id="f-manual" title="เอกสารย้อนหลัง: finnhouses-user-manual.html" src="finnhouses-user-manual.html"></iframe>
+  <iframe id="f-flow" title="เอกสารย้อนหลัง: finnhouses-system-flow.html" src="finnhouses-system-flow.html"></iframe>
+  <iframe id="f-arch" title="เอกสารย้อนหลัง: finnhouses-architecture.html" src="finnhouses-architecture.html"></iframe>
+  <iframe id="f-workflows" title="เอกสารย้อนหลัง: finnhouses-key-workflows.html" src="finnhouses-key-workflows.html"></iframe>
+  <iframe id="f-mindmap" title="เอกสารย้อนหลัง: finnhouses-mindmap.html" src="finnhouses-mindmap.html"></iframe>
+  <iframe id="f-dataflow" title="เอกสารย้อนหลัง: finnhouses-dataflow.html" src="finnhouses-dataflow.html"></iframe>
 </div>
 
-<footer>
-  ไฟล์ที่รวมไว้: finnhouses-user-manual-v4 · ap-home-system-flow · ap-home-architecture · finnhouses-platform-architecture-v3 · finnhouses-mindmap-v4 · finnhouses-platform-dataflow-mindmap-v4
-  — ไฟล์ที่ตัดออก (ซ้ำ/เก่ากว่า): user-manual-v3 (×2 ซ้ำกัน), platform-flowchart-v3 (draft เก่าของ Architecture), platform-dataflow-v3 (แทนที่ด้วย v4)
-</footer>
+<footer>สถานะปัจจุบัน: ap_home_platform_os_map.html · เอกสารแท็บอื่นเป็นฉบับย้อนหลัง อาจมีข้อมูลที่ถูกแทนที่แล้ว</footer>
 
 <script>
   const buttons = document.querySelectorAll('#tabs button');
   const frames = document.querySelectorAll('iframe');
   buttons.forEach(btn => {
     btn.addEventListener('click', () => {
-      buttons.forEach(b => b.classList.remove('active'));
+      buttons.forEach(b => { b.classList.remove('active'); b.setAttribute('aria-pressed', 'false'); });
       frames.forEach(f => f.classList.remove('active'));
       btn.classList.add('active');
+      btn.setAttribute('aria-pressed', 'true');
+      document.getElementById('doc-status').textContent = btn.dataset.target === 'f-current'
+        ? 'สถานะที่ทบทวนล่าสุดจากโค้ด, ADR และข้อมูลเจ้าของระบบ — ยังไม่ใช่การตรวจ runtime ทุกบริการ'
+        : 'เอกสารย้อนหลัง — ผังและสถานะในหน้านี้ยังไม่ได้ทบทวนทั้งหมด โปรดเทียบกับแท็บสถานะปัจจุบันก่อนใช้งาน';
       document.getElementById(btn.dataset.target).classList.add('active');
     });
   });

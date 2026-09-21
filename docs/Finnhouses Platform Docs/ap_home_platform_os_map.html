@@ -2,409 +2,95 @@
 <html lang="th">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AP-Home Platform OS — สถานะระบบ 21 กันยายน 2026</title>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Prompt', sans-serif; background: #0f1117; color: #e2e8f0; padding: 20px; font-size: 13px; }
-  h1 { text-align: center; font-size: 16px; color: #f8c948; margin-bottom: 4px; letter-spacing: 1px; }
-  .subtitle { text-align: center; color: #94a3b8; font-size: 11px; margin-bottom: 20px; }
-
-  .section-title { font-size: 11px; font-weight: 700; color: #94a3b8; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; }
-
-  /* LAYER LAYOUT */
-  .os-map { display: flex; flex-direction: column; gap: 14px; }
-
-  /* INFRA ROW */
-  .infra-row { display: flex; gap: 10px; flex-wrap: wrap; }
-  .infra-pill { background: #1e293b; border: 1px solid #334155; border-radius: 6px; padding: 6px 12px; font-size: 11px; color: #94a3b8; }
-  .infra-pill span { color: #f8c948; font-weight: 600; }
-  .infra-pill.new { border-color: #7c3aed60; background: #1a0d3040; }
-  .infra-pill.new span { color: #a78bfa; }
-
-  /* MODULES GRID */
-  .modules-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-  .module { border-radius: 10px; padding: 12px; border: 1px solid; }
-  .module.live { border-color: #22c55e40; background: #052e1640; }
-  .module.partial { border-color: #f8c94840; background: #2d2a0040; }
-  .module.future { border-color: #3b82f640; background: #0c1a3040; }
-
-  .module-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-  .module-icon { font-size: 18px; }
-  .module-name { font-size: 12px; font-weight: 700; color: #f1f5f9; }
-  .module-route { font-size: 10px; color: #64748b; }
-  .badge { font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 4px; margin-left: auto; }
-  .badge.live { background: #16a34a; color: #fff; border: none; }
-  .badge.partial { background: #d97706; color: #fff; border: none; }
-  .badge.future { background: #1d4ed8; color: #fff; border: none; }
-
-  .module-items { list-style: none; }
-  .module-items li { font-size: 10px; color: #94a3b8; padding: 2px 0; border-top: 1px solid #1e293b; }
-  .module-items li::before { content: "→ "; color: #64748b; }
-
-  /* DATA FLOW */
-  .flow-row { display: flex; gap: 6px; align-items: center; overflow-x: auto; padding-bottom: 4px; }
-  .flow-node { background: #1e293b; border: 1px solid #334155; border-radius: 6px; padding: 6px 10px; font-size: 10px; white-space: nowrap; text-align: center; }
-  .flow-node .label { color: #94a3b8; font-size: 9px; }
-  .flow-node .name { color: #e2e8f0; font-weight: 600; }
-  .flow-arrow { color: #f8c948; font-size: 16px; flex-shrink: 0; }
-
-  /* AUTOMATION */
-  .auto-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .auto-card { background: #1e293b; border: 1px solid #334155; border-radius: 10px; padding: 12px; }
-  .auto-card-title { font-size: 11px; font-weight: 700; color: #f8c948; margin-bottom: 6px; }
-  .auto-steps { list-style: none; }
-  .auto-steps li { font-size: 10px; color: #94a3b8; padding: 2px 0; }
-  .auto-steps li::before { content: "• "; color: #f8c948; }
-
-  /* STATUS LEGEND */
-  .legend { display: flex; gap: 16px; margin-top: 4px; }
-  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 10px; color: #64748b; }
-  .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
-  .legend-dot.live { background: #22c55e; }
-  .legend-dot.partial { background: #f8c948; }
-  .legend-dot.future { background: #3b82f6; }
-
-  /* PENDING BADGE */
-  .pending { display: inline-block; background: #7c3aed; color: #fff; font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 3px; margin-left: 4px; }
-
-  /* HUB V2 PROGRESS */
-  .v2-section { background: #12082a; border: 1px solid #7c3aed40; border-radius: 10px; padding: 14px; }
-  .v2-title { font-size: 12px; font-weight: 700; color: #a78bfa; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
-  .v2-progress-bar-wrap { background: #1e1035; border-radius: 6px; height: 10px; margin-bottom: 12px; overflow: hidden; }
-  .v2-progress-bar { background: linear-gradient(90deg, #7c3aed, #a78bfa); height: 100%; border-radius: 6px; width: 79%; }
-  .v2-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
-  .v2-phase { border-radius: 8px; padding: 8px; border: 1px solid; text-align: center; }
-  .v2-phase.done { border-color: #22c55e40; background: #052e1640; }
-  .v2-phase.wip  { border-color: #f8c94840; background: #2d2a0040; }
-  .v2-phase.todo { border-color: #33415540; background: #1e293b40; }
-  .v2-phase-name { font-size: 9px; font-weight: 700; color: #94a3b8; margin-bottom: 4px; }
-  .v2-phase-count { font-size: 14px; font-weight: 800; }
-  .v2-phase.done .v2-phase-count { color: #22c55e; }
-  .v2-phase.wip  .v2-phase-count { color: #f8c948; }
-  .v2-phase.todo .v2-phase-count { color: #475569; }
-  .v2-phase-sub { font-size: 9px; color: #64748b; }
-
-  .v2-done-list { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 10px; }
-  .v2-tag { font-size: 9px; padding: 2px 6px; border-radius: 4px; }
-  .v2-tag.done { background: #16a34a30; color: #4ade80; border: 1px solid #16a34a40; }
-  .v2-tag.pending { background: #d9770630; color: #fbbf24; border: 1px solid #d9770640; }
+:root{color-scheme:dark;--bg:#0f1117;--panel:#171e2c;--line:#334155;--text:#e2e8f0;--muted:#a8b6c9;--gold:#f8c948;--green:#86efac;--amber:#fcd34d;--blue:#93c5fd}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.8 'Segoe UI',Tahoma,system-ui,sans-serif}main{max-width:1180px;margin:auto;padding:32px 24px 64px}h1,h2,h3,p{margin:0 0 12px}h1{font-size:32px;color:var(--gold);line-height:1.35}h2{font-size:23px}h3{font-size:17px}section{margin-top:34px;scroll-margin-top:20px}.eyebrow,.muted{color:var(--muted)}.eyebrow{font-size:12px;letter-spacing:2px}.lead{font-size:18px;max-width:900px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.three{grid-template-columns:repeat(3,minmax(0,1fr))}.card{padding:20px;background:var(--panel);border:1px solid var(--line);border-radius:12px;min-width:0}.card p:last-child{margin-bottom:0}.tag{display:inline-block;font-size:12px;padding:2px 9px;border-radius:5px;margin-bottom:10px;background:#243347;color:var(--blue)}.tag.code{color:var(--green);background:#17372b}.tag.pending{color:var(--amber);background:#3e331c}.tag.closed{color:#fda4af;background:#3d222c}.note{padding:15px 18px;border-left:3px solid var(--gold);background:#25251e;margin:16px 0}.nav{display:flex;flex-wrap:wrap;gap:8px;margin:22px 0}.nav a{padding:6px 12px;background:var(--panel);border:1px solid var(--line);border-radius:7px;text-decoration:none}a{color:#7dd3fc}a:focus-visible,summary:focus-visible{outline:3px solid var(--gold);outline-offset:4px}code{font-size:13px;color:#bae6fd;overflow-wrap:anywhere}ul,ol{margin:8px 0;padding-left:22px}li{margin:5px 0}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:left;vertical-align:top;padding:12px;border-bottom:1px solid var(--line);overflow-wrap:anywhere}th{color:var(--gold)}.cost td:nth-child(2){white-space:nowrap}.total{font-size:19px;font-weight:700}.path{display:block;border-left:2px solid #57708b;padding-left:14px;margin:10px 0}details{border-top:1px solid var(--line);padding:14px 0}summary{cursor:pointer;color:#bae6fd;font-weight:600}footer{margin-top:32px;color:var(--muted);font-size:13px}.small{font-size:13px}.pillars{display:grid;grid-template-columns:1fr 1fr;gap:16px}.legend{display:flex;gap:12px;flex-wrap:wrap}.legend .tag{margin:0}.facts{font-size:25px;color:var(--gold);font-weight:700}
+@media(max-width:700px){main{padding:24px 16px}.grid,.three,.pillars{grid-template-columns:1fr}h1{font-size:26px}h2{font-size:21px}th,td{padding:9px 6px;font-size:13px}.lead{font-size:16px}.nav a{min-height:44px;display:flex;align-items:center}}
+@media print{body{background:white;color:#111}main{max-width:none;padding:0}.card,.note{background:white;color:#111;border-color:#aaa}h1,h2,h3,th,.facts,a,code,.muted,footer{color:#111}.nav{display:none}.card{break-inside:avoid}section{margin-top:20px}}
 </style>
 </head>
-<body>
-<h1>🏠 AP-Home Platform OS</h1>
-<p class="subtitle">บจก.อาชิดา · Finnhouses · Intelligence Operating System สำหรับอสังหาริมทรัพย์ · อัพเดท Jun 28, 2026</p>
-
-<div class="os-map">
-
-  <!-- INFRA -->
-  <div>
-    <div class="section-title">🔧 Infrastructure</div>
-    <div class="infra-row">
-      <div class="infra-pill">Dashboard <span>Vercel</span> (Next.js 15)</div>
-      <div class="infra-pill">Hub v1 <span>Railway</span> (server.cjs)</div>
-      <div class="infra-pill new">Hub v2 Shadow <span>Railway</span> (TypeScript)</div>
-      <div class="infra-pill">n8n <span>Railway</span> (own mode)</div>
-      <div class="infra-pill">FB Backend <span>Railway</span> (Express.js)</div>
-      <div class="infra-pill">Database <span>Supabase</span> (Postgres + Storage)</div>
-      <div class="infra-pill">Website <span>finnhouses.com</span> (WordPress)</div>
-      <div class="infra-pill">Alerts <span>Telegram</span></div>
-    </div>
-  </div>
-
-  <!-- MODULES -->
-  <div>
-    <div class="section-title" style="display:flex;align-items:center;gap:12px;">
-      📦 Modules
-      <div class="legend">
-        <div class="legend-item"><div class="legend-dot live"></div> Live</div>
-        <div class="legend-item"><div class="legend-dot partial"></div> Partial</div>
-        <div class="legend-item"><div class="legend-dot future"></div> Planned</div>
-      </div>
-    </div>
-    <div class="modules-grid">
-
-      <div class="module live">
-        <div class="module-header">
-          <div class="module-icon">📊</div>
-          <div><div class="module-name">OS Dashboard</div><div class="module-route">/dashboard</div></div>
-          <div class="badge live">LIVE</div>
-        </div>
-        <ul class="module-items">
-          <li>CRM lead counts (5 stages)</li>
-          <li>FB Engine + Blog Runner status</li>
-          <li>Revenue Pipeline</li>
-          <li>ทรัพย์รอ Review</li>
-        </ul>
-      </div>
-
-      <div class="module live">
-        <div class="module-header">
-          <div class="module-icon">👥</div>
-          <div><div class="module-name">CRM</div><div class="module-route">/crm</div></div>
-          <div class="badge live">LIVE</div>
-        </div>
-        <ul class="module-items">
-          <li>Kanban 5 stage (new→closed)</li>
-          <li>Supabase realtime sync</li>
-          <li>Budget Tool → auto lead capture</li>
-          <li>Telegram alert ทุก lead ใหม่</li>
-        </ul>
-      </div>
-
-      <div class="module live">
-        <div class="module-header">
-          <div class="module-icon">✨</div>
-          <div><div class="module-name">AI Content (FB Engine)</div><div class="module-route">/ai-content</div></div>
-          <div class="badge live">LIVE</div>
-        </div>
-        <ul class="module-items">
-          <li>สร้าง FB post (3T Framework)</li>
-          <li>Image Engine v6 (OpenAI→Gemini)</li>
-          <li>Content Queue 7 วัน</li>
-          <li>Blog→FB post converter</li>
-        </ul>
-      </div>
-
-      <div class="module live">
-        <div class="module-header">
-          <div class="module-icon">📝</div>
-          <div><div class="module-name">Blog Runner</div><div class="module-route">/marketing</div></div>
-          <div class="badge live">LIVE</div>
-        </div>
-        <ul class="module-items">
-          <li>n8n Auto cron 09:05 ทุกวัน</li>
-          <li>GPT-4o → WP publish</li>
-          <li>Keyword Lock fix (WF1 v2)</li>
-          <li>Manual trigger ได้</li>
-        </ul>
-      </div>
-
-      <div class="module live">
-        <div class="module-header">
-          <div class="module-icon">📸</div>
-          <div><div class="module-name">QC Line</div><div class="module-route">LINE OA</div></div>
-          <div class="badge live">LIVE</div>
-        </div>
-        <ul class="module-items">
-          <li>ช่างส่งรูป → AI วิเคราะห์คุณภาพ</li>
-          <li>GPT-4o Vision + calibration fix</li>
-          <li>ตอบกลับภาษาไทย ≤15s</li>
-          <li>คอนกรีตโครงสร้าง: ปรับ false positive แล้ว</li>
-        </ul>
-      </div>
-
-      <div class="module live">
-        <div class="module-header">
-          <div class="module-icon">🧠</div>
-          <div><div class="module-name">Market Intelligence</div><div class="module-route">/ai-content → Intel tab</div></div>
-          <div class="badge partial">PARTIAL</div>
-        </div>
-        <ul class="module-items">
-          <li>กรอก insight ตลาด → n8n → Supabase</li>
-          <li>Claude วิเคราะห์ → Telegram</li>
-          <li>3 tables: market_insights, buyer_context, content_frames</li>
-        </ul>
-      </div>
-
-      <div class="module partial">
-        <div class="module-header">
-          <div class="module-icon">🏡</div>
-          <div><div class="module-name">Property Intake</div><div class="module-route">LINE OA → Dashboard</div></div>
-          <div class="badge partial">PARTIAL</div>
-        </div>
-        <ul class="module-items">
-          <li>ขาย LINE → n8n → Supabase pending</li>
-          <li>Review + upload รูปใน Dashboard</li>
-          <li>Hub publish → WordPress CPT</li>
-        </ul>
-      </div>
-
-      <div class="module partial">
-        <div class="module-header">
-          <div class="module-icon">💰</div>
-          <div><div class="module-name">Budget Tool</div><div class="module-route">/budget</div></div>
-          <div class="badge live">LIVE</div>
-        </div>
-        <ul class="module-items">
-          <li>คำนวณงบสร้างบ้าน</li>
-          <li>Lead capture → Supabase + Telegram</li>
-        </ul>
-      </div>
-
-      <div class="module future">
-        <div class="module-header">
-          <div class="module-icon">🗺️</div>
-          <div><div class="module-name">Land Analyzer</div><div class="module-route">/land-analyzer</div></div>
-          <div class="badge future">BUILT</div>
-        </div>
-        <ul class="module-items">
-          <li>AI Vision วิเคราะห์ที่ดิน</li>
-          <li>ยังไม่ได้ integrate เต็มรูป</li>
-        </ul>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- HUB V2 PROGRESS -->
-  <div class="v2-section">
-    <div class="v2-title">🟣 Hub v2 Blueprint Progress — TypeScript Clean Architecture (Shadow Deploy)
-      <span style="font-size:11px;color:#64748b;font-weight:400;margin-left:auto;">30/38 tasks · 79% complete</span>
-    </div>
-    <div class="v2-progress-bar-wrap"><div class="v2-progress-bar"></div></div>
-    <div class="v2-grid">
-      <div class="v2-phase done">
-        <div class="v2-phase-name">Phase 0<br>Scaffold</div>
-        <div class="v2-phase-count">4/4</div>
-        <div class="v2-phase-sub">✅ Done</div>
-      </div>
-      <div class="v2-phase done">
-        <div class="v2-phase-name">Phase 1<br>Core</div>
-        <div class="v2-phase-count">7/7</div>
-        <div class="v2-phase-sub">✅ Done</div>
-      </div>
-      <div class="v2-phase done">
-        <div class="v2-phase-name">Phase 2<br>Infra</div>
-        <div class="v2-phase-count">8/8</div>
-        <div class="v2-phase-sub">✅ Done</div>
-      </div>
-      <div class="v2-phase wip">
-        <div class="v2-phase-name">Phase 3<br>Use Cases</div>
-        <div class="v2-phase-count">9/11</div>
-        <div class="v2-phase-sub">Cache, History</div>
-      </div>
-      <div class="v2-phase done">
-        <div class="v2-phase-name">Phase 4<br>Presentation</div>
-        <div class="v2-phase-count">6/6</div>
-        <div class="v2-phase-sub">✅ Done</div>
-      </div>
-      <div class="v2-phase wip">
-        <div class="v2-phase-name">Phase 5-6<br>Deploy</div>
-        <div class="v2-phase-count">1/6</div>
-        <div class="v2-phase-sub">Shadow live</div>
-      </div>
-    </div>
-    <div class="v2-done-list">
-      <span class="v2-tag done">tsconfig ✅</span>
-      <span class="v2-tag done">Value Objects ✅</span>
-      <span class="v2-tag done">Domain Events ✅</span>
-      <span class="v2-tag done">Ports/Interfaces ✅</span>
-      <span class="v2-tag done">SupabaseClient ✅</span>
-      <span class="v2-tag done">StateRepository ✅</span>
-      <span class="v2-tag done">TelegramNotifier ✅</span>
-      <span class="v2-tag done">LineAdapter ✅</span>
-      <span class="v2-tag done">FbBackendAdapter ✅</span>
-      <span class="v2-tag done">WordPressPublisher ✅</span>
-      <span class="v2-tag done">AI Gateway (Claude/GPT/Gemini) ✅</span>
-      <span class="v2-tag done">BlogUseCase ✅</span>
-      <span class="v2-tag done">QcUseCase ✅</span>
-      <span class="v2-tag done">FbUseCase ✅</span>
-      <span class="v2-tag done">HealthMonitor (5min) ✅</span>
-      <span class="v2-tag done">FB Routes ✅</span>
-      <span class="v2-tag done">Blog Routes ✅</span>
-      <span class="v2-tag done">QC Routes ✅</span>
-      <span class="v2-tag done">State Routes ✅</span>
-      <span class="v2-tag done">Auth Middleware ✅</span>
-      <span class="v2-tag done">Shadow Deploy ✅</span>
-      <span class="v2-tag done">Node 22 (WebSocket) ✅</span>
-      <span class="v2-tag pending">Smoke Test ⏳</span>
-      <span class="v2-tag pending">Monitor 3 วัน ⏳</span>
-      <span class="v2-tag pending">Cutover ⏳</span>
-    </div>
-  </div>
-
-  <!-- AUTOMATION FLOWS -->
-  <div>
-    <div class="section-title">⚡ Automation Flows (n8n)</div>
-    <div class="auto-row">
-      <div class="auto-card">
-        <div class="auto-card-title">📝 Blog Runner (WF1) — Auto 09:05</div>
-        <ul class="auto-steps">
-          <li>Schedule Cron → n8n webhook</li>
-          <li>Topic Engine PRO → keyword + category (Keyword Lock)</li>
-          <li>GPT-4o → เขียนบทความภาษาไทย</li>
-          <li>WF2: Image Engine v6 → รูปปก</li>
-          <li>Hub → publish ขึ้น WordPress</li>
-          <li>Telegram แจ้งผล</li>
-        </ul>
-      </div>
-      <div class="auto-card">
-        <div class="auto-card-title">📸 QC Line — Real-time ≤15s</div>
-        <ul class="auto-steps">
-          <li>LINE OA รับรูปจากช่าง</li>
-          <li>n8n → download + upload Supabase Storage</li>
-          <li>Hub /api/qc/ingest → GPT-4o Vision</li>
-          <li>QC Calibration: แยก 3 ประเภทคอนกรีต</li>
-          <li>ประเมิน: คะแนน + ข้อบกพร่อง + คำแนะนำ</li>
-          <li>ตอบกลับ LINE ภาษาไทย + Telegram alert</li>
-        </ul>
-      </div>
-      <div class="auto-card">
-        <div class="auto-card-title">📊 CRM Intelligence — 22:00 ทุกวัน</div>
-        <ul class="auto-steps">
-          <li>Cron → ดึง leads ที่ยังไม่ parse</li>
-          <li>Claude Haiku → parse notes</li>
-          <li>บันทึก intent, urgency, buyer_context</li>
-          <li>Telegram digest รายคืน</li>
-        </ul>
-      </div>
-      <div class="auto-card">
-        <div class="auto-card-title">📣 FB Engine — Queue อัตโนมัติ</div>
-        <ul class="auto-steps">
-          <li>สร้าง post + รูป ใน Dashboard</li>
-          <li>Queue สูงสุด 7 วัน</li>
-          <li>Cron 09:05 → โพสต์ทีละ 1</li>
-          <li>FB Backend → Facebook API</li>
-          <li>Post Performance Tracker รายวัน</li>
-        </ul>
-      </div>
-    </div>
-  </div>
-
-  <!-- DATA FLOW -->
-  <div>
-    <div class="section-title">🔄 Data Flow หลัก</div>
-    <div class="flow-row">
-      <div class="flow-node"><div class="label">User/ช่าง</div><div class="name">LINE / Browser</div></div>
-      <div class="flow-arrow">→</div>
-      <div class="flow-node"><div class="label">Proxy</div><div class="name">Vercel API Routes</div></div>
-      <div class="flow-arrow">→</div>
-      <div class="flow-node"><div class="label">Orchestrator</div><div class="name">Hub (Railway)</div></div>
-      <div class="flow-arrow">→</div>
-      <div class="flow-node"><div class="label">AI</div><div class="name">OpenAI / Claude</div></div>
-      <div class="flow-arrow">→</div>
-      <div class="flow-node"><div class="label">Store</div><div class="name">Supabase</div></div>
-      <div class="flow-arrow">→</div>
-      <div class="flow-node"><div class="label">Output</div><div class="name">LINE / FB / WP / Telegram</div></div>
-    </div>
-    <p style="font-size:10px;color:#475569;margin-top:6px;">ทุก request ผ่าน Hub — ไม่มี browser เรียก Railway/Supabase โดยตรง (CORS + Security)</p>
-  </div>
-
-  <!-- HEALTH MONITOR -->
-  <div style="background:#1e293b;border:1px solid #334155;border-radius:10px;padding:12px;">
-    <div class="section-title" style="margin-bottom:6px;">🏥 Health Monitor — Auto (ทุก 5 นาที · Hub v2 HealthMonitor)</div>
-    <div style="display:flex;gap:20px;flex-wrap:wrap;">
-      <div style="font-size:10px;color:#94a3b8;">✅ Supabase health check (touchHealthCheck)</div>
-      <div style="font-size:10px;color:#94a3b8;">✅ Blog Runner ค้าง &gt;60 นาที</div>
-      <div style="font-size:10px;color:#94a3b8;">✅ Alert cooldown 30 นาที (dedup)</div>
-      <div style="font-size:10px;color:#f8c948;">→ แจ้ง Telegram ถ้ามีปัญหา</div>
-      <div style="font-size:10px;color:#64748b;">n8n health-check-v2.json (Supabase+Telegram) ยังรันคู่กัน</div>
-    </div>
-  </div>
-
-  <!-- PENDING -->
-  <div style="background:#1a0d10;border:1px solid #e11d4840;border-radius:10px;padding:12px;">
-    <div class="section-title" style="margin-bottom:8px;color:#f87171;">⏳ สิ่งที่ยังเหลือ (Next Actions)</div>
-    <div style="display:flex;flex-direction:column;gap:6px;">
-      <div style="font-size:10px;color:#fca5a5;">🔴 <strong>QC LINE end-to-end test</strong> — import wf_qc_line_hardcoded.json v8 → Activate → ส่งรูปทดสอบจาก LINE OA</div>
-      <div style="font-size:10px;color:#fca5a5;">🔴 <strong>Verify QC calibration</strong> — ส่งรูปคอนกรีตโครงสร้าง → score ≥80, ไม่ผิด false positive</div>
-      <div style="font-size:10px;color:#fbbf24;">🟡 <strong>Hub v2 Smoke Test</strong> — TASK-502: test ทุก endpoint บน shadow URL</div>
-      <div style="font-size:10px;color:#fbbf24;">🟡 <strong>Hub v2 Monitor 3 วัน</strong> — TASK-503: ดู Railway logs ยืนยัน stable</div>
-      <div style="font-size:10px;color:#94a3b8;">⚪ <strong>Market Intel Form</strong> — กรอก Section 1.3, 7.1, 8 ที่เหลือ</div>
-      <div style="font-size:10px;color:#94a3b8;">⚪ <strong>FB Token renew</strong> — หมดอายุ Aug 2, 2026 (~35 วัน)</div>
-      <div style="font-size:10px;color:#64748b;">🔵 <strong>Hub v2 Cutover</strong> — สลับ HUB_MODE=v2 หลัง QA ครบ</div>
-    </div>
-  </div>
-
+<body><main>
+<header>
+<div class="eyebrow">ACHIDA · FINNHOUSES · BUSINESS OPERATING PLATFORM</div>
+<h1>AP-Home Platform OS</h1>
+<p class="lead">ระบบกลางสำหรับข้อมูลและการทำงานธุรกิจอสังหาฯ เพื่อช่วยเจ้าของธุรกิจวิเคราะห์และตัดสินใจ</p>
+<p class="muted">อัปเดต 21 กันยายน 2026 · อ้างอิงโค้ด main ณ <code>ea4565f</code>, ADR ที่เกี่ยวข้อง และข้อมูลค่าใช้จ่ายจากเจ้าของระบบ</p>
+<div class="legend"><span class="tag code">ยืนยันจากโค้ด / เอกสาร</span><span class="tag pending">ต้องตรวจ runtime เพิ่ม</span><span class="tag">ข้อเสนอ — ยังไม่ได้ทำ</span></div>
+<div class="note">นี่คือสถานะตามหลักฐานที่ตรวจ ไม่ใช่ผลทดสอบ production ทุกบริการ การแก้เอกสารหรือ merge ADR ไม่ทำให้ prompt ใน n8n เปลี่ยนเอง</div>
+<nav class="nav" aria-label="หัวข้อเอกสาร"><a href="#business">ธุรกิจ</a><a href="#modules">เครื่องมือ</a><a href="#routes">เส้นทางข้อมูล</a><a href="#assistant">Assistant และความจำ</a><a href="#wf1">WF1 / Quality Gate</a><a href="#cost">ค่าใช้จ่าย</a><a href="#next">งานที่เหลือ</a><a href="#sources">หลักฐาน</a></nav>
+</header>
+<section id="business"><h2>01 · ธุรกิจที่ระบบรองรับ</h2>
+<div class="grid three"><article class="card"><div class="facts">60%</div><h3>Fix &amp; Flip / Develop</h3><p>ลงทุนพัฒนาทรัพย์ของบริษัท ทั้งซื้อบ้านรีโนเวทขาย และประเมินที่ดินเพื่อสร้างบ้านขาย โดยแยกข้อมูลสองรูปแบบลงทุนออกจากกัน</p></article><article class="card"><div class="facts">30%</div><h3>Consulting / Inspection</h3><p>ให้คำปรึกษา ตรวจบ้าน ตรวจงานระหว่างก่อสร้าง ตรวจรับงาน และตรวจ BOQ / คุณภาพ</p></article><article class="card"><div class="facts">10%</div><h3>Brokerage / Agency</h3><p>นายหน้า รับฝากขายบ้านและที่ดิน พร้อมเครื่องมือจัดการทรัพย์ การตลาด และติดตามลูกค้า</p></article></div>
+<p class="muted small">สัดส่วนจาก Business Model ไม่ใช่ยอดรายได้จริงที่คำนวณจากฐานข้อมูล</p>
+<div class="note"><strong>ไม่รับจ้างสร้างบ้านใหม่ให้ลูกค้า แต่เผยแพร่ความรู้เรื่องสร้างบ้านได้</strong> รวมแบบบ้าน งบประมาณ BOQ และการเลือกผู้รับเหมา ห้ามเนื้อหาหรือ CTA อ้างว่า Finnhouses รับจ้างสร้างบ้านให้ผู้อ่าน</div>
+<div class="pillars"><article class="card"><h3>การตลาดและขาย</h3><p>Content · CRM · Properties · Market Intelligence · ฝั่งขายของ Deals</p></article><article class="card"><h3>การบริหารงานก่อสร้างและลงทุน</h3><p>Land Analyzer · Deals · BOQ · QC / Inspection</p></article></div>
+<p class="muted small">สองด้านนี้ใช้ข้อมูลประกอบกัน แต่ยังไม่ใช่วงจรอัตโนมัติครบทุกโมดูล AI เป็นเครื่องมือภายในระบบ ไม่ใช่ระบบปฏิบัติการระดับฮาร์ดแวร์แบบ Android</p>
+</section>
+<section id="modules"><h2>02 · เครื่องมือและขอบเขตข้อมูล</h2>
+<div class="table-wrap"><table><thead><tr><th>เครื่องมือ</th><th>หน้าที่ / ข้อมูลหลัก</th><th>ข้อจำกัดที่ต้องรู้</th></tr></thead><tbody>
+<tr><td>Dashboard / Marketing</td><td>ดูสถานะ Hub, คิว Blog / FB และผลการทำงาน</td><td>สถานะการรันไม่เท่ากับความถูกต้องของเนื้อหา</td></tr>
+<tr><td>CRM</td><td>Lead และการติดตามลูกค้า; <code>consult</code> / <code>list</code></td><td>Fix &amp; Flip ไม่ใช่ CRM business_unit; lead ใช้ manual entry / CSV ตาม Business Model</td></tr>
+<tr><td>Land Analyzer</td><td>Build-to-Sell → <code>projects</code></td><td>ไม่ใช่ต้นทางสร้าง Fix &amp; Flip Deal อัตโนมัติ</td></tr>
+<tr><td>Fix &amp; Flip Deals</td><td>Renovate-to-Resell → <code>reno_deals</code>; evaluating / renovating / listed / closed</td><td>ไม่มี <code>land_project_id</code> ตาม ADR-027; ต้องไม่เดาว่าเป็นโครงการเดียวกับ Land Analyzer</td></tr>
+<tr><td>BOQ</td><td>รายการ ปริมาณ วัสดุ ค่าแรง และต้นทุนตาม project</td><td>หน้าหลักยังไม่ถอดปริมาณ DWG/CAD อัตโนมัติ</td></tr>
+<tr><td>QC</td><td><code>qc_inspections</code>; เชื่อม <code>site_id</code> / <code>deal_id</code> เมื่อมีข้อมูล</td><td>ผล AI ต้องตรวจด้วย human feedback; ไม่มีการรับรองเวลาตอบตายตัว</td></tr>
+<tr><td>Market Intelligence</td><td>ข้อมูลตลาดและ structured signals ในระบบ</td><td>ข้อมูลที่ AI สกัดไม่เท่ากับข้อเท็จจริงที่มนุษย์ยืนยันทุกแถว</td></tr>
+<tr><td>Properties / Content</td><td>ข้อมูลทรัพย์ เนื้อหา คิว และการเผยแพร่</td><td>AI ต้องไม่แต่งข้อมูลบริการ/คุณสมบัติทรัพย์ที่ไม่มีหลักฐาน</td></tr>
+<tr><td>Brains context</td><td>อ่านข้อมูลข้ามโมดูลผ่าน <code>/api/brains/context</code></td><td>เป็นการรวมข้อมูลเดิม ไม่ใช่ฐานข้อมูลใหม่หรือระบบเรียนรู้ด้วยตัวเอง</td></tr>
+<tr><td>Budget Tool เดิม</td><td><span class="tag closed">ปิดบริการ /budget</span></td><td>ไม่ใช่ช่องทาง public lead capture ที่ active แล้ว</td></tr>
+</tbody></table></div></section>
+<section id="routes"><h2>03 · เส้นทางข้อมูลตาม implementation</h2>
+<p>Hub v1 เป็นเส้นทาง production ตามบันทึก ADR-004; Hub v2 เป็นงานแยกที่ยังไม่ควรถือว่าเข้ามาแทนทั้งหมด ไม่แสดงเปอร์เซ็นต์ความพร้อมเก่าหรืออ้างว่า “ทุก request ผ่าน Hub”</p>
+<div class="grid">
+<article class="card"><span class="tag code">Blog / FB orchestration</span><h3>หน้าจอ → API proxy → Hub v1</h3><p class="path">Dashboard เรียก Next.js API<br>API ส่ง <code>x-hub-token</code> ไป Hub<br>Hub จัดคิวและเรียก n8n / backend ที่เกี่ยวข้อง<br>ผล callback กลับมาอัปเดตสถานะ</p><p class="small muted">ตัวอย่าง Blog queue ใช้ <code>/action/blog/queue/run-next</code> บน Hub</p></article>
+<article class="card"><span class="tag code">Assistant</span><h3>หน้าจอ → /api/assistant → Claude</h3><p>API เป็นตัวเรียก Claude โดยตรง พร้อม tools ที่อ่าน Hub, Supabase และ Brains จึงไม่ได้ผ่าน AI Gateway ของ Hub v2 ทุกครั้ง</p><p>คำสั่งเขียนที่มีอยู่คือรัน Blog และโพสต์ FB ตัวถัดไป โดย UI ขอให้กดยืนยันก่อน</p></article>
+<article class="card"><span class="tag code">Shared Business Context</span><h3>Brains → Supabase แบบอ่านอย่างเดียว</h3><p>รวม market insights, market summary, area memory, buyer signals, deals, QC และ content frames</p><p class="small muted">ไม่อ่านประวัติแชท และไม่ได้ดึง <code>projects</code> / BOQ ใน endpoint นี้ ตัวกรองพื้นที่ไม่ได้ใช้กับทุกชุดข้อมูล จึงห้ามสรุปว่าทั้งคำตอบเป็นข้อมูลเฉพาะพื้นที่เดียวกันทั้งหมด</p></article>
+<article class="card"><span class="tag code">AI endpoints แยก</span><h3>/api/chat · /api/image · QC Hub</h3><p>Content / CRM ใช้ API chat; ภาพใช้ API image; QC ingest เรียก AI จาก Hub การควบคุมงบจึงต้องครอบคลุมหลายเส้นทาง รวม n8n ที่เรียก AI เอง</p></article>
 </div>
-</body>
-</html>
+<details><summary>ข้อควรอ่านของ Brains: confidence ไม่ใช่การตรวจรับโดยมนุษย์</summary><p>โค้ดส่ง <code>verified_insights</code> โดยเลือก insight ที่ confidence ≥ 4 ชื่อนี้ไม่ใช่หลักฐานว่ามีคนยืนยันแล้ว ต้องตรวจ feedback/หลักฐานต้นทางก่อนนำไปใช้เป็นข้อเท็จจริง</p></details>
+</section>
+<section id="assistant"><h2>04 · Assistant จำอะไรได้ในปัจจุบัน</h2>
+<div class="grid"><article class="card"><span class="tag code">ยืนยันจากโค้ด</span><h3>จำได้ระหว่างหน้าเว็บยังอยู่</h3><ul><li>ข้อความอยู่ใน React state: <code>displayMessages</code> และ <code>apiMessages</code></li><li>แต่ละคำถามส่งประวัติใน state ไปให้ API อีกครั้ง</li><li>ย่อช่องแชทแล้วเปิดใหม่ในหน้าเดิม ประวัติยังอยู่</li><li>เมื่อ reload / เปิดหน้าใหม่ ไม่มีระบบกู้ประวัติแชทจากฐานข้อมูล</li></ul></article>
+<article class="card"><span class="tag">ข้อเสนอ — ยังไม่ได้ทำ</span><h3>ความจำถาวรที่ควบคุมต้นทุน</h3><ul><li>เก็บข้อความในฐานข้อมูลเดิมหลังตรวจพื้นที่และสิทธิ์เข้าถึง</li><li>เลือกเฉพาะประวัติที่จำเป็นส่งให้ AI ไม่ส่งทุกบทสนทนา</li><li>แยกข้อมูลดีลที่ยืนยันแล้วออกจากตัวเลขสมมติในแชท</li><li>ผูกแชทกับดีลให้ชัด และให้ยืนยันก่อนแก้ข้อมูลหลัก</li><li>ยังไม่เพิ่มการเรียก AI สรุปทุกข้อความ</li></ul></article></div>
+<div class="note"><strong>พิมพ์ข้อมูลบ้านในแชท ไม่ได้ทำให้เกิดดีลใน /deals อัตโนมัติ</strong> API ปัจจุบันมี tool อ่านดีล แต่ไม่มี tool สร้างหรือแก้ดีล การบันทึกข้อมูลธุรกิจกับการเก็บประวัติแชทเป็นคนละเรื่อง</div>
+<p>Assistant ใช้ <code>claude-sonnet-4-6</code>, จำกัด output ต่อการเรียกไว้ 4,096 tokens และวน tool loop ได้สูงสุด 6 รอบต่อ request หนึ่งคำถามจึงอาจมีหลาย AI calls โค้ดยังไม่มีบัญชีค่าใช้จ่ายกลางหรือการตัดประวัติตามงบ</p>
+<p class="small muted">คำตอบต้องอิงข้อมูลจาก tools หรือข้อมูลที่ผู้ใช้ระบุ หากขาดข้อมูลให้ถาม ไม่เติมตัวเลขจากความรู้ทั่วไปนอกระบบตามกติกาเจ้าของระบบ สถานะนี้อ้างอิง application code ไม่ใช่คำรับรองนโยบายเก็บข้อมูลของผู้ให้บริการ AI</p>
+</section>
+<section id="wf1"><h2>05 · WF1 และ AI Quality Gate</h2>
+<div class="grid"><article class="card"><span class="tag code">ADR-016 amendment merge แล้ว</span><h3>หัวข้อ Content ≠ บริการที่ขาย</h3><p>บทความสร้างบ้าน แบบบ้าน ค่าใช้จ่าย และเลือกผู้รับเหมาทำได้ บล็อก <code>brand_guardrail_violation</code> เมื่อเนื้อหาหรือ CTA อ้างว่า Finnhouses รับจ้างสร้างบ้านให้ลูกค้า ต้องอ่านบริบทและมีข้อความหลักฐานจริง</p><p>ยังต้องตรวจภาษาไทย ข้อเท็จจริง และ structural / dedupe guard ตามเดิม มีตัวอย่างด้าน brand 13 กรณีใน ADR</p></article>
+<article class="card"><span class="tag pending">ยังไม่ยืนยัน active n8n revision</span><h3>เอกสารเปลี่ยนแล้ว ≠ workflow เปลี่ยนแล้ว</h3><p>PR #3 merge แล้ว (<code>ea4565f</code>) แต่รอบนี้ไม่ได้ import / activate หรือทดสอบ prompt บน n8n การมีไฟล์ WF1 ฉบับแก้ไขแยกต่างหากไม่ยืนยันว่า instance ใช้ฉบับนั้น</p><p>ต้อง export ตัว active และตรวจ writer / gate ก่อนยืนยันผล production</p></article></div>
+<div class="table-wrap"><table><thead><tr><th>ลำดับตาม ADR</th><th>หน้าที่</th><th>เมื่อไม่ผ่าน / ข้อจำกัด</th></tr></thead><tbody>
+<tr><td>รับงานและสร้างบทความ</td><td>ใช้ keyword / category และสร้าง payload</td><td>ต้องใช้ business context เดียวกับ reviewer</td></tr>
+<tr><td>ตรวจสองทาง</td><td>Structural guard + AI Quality Gate</td><td>AI ตรวจ brand, ภาษาไทย และ unsupported claims</td></tr>
+<tr><td>Parse / Log / Combine</td><td>รวมเหตุผล และบันทึกการตัดสินใจลง <code>quality_gate_log</code></td><td>ADR เดิมกำหนด AI infra/parse error เป็น fail-open; ไม่ได้เปลี่ยน policy นี้ใน amendment</td></tr>
+<tr><td>ผ่าน / บล็อก</td><td>ผ่านจึงเข้าสู่ทางเผยแพร่; บล็อกเข้าสู่ทางแจ้งผล</td><td>ผัง node และ connection ที่ active ต้องตรวจจาก export จริง</td></tr>
+<tr><td>Human feedback</td><td>ยืนยันถูก / ผิดผ่าน Quality Gate dashboard</td><td>การกดยืนยันไม่ได้ปรับ prompt หรือฝึกโมเดลอัตโนมัติ</td></tr>
+</tbody></table></div>
+<p class="small muted">Snapshot จากเจ้าของระบบวันที่ 21 ก.ย. 2026: 47 ครั้ง, ผ่าน 1 / บล็อก 46, ถูก 25 / ผิด 22, accuracy 53.2%, false positive 22 / false negative 0 — ไม่ใช่ผลหลังแก้ และยังไม่ได้ตรวจบทความเต็มทั้งชุด API accuracy อ่านล่าสุดไม่เกิน 200 แถว จึงไม่ใช่ยอดตลอดอายุระบบเมื่อเกินจำนวนนี้</p>
+</section>
+<section id="cost"><h2>06 · ค่าใช้จ่ายที่เจ้าของระบบแจ้ง</h2>
+<div class="grid"><article class="card"><span class="tag code">ข้อมูลผู้ใช้ · ต่อเดือน</span><div class="table-wrap"><table class="cost"><thead><tr><th>รายการ</th><th>USD / เดือน</th></tr></thead><tbody><tr><td>OpenAI</td><td>$5</td></tr><tr><td>Claude</td><td>$5</td></tr><tr><td>Railway</td><td>$10–15</td></tr><tr class="total"><td>รวมรายการที่แจ้ง</td><td>$20–25</td></tr></tbody></table></div><p class="small muted">AI รวม $10/เดือน แยกจาก Railway ตัวเลขนี้เป็นยอดที่เจ้าของระบบแจ้ง ไม่ใช่ invoice ที่ตรวจแล้ว และไม่ใช่ hard cap ที่ระบบบังคับอยู่</p></article>
+<article class="card"><span class="tag pending">ยังไม่มีเพดานรวมที่ยืนยันได้</span><h3>มีตัวคุมเฉพาะ QC</h3><p>QC มี <code>qc_daily_usage</code> เก็บ tokens และต้นทุนประมาณการ โค้ดตั้งค่าเริ่มต้น <code>QC_DAILY_BUDGET_THB = 300</code> บาท/วัน อาจมี env บน server ทับค่าอยู่ ซึ่งยังไม่ได้ตรวจ</p><p>Assistant, chat และ image routes ที่ตรวจไม่บันทึกค่าใช้จ่ายรวมทุกผู้ให้บริการ และไม่มี monthly budget gate ร่วมกัน</p></article></div>
+<p><strong>n8n ใช้แบบฟรีตามที่เจ้าของระบบแจ้ง</strong> แต่การเรียก AI จาก workflow ใช้บัญชี API ของผู้ให้บริการแยกกัน ห้ามนับว่า AI ฟรีตาม n8n และไม่เพิ่มค่า Railway อีกก้อนโดยไม่มีบิลรองรับ</p>
+<details><summary>สิ่งที่ต้องมี ก่อนรับรองว่าคุมค่าใช้จ่ายได้จริง</summary><ol><li>เทียบ Usage / Billing ของทุกบัญชี AI กับงานที่รันจริง รวม retry, fallback, ภาพ และ n8n</li><li>เก็บ usage ต่อ request, provider, model และงาน โดยแยกยอดประมาณการกับยอดเรียกเก็บจริง</li><li>กำหนดวงเงินร่วมและจองงบก่อนเรียก เพื่อคุมงานที่รันพร้อมกัน</li><li>ยืนยันวงเงินกับเจ้าของระบบจากฐานค่าใช้จ่ายล่าสุด ไม่ใช้เพดานรวม $15 ที่เกิดจากความเข้าใจผิดก่อนหน้า</li></ol><p class="muted small">ทั้งหมดเป็นงานที่ยังไม่ได้ implement; ไม่รับรองว่าบันทึกแชทแล้วค่าใช้จ่ายจะเท่าเดิมจนกว่าจะตรวจพื้นที่และ token usage</p></details>
+</section>
+<section id="next"><h2>07 · งานที่ยังเหลือ</h2><div class="table-wrap"><table><thead><tr><th>งาน</th><th>สถานะ</th><th>หลักฐานก่อนปิดงาน</th></tr></thead><tbody>
+<tr><td>ADR-016 และ business context</td><td>merge เอกสารแล้ว</td><td>PR #3 / commit ea4565f</td></tr>
+<tr><td>นำ policy ไปใช้กับ WF1</td><td>รอตรวจ active workflow</td><td>workflow ID/version + pass/block tests + execution จริง</td></tr>
+<tr><td>ตรวจงบ AI รวม</td><td>ตรวจโค้ดบางเส้นทางแล้ว; ยังไม่มียอด billing</td><td>Usage / Billing และ export workflow ที่ active</td></tr>
+<tr><td>ประวัติแชทถาวร</td><td>ข้อเสนอ ยังไม่พัฒนา</td><td>ออกแบบสิทธิ์/ดีล/ข้อมูลสมมติ/พื้นที่ และทดสอบ reload แล้วเรียกประวัติได้</td></tr>
+<tr><td>Hub v2 cutover</td><td>ยังไม่ถือว่าแทน v1 แล้ว</td><td>ตรวจทุก route ที่ผู้ใช้และ workflow เรียกจริงก่อนย้าย</td></tr>
+</tbody></table></div></section>
+<section id="sources"><h2>08 · หลักฐานและขอบเขตการตรวจ</h2><p>ลิงก์โค้ดอ้างอิง commit ที่ตรวจ เพื่อให้ย้อนดูข้อสรุปได้ เอกสารไม่แสดง API keys หรือข้อมูลรับรองการเข้าถึง</p><ul>
+<li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/ea4565ffb019bb4a4fbe9b9723fada94add67268/docs/BUSINESS_MODEL.md">Business Model และขอบเขต Content</a></li>
+<li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/ea4565ffb019bb4a4fbe9b9723fada94add67268/docs/v2/04-decisions/accepted/ADR-027.md">ADR-027 — แยกสองรูปแบบลงทุน</a> · <a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/ea4565ffb019bb4a4fbe9b9723fada94add67268/docs/v2/04-decisions/accepted/ADR-004.md">ADR-004 — Hub v1 / v2</a></li>
+<li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/ea4565ffb019bb4a4fbe9b9723fada94add67268/components/AssistantChat.tsx">AssistantChat — state ในหน้าเว็บ</a> · <a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/ea4565ffb019bb4a4fbe9b9723fada94add67268/app/api/assistant/route.ts">Assistant API / tools</a></li>
+<li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/ea4565ffb019bb4a4fbe9b9723fada94add67268/app/api/brains/context/route.ts">Brains aggregation</a> · <a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/ea4565ffb019bb4a4fbe9b9723fada94add67268/app/budget/page.tsx">Budget Tool ปิดบริการ</a></li>
+<li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/pull/3">PR #3 — ADR-016 amendment</a> · <a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/ea4565ffb019bb4a4fbe9b9723fada94add67268/app/api/quality-gate/accuracy/route.ts">Quality Gate accuracy</a></li>
+<li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/ea4565ffb019bb4a4fbe9b9723fada94add67268/services/backend-hub/server.cjs">Hub / QC usage</a> · <a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/ea4565ffb019bb4a4fbe9b9723fada94add67268/app/api/chat/route.ts">Chat API</a> · <a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/ea4565ffb019bb4a4fbe9b9723fada94add67268/app/api/image/route.ts">Image API</a></li>
+<li>ยอด OpenAI $5, Claude $5, Railway $10–15 และ n8n ฟรี: เจ้าของระบบแจ้งในบทสนทนาวันที่ 21 กันยายน 2026</li>
+</ul></section>
+<footer>AP-Home Platform OS · Current-state reference · 21 September 2026<br>เอกสารเก่าในหน้า index เก็บเพื่ออ้างอิงประวัติ ให้ยึดหน้านี้สำหรับสถานะที่ทบทวนล่าสุด</footer>
+</main></body></html>
