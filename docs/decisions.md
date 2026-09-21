@@ -1,7 +1,17 @@
 # Architecture Decisions Log
 
----
+> **CURRENT PRODUCTION STATE — 2026-09-21**
+>
+> - **Build-to-Sell:** Land Analyzer → `projects`
+> - **Renovate-to-Resell:** Fix & Flip Deals → `reno_deals`
+> - These are separate investment streams. There is no `reno_deals.land_project_id` relationship in production.
+> - **Operational Fix & Flip:** `reno_deals.site_id → sites.id`; `qc_inspections.deal_id → reno_deals.id`; `qc_inspections.site_id → sites.id`.
+> - **Brains:** `/api/brains/context` is the shared read-only business-context layer used by AI Assistant for cross-module context.
+> - ADR-022 and ADR-026 contain historical implementation/architecture proposals that are superseded by ADR-027 and the current Brains implementation. Keep them as history; do not treat their old relationship claims as current state.
+>
+> **Source of truth:** live production schema + current source code + verified runtime behavior. Historical ADR text is not a statement of current production state.
 
+---
 ## ADR-001 — Hub v2 URL normalization ใน Vercel proxy
 **Date**: 2026-06-30  
 **Status**: Implemented ✅
