@@ -205,7 +205,11 @@ Fix & Flip decisions
 
 ระบบมี buyer-segment context และ Taste Library สำหรับอ้างอิง content ที่เคยเลือกไว้
 
-**Business positioning rule:** content ต้องไม่อ้างว่า Finnhouses รับสร้างบ้านใหม่เอง เพราะ Unit 1 discontinued แล้ว
+**Business positioning rule (clarified 2026-09-21):** Finnhouses ไม่รับจ้างสร้างบ้านใหม่ให้ลูกค้า เพราะ Unit 1 discontinued แล้ว แต่ **เผยแพร่บทความให้ความรู้เรื่องสร้างบ้านได้** — รวมงบประมาณ แบบบ้าน สไตล์ BOQ วัสดุ การเลือกบริษัทรับสร้างบ้าน และขั้นตอนก่อสร้าง หัวข้อ content ไม่จำเป็นต้องเป็นบริการที่บริษัทรับทำ
+
+**Brand gate:** บล็อกเมื่อเนื้อหาหรือ CTA อ้างโดยตรง/โดยนัยว่า Finnhouses รับจ้างสร้างบ้านให้ลูกค้า ไม่บล็อกจาก keyword/title/category อย่างเดียว บริการที่ปรึกษา/ตรวจสอบ, รีโนเวททรัพย์ของบริษัทเพื่อขาย และสร้างบ้านขายบนทรัพย์ของบริษัทเป็นบทบาทที่อนุญาต ทั้งหมดยังต้องผ่านการตรวจภาษา ข้อเท็จจริง และโครงสร้างตามเดิม — ดู [ADR-016 amendment 2026-09-21](v2/04-decisions/accepted/ADR-016.md)
+
+**สถานะการปรับนโยบายรอบนี้:** แก้เอกสารต้นทางแล้ว; ยังไม่ได้ sync prompt หรือยืนยัน workflow ที่ active ใน n8n การแก้ Markdown ไม่ทำให้ runtime เปลี่ยนอัตโนมัติ
 
 ### Blog Automation
 n8n workflow ใช้สำหรับรับงานจาก platform → สร้างบทความ → publish ไป WordPress → สร้าง/patch featured image → ส่งสถานะกลับ platform
