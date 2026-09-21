@@ -42,8 +42,8 @@
 | Property Review | /dashboard tab | ✅ Live | LINE seller intake → WP publish |
 | Market Intel Page | /market-intel | ✅ Live | Standalone page + Telegram input |
 | Properties | /properties | ✅ Live | Property listing view |
-| QC Line | LINE OA | ❌ NOT BUILT | Documented as active in old memory — confirmed not built |
-| Fix & Flip Module | — | ❌ NOT BUILT | BU3 has no platform module at all |
+| QC Line | LINE OA | ✅ Live | QC ingestion and inspection flow backed by qc_inspections |
+| Fix & Flip Module | /deals | ✅ Live | Native Renovate-to-Resell deal pipeline backed by reno_deals |
 
 ---
 
