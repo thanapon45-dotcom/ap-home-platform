@@ -1,3 +1,11 @@
+## WF1 policy update — 2026-09-21
+
+Product Owner ขอแก้ ADR ที่ต้นเหตุ: อนุญาตบทความให้ความรู้เรื่องสร้างบ้าน แต่ห้ามอ้างว่า Finnhouses รับจ้างสร้างบ้านให้ลูกค้า — ดู [ADR-016 amendment](v2/04-decisions/accepted/ADR-016.md) ซึ่ง sync กับ ADR-010 และ Business Model แล้ว
+
+**สถานะ:** เอกสารเท่านั้น; ยังไม่แก้/deploy/verify active n8n workflow ไม่มี WF1 JSON ใน repo ณ commit ที่ตรวจ (`fd82bfed`) ขั้นต่อไปต้อง export active workflow, sync writer/rewriter/gate และทดสอบ pass/block ตาม ADR ก่อนยืนยันผล production เก็บ feedback เก่าและวัดก่อน/หลังแยกกัน ตัวเลข 53.2% เป็นข้อมูลที่ Product Owner ส่งมา ไม่ใช่ผลหลังแก้
+
+---
+
 # Session Handoff — สำหรับ Claude session ถัดไป
 
 > อ่าน CLAUDE.md ก่อนเสมอ แล้วค่อยอ่านไฟล์นี้
