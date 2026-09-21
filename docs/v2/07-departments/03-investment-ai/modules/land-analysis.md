@@ -23,7 +23,7 @@ map (Leaflet), save as project which can immediately become a Fix and Flip deal.
 | Type-based parameters (small/large) | 100% | CA percent varies |
 | GPS Map picker | 100% | Leaflet integration with OpenStreetMap |
 | Save as project | 100% | projects table via /api/projects |
-| Link to Fix and Flip deal | 100% | reno_deals.land_project_id (ADR-022) |
+| Link to Fix and Flip deal | 0% / not applicable | Intentionally independent; no `reno_deals.land_project_id` FK (ADR-027) |
 | Market price comparison | 100% | Premium/discount vs market displayed |
 
 ---
@@ -38,7 +38,7 @@ target profit percent, market price per house (optional), GPS coordinates.
 
 ## ADRs
 
-- ADR-022: Land Analyzer to Fix and Flip Deals link - ../../../04-decisions/accepted/ADR-022.md
+- ADR-027: Land Analyzer and Fix & Flip are separate investment streams - ../../../04-decisions/accepted/ADR-027.md
 
 ---
 
