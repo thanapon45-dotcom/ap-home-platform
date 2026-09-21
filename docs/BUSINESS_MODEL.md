@@ -43,9 +43,10 @@
 7. เก็บ actual performance กลับเข้าสู่ระบบ
 
 **ระบบที่รองรับจริง**
-- **Land Analyzer** — วิเคราะห์ที่ดิน/ทำเล, ราคา, ROI และบันทึกเป็น project
-- **Fix & Flip Deals** (`/deals`) — pipeline 4 stages: ประเมิน → รีโนเวท → ประกาศขาย → ปิดดีล
-- **Land Analyzer** และ **Fix & Flip Deals** เป็นโมดูลแยกกัน — ไม่มี FK หรือปุ่มสร้าง Deal ข้ามกัน
+- **Land Analyzer** — วิเคราะห์การลงทุน **สร้างบ้านเพื่อขาย (Build-to-Sell)**: ที่ดิน/ทำเล, ราคา, ต้นทุนพัฒนา, จำนวนแปลง และ ROI แล้วบันทึกเป็น `projects`
+- **Fix & Flip Deals** (`/deals`) — วิเคราะห์การลงทุน **ซื้อบ้าน → รีโนเวท → ขาย (Renovate-to-Resell)** ด้วย pipeline 4 stages: ประเมิน → รีโนเวท → ประกาศขาย → ปิดดีล
+- **Land Analyzer** และ **Fix & Flip Deals** เป็นคนละ investment stream และต้องไม่มี FK หรือปุ่มสร้าง Deal ข้ามกัน
+- `projects` เป็นข้อมูลของ Build-to-Sell; `reno_deals` เป็นข้อมูลของ Renovate-to-Resell
 - **ROI Actual vs Estimate** — ใช้ตัวเลขประมาณการและตัวเลขจริงที่บันทึกใน Deal เอง
 
 - **Budget / cost calculation** — คำนวณต้นทุนที่เกี่ยวข้องกับการพัฒนา/รีโนเวท
@@ -143,7 +144,11 @@ CRM เก็บ lead, stage, score, source และข้อมูลประ
 ### Construction / Quality Intelligence
 ข้อมูลจาก QC และ BOQ ใช้สนับสนุนการควบคุมคุณภาพ ต้นทุน และการตัดสินใจด้านงานก่อสร้าง/รีโนเวท
 
-### Renovation / Investment Intelligence
+### Investment Intelligence
+มี 2 investment streams ที่ต้องไม่ถูกตีความเป็นความสัมพันธ์เดียวกัน:
+- **Build-to-Sell:** Land Analyzer → `projects` — ลงทุนที่ดิน/พัฒนาโครงการเพื่อสร้างบ้านขาย
+- **Renovate-to-Resell:** Fix & Flip Deals → `reno_deals` — ซื้อทรัพย์ → รีโนเวท → ขาย
+
 Fix & Flip Deals รวม purchase, renovation budget, list price, actual spend, actual ROI, estimated ROI และ deal stage
 
 ---
