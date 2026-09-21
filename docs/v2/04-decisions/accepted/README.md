@@ -24,6 +24,6 @@
 | [ADR-019](ADR-019.md) | CRM: ตัด "reno" ออกจาก business_unit ทั้งหมด — lead เข้ามาแค่ 2 หน่วย (consult/list) |
 | [ADR-020](ADR-020.md) | "FB Post Performance Tracker" ไม่เคยเขียนข้อมูลจริงเลยสักครั้ง — root cause: anon key ชน RLS |
 | [ADR-021](ADR-021.md) | WF1 AI Quality Gate feedback loop (item #2 ของแผน 3 ข้อ "ระบบพิสูจน์ตัวเองว่าทำงานถูก") |
-| [ADR-022](ADR-022.md) | Land Analyzer → Fix & Flip Deals link (item #3 ของแผน 3 ข้อ) |
+| [ADR-022](ADR-022.md) | **SUPERSEDED** — historical Land Analyzer → Fix & Flip Deals link |
 | [ADR-023](ADR-023.md) | Market Intel confidence calibration (item #3 สุดท้ายของแผน 3 ข้อ) |
 | [ADR-024](ADR-024.md) | Data-flow graph verification (Obsidian-style) + useLiveData Hub bypass fix |
