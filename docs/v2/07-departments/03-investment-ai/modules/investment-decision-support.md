@@ -23,7 +23,7 @@ Current state: Basic aggregate metrics exist. Advanced analytics pending.
 |------------|--------|-------|
 | Total capital deployed | 100% | Sum of active deals capital |
 | Average ROI (closed deals) | 100% | Shown when n greater than 0 |
-| Capital deployed per area | Partial | Shown if land_project_id set |
+| Capital deployed per area | Partial | Can be grouped by `reno_deals.area_name` when populated |
 | ROI by area comparison | Missing | No aggregation |
 | ROI by deal type | Missing | No segmentation |
 | Risk scoring | Missing | No historical variance tracking |
@@ -33,8 +33,7 @@ Current state: Basic aggregate metrics exist. Advanced analytics pending.
 
 ## What's Missing
 
-ROI by Area Comparison: needs closed deals linked to areas via
-land_project_id, historical ROI per area, sufficient sample size per area.
+ROI by Area Comparison: needs closed deals with `reno_deals.area_name`, historical ROI per area, and sufficient sample size per area.
 Currently under 5 closed deals, insufficient for meaningful comparison.
 
 Risk Scoring: would use actual vs estimate variance per area, time to
