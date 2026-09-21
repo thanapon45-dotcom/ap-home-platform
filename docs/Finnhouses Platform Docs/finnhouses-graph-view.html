@@ -111,7 +111,7 @@ const nodes = [
   { id: "properties",  group: "data",   desc: "ตาราง properties — pending → live" },
   { id: "market_insights", group: "data", desc: "135 แถว, AI confidence 1-5 ดาว, มี Calibration feedback แล้ว" },
   { id: "quality_gate_log", group: "data", desc: "log การตัดสินใจของ AI Quality Gate (ADR-021)" },
-  { id: "reno_deals",  group: "data",   desc: "Fix & Flip deal pipeline, เชื่อม Land Analyzer ROI (ADR-022)" },
+  { id: "reno_deals",  group: "data",   desc: "Fix & Flip / Renovate-to-Resell deal pipeline; แยกจาก Land Analyzer" },
 
   { id: "MODULES",     group: "module", desc: "เครื่องมือที่ Archi ใช้งานจริงบน Dashboard OS" },
   { id: "Dashboard",   group: "module", desc: "Overview + Live KPIs + Ops health" },
@@ -119,7 +119,7 @@ const nodes = [
   { id: "AI Content",  group: "module", desc: "FB Content Studio — สร้างโพสต์ด้วย Claude" },
   { id: "Blog Runner", group: "module", desc: "Queue จัดคิวบทความ + Quality Gate Accuracy tab" },
   { id: "Market Intel",group: "module", desc: "บันทึกข้อมูลตลาด + Calibration feedback" },
-  { id: "Land Analyzer",group:"module", desc: "คำนวณ ROI ที่ดิน → เชื่อมเข้า Fix & Flip Deals ได้ (ADR-022)" },
+  { id: "Land Analyzer",group:"module", desc: "คำนวณการลงทุน Build-to-Sell → projects; แยกจาก Fix & Flip Deals" },
   { id: "Deals",       group: "module", desc: "Fix & Flip Kanban + ROI จริง vs ประเมิน" },
 ];
 
@@ -149,7 +149,7 @@ const links = [
   ["Blog Runner","Blog"],
   ["Blog Runner","quality_gate_log"],
   ["Market Intel","market_insights"],
-  ["Land Analyzer","reno_deals"],
+  
   ["Deals","reno_deals"],
   ["Dashboard","leads"],
   ["Dashboard","properties"],
