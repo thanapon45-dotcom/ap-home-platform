@@ -56,7 +56,7 @@
 <article class="card"><span class="tag">ข้อเสนอ — ยังไม่ได้ทำ</span><h3>ความจำถาวรที่ควบคุมต้นทุน</h3><ul><li>เก็บข้อความในฐานข้อมูลเดิมหลังตรวจพื้นที่และสิทธิ์เข้าถึง</li><li>เลือกเฉพาะประวัติที่จำเป็นส่งให้ AI ไม่ส่งทุกบทสนทนา</li><li>แยกข้อมูลดีลที่ยืนยันแล้วออกจากตัวเลขสมมติในแชท</li><li>ผูกแชทกับดีลให้ชัด และให้ยืนยันก่อนแก้ข้อมูลหลัก</li><li>ยังไม่เพิ่มการเรียก AI สรุปทุกข้อความ</li></ul></article></div>
 <div class="note"><strong>พิมพ์ข้อมูลบ้านในแชท ไม่ได้ทำให้เกิดดีลใน /deals อัตโนมัติ</strong> API ปัจจุบันมี tool อ่านดีล แต่ไม่มี tool สร้างหรือแก้ดีล การบันทึกข้อมูลธุรกิจกับการเก็บประวัติแชทเป็นคนละเรื่อง</div>
 <p>Assistant ใช้ <code>claude-sonnet-4-6</code>, จำกัด output ต่อการเรียกไว้ 4,096 tokens และวน tool loop ได้สูงสุด 6 รอบต่อ request หนึ่งคำถามจึงอาจมีหลาย AI calls โค้ดยังไม่มีบัญชีค่าใช้จ่ายกลางหรือการตัดประวัติตามงบ</p>
-<p class="small muted">คำตอบต้องอิงข้อมูลจาก tools หรือข้อมูลที่ผู้ใช้ระบุ หากขาดข้อมูลให้ถาม ไม่เติมตัวเลขจากความรู้ทั่วไปนอกระบบตามกติกาเจ้าของระบบ สถานะนี้อ้างอิง application code ไม่ใช่คำรับรองนโยบายเก็บข้อมูลของผู้ให้บริการ AI</p>
+<p class="small muted">คำตอบต้องอิงข้อมูลจาก tools หรือข้อมูลที่ผู้ใช้ระบุ หากขาดข้อมูลให้ถาม ไม่เติมตัวเลขจากความรู้ทั่วไปนอกระบบตามกติกาเจ้าของระบบ ข้อกำหนด internal-only ยังอยู่ใน prompt; โค้ดส่งข้อความจากโมเดลกลับมา จึงยังไม่ได้บังคับคำตอบจากหลักฐานฝั่งเซิร์ฟเวอร์ครบถ้วน สถานะนี้อ้างอิง application code ไม่ใช่คำรับรองนโยบายเก็บข้อมูลของผู้ให้บริการ AI</p>
 </section>
 <section id="wf1"><h2>05 · WF1 และ AI Quality Gate</h2>
 <div class="grid"><article class="card"><span class="tag code">ADR-016 amendment merge แล้ว</span><h3>หัวข้อ Content ≠ บริการที่ขาย</h3><p>บทความสร้างบ้าน แบบบ้าน ค่าใช้จ่าย และเลือกผู้รับเหมาทำได้ บล็อก <code>brand_guardrail_violation</code> เมื่อเนื้อหาหรือ CTA อ้างว่า Finnhouses รับจ้างสร้างบ้านให้ลูกค้า ต้องอ่านบริบทและมีข้อความหลักฐานจริง</p><p>ยังต้องตรวจภาษาไทย ข้อเท็จจริง และ structural / dedupe guard ตามเดิม มีตัวอย่างด้าน brand 13 กรณีใน ADR</p></article>
@@ -92,5 +92,5 @@
 <li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/ea4565ffb019bb4a4fbe9b9723fada94add67268/services/backend-hub/server.cjs">Hub / QC usage</a> · <a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/ea4565ffb019bb4a4fbe9b9723fada94add67268/app/api/chat/route.ts">Chat API</a> · <a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/ea4565ffb019bb4a4fbe9b9723fada94add67268/app/api/image/route.ts">Image API</a></li>
 <li>ยอด OpenAI $5, Claude $5, Railway $10–15 และ n8n ฟรี: เจ้าของระบบแจ้งในบทสนทนาวันที่ 21 กันยายน 2026</li>
 </ul></section>
-<footer>AP-Home Platform OS · Current-state reference · 21 September 2026<br>เอกสารเก่าในหน้า index เก็บเพื่ออ้างอิงประวัติ ให้ยึดหน้านี้สำหรับสถานะที่ทบทวนล่าสุด</footer>
+<footer>AP-Home Platform OS · Current-state reference · 21 September 2026<br>เอกสารชุดเดียวกันในหน้า index ทบทวนวันที่ 21 กันยายน 2026; แต่ละหน้าระบุหลักฐานและข้อจำกัดการตรวจ</footer>
 </main></body></html>
