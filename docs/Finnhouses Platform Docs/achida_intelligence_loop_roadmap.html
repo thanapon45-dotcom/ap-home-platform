@@ -1,573 +1,102 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="th">
 <head>
-<meta charset="UTF-8">
-<style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Segoe UI', sans-serif; background: var(--bg-1, #0f1117); color: var(--text-1, #e8eaf0); padding: 20px; min-height: 100vh; }
-  
-  h1 { font-size: 15px; font-weight: 700; color: #a78bfa; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 4px; }
-  .sub { font-size: 11px; color: #6b7280; margin-bottom: 20px; }
-
-  /* Phase tabs */
-  .phase-tabs { display: flex; gap: 6px; margin-bottom: 20px; flex-wrap: wrap; }
-  .tab { padding: 6px 14px; border-radius: 20px; font-size: 11px; font-weight: 600; cursor: pointer; border: 1.5px solid transparent; transition: all 0.2s; }
-  .tab.done { background: #052e16; border-color: #16a34a; color: #4ade80; }
-  .tab.active-phase { background: #2d1a00; border-color: #f59e0b; color: #fbbf24; }
-  .tab.next { background: #1e1b4b; border-color: #6366f1; color: #a5b4fc; }
-  .tab.future { background: #1f1f2e; border-color: #374151; color: #6b7280; }
-  .tab.selected { outline: 2px solid #a78bfa; outline-offset: 2px; }
-
-  /* Main grid */
-  .main { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  
-  /* Intelligence column */
-  .intel-col { display: flex; flex-direction: column; gap: 8px; }
-  .section-label { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #6b7280; margin-bottom: 4px; }
-
-  /* Intelligence cards */
-  .intel-card {
-    background: #16181f; border-radius: 10px; padding: 12px 14px;
-    border-left: 3px solid transparent; cursor: pointer; transition: all 0.15s;
-    position: relative;
-  }
-  .intel-card:hover { background: #1c1f2a; }
-  .intel-card.done { border-color: #16a34a; }
-  .intel-card.partial { border-color: #f59e0b; }
-  .intel-card.missing { border-color: #374151; }
-  .intel-card.selected { background: #1e1b4b; border-color: #6366f1; }
-
-  .card-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-  .card-icon { font-size: 16px; }
-  .card-title { font-size: 12px; font-weight: 700; flex: 1; }
-  .status-badge {
-    font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 10px;
-    letter-spacing: 0.05em; text-transform: uppercase;
-  }
-  .badge-done { background: #052e16; color: #4ade80; }
-  .badge-partial { background: #2d1a00; color: #fbbf24; }
-  .badge-missing { background: #1f1f2e; color: #6b7280; }
-  .badge-next { background: #1e1b4b; color: #a5b4fc; }
-
-  .card-body { font-size: 10.5px; color: #9ca3af; line-height: 1.6; }
-  .card-body ul { padding-left: 14px; }
-  .card-body li { margin-bottom: 2px; }
-
-  /* BU column */
-  .bu-card {
-    background: #16181f; border-radius: 10px; padding: 12px 14px;
-    border: 1.5px solid #1f2937; cursor: pointer; transition: all 0.15s;
-  }
-  .bu-card:hover { background: #1c1f2a; }
-  .bu-card.selected { background: #1e1b4b; border-color: #6366f1; }
-  .bu-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-  .bu-title { font-size: 12px; font-weight: 700; }
-  .bu-body { font-size: 10px; color: #6b7280; line-height: 1.6; }
-  .data-tag {
-    display: inline-block; font-size: 9px; background: #1f2937;
-    border: 1px solid #374151; border-radius: 4px; padding: 1px 6px;
-    color: #9ca3af; margin: 2px 2px 0 0;
-  }
-  .data-tag.feeds { border-color: #4ade80; color: #4ade80; background: #052e16; }
-  .data-tag.needs { border-color: #818cf8; color: #a5b4fc; background: #1e1b4b; }
-
-  /* Detail panel */
-  .detail-panel {
-    grid-column: 1 / -1; background: #1c1f2a; border-radius: 10px;
-    padding: 16px; border: 1.5px solid #6366f1; display: none;
-  }
-  .detail-panel.visible { display: block; }
-  .detail-title { font-size: 13px; font-weight: 700; color: #a5b4fc; margin-bottom: 10px; }
-  .detail-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
-  .detail-section h4 { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #6b7280; margin-bottom: 6px; }
-  .detail-section ul { font-size: 11px; color: #d1d5db; line-height: 1.8; padding-left: 14px; }
-  .detail-section .done-item { color: #4ade80; }
-  .detail-section .todo-item { color: #fbbf24; }
-  .detail-section .future-item { color: #6b7280; }
-
-  /* Loop diagram */
-  .loop-section { grid-column: 1 / -1; }
-  .loop-title { font-size: 11px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
-  .loop-flow {
-    display: flex; align-items: center; gap: 0; background: #16181f;
-    border-radius: 10px; padding: 12px; overflow-x: auto;
-  }
-  .loop-node {
-    flex-shrink: 0; text-align: center; padding: 8px 10px;
-    min-width: 90px;
-  }
-  .loop-node .node-icon { font-size: 18px; display: block; margin-bottom: 3px; }
-  .loop-node .node-text { font-size: 9.5px; font-weight: 600; line-height: 1.4; color: #d1d5db; }
-  .loop-node .node-sub { font-size: 8.5px; color: #6b7280; margin-top: 1px; }
-  .loop-arrow {
-    flex-shrink: 0; font-size: 14px; color: #4b5563; padding: 0 2px;
-  }
-  .loop-node.highlight .node-text { color: #a5b4fc; }
-  .loop-node.highlight .node-icon { filter: drop-shadow(0 0 4px #6366f1); }
-
-  /* Phase detail */
-  .phase-detail { grid-column: 1 / -1; }
-  .phase-rows { display: flex; flex-direction: column; gap: 6px; }
-  .phase-row {
-    display: flex; align-items: flex-start; gap: 10px;
-    background: #16181f; border-radius: 8px; padding: 10px 12px;
-  }
-  .phase-row .phase-num { 
-    flex-shrink: 0; font-size: 10px; font-weight: 700; 
-    width: 24px; height: 24px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-  }
-  .ph-done .phase-num { background: #052e16; color: #4ade80; }
-  .ph-current .phase-num { background: #2d1a00; color: #fbbf24; }
-  .ph-next .phase-num { background: #1e1b4b; color: #a5b4fc; }
-  .ph-future .phase-num { background: #1f2937; color: #6b7280; }
-  .phase-row .phase-info { flex: 1; }
-  .phase-row .phase-name { font-size: 12px; font-weight: 700; margin-bottom: 3px; }
-  .ph-done .phase-name { color: #4ade80; }
-  .ph-current .phase-name { color: #fbbf24; }
-  .ph-next .phase-name { color: #a5b4fc; }
-  .ph-future .phase-name { color: #6b7280; }
-  .phase-row .phase-desc { font-size: 10.5px; color: #9ca3af; line-height: 1.6; }
-  .phase-row .phase-items { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
-  .pi { font-size: 9px; padding: 2px 8px; border-radius: 10px; font-weight: 600; }
-  .pi-done { background: #052e16; color: #4ade80; }
-  .pi-todo { background: #2d1a00; color: #fbbf24; }
-  .pi-next { background: #1e1b4b; color: #a5b4fc; }
-  .pi-future { background: #1f1f2e; color: #6b7280; }
-
-  @media (max-width: 600px) {
-    .main { grid-template-columns: 1fr; }
-    .detail-grid { grid-template-columns: 1fr; }
-  }
-</style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Intelligence Loop Roadmap · 22 ก.ย. 2026</title>
+<style>*{box-sizing:border-box}body{margin:0;background:#0d1422;color:#e7edf6;font:16px/1.8 Tahoma,system-ui,sans-serif}main{max-width:1160px;margin:auto;padding:34px 28px 70px}h1{font-size:34px;line-height:1.4;color:#f4d478}h2{font-size:24px;margin-top:38px}h3{font-size:18px;color:#b9e7ed}a{color:#8adbea}code{color:#b9e7ed;overflow-wrap:anywhere;font-size:.88em}header p,.muted{color:#adbacd}.badge{display:inline-block;background:#20344b;color:#acdcd7;border-radius:5px;padding:3px 9px;font-size:12px;letter-spacing:.5px}.note{border-left:3px solid #f4d478;background:#252a31;padding:15px 20px;margin:22px 0}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.card,details{background:#162236;border:1px solid #344158;border-radius:12px;padding:20px;min-width:0}.card h3{margin-top:0}summary{cursor:pointer;font-weight:700;color:#b9e7ed}details{margin:12px 0}table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:13px;text-align:left;vertical-align:top;border-bottom:1px solid #344158;overflow-wrap:anywhere}th{color:#f4d478}.table{overflow-x:auto}nav{display:flex;flex-wrap:wrap;gap:10px;margin:20px 0}nav a,button{background:#20344b;border:1px solid #40516b;border-radius:7px;padding:10px 14px;color:#e7edf6;text-decoration:none;font:inherit;cursor:pointer}button[aria-pressed=true]{background:#f4d478;color:#182235}a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid #f4d478;outline-offset:3px}li{margin:8px 0}footer{border-top:1px solid #344158;margin-top:36px;padding-top:18px;color:#adbacd;font-size:13px}.step{border-left:3px solid #75c4ce;padding:8px 18px;margin:12px 0}.step strong{color:#f4d478}svg{max-width:100%;height:auto}svg text{font-family:Tahoma,system-ui,sans-serif}#detail{min-height:100px}.branch{border-left:2px solid #75c4ce;padding:0 0 0 20px}.branch h3{margin-bottom:5px}@media(max-width:650px){main{padding:22px 16px}h1{font-size:27px}.grid{grid-template-columns:1fr}th,td{padding:9px;min-width:120px}}@media print{body{background:white;color:#111}main{padding:0}.card,details,.note{background:white;border-color:#aaa}h1,h2,h3,a,code,th,.muted,header p,footer{color:#111}nav,button{display:none}.card{break-inside:avoid}details{display:block}}</style>
 </head>
 <body>
-
-<h1>🧠 AP-Home Platform OS — Intelligence Loop Roadmap</h1>
-<p class="sub">บจก.อาชิดา · คลิกที่ card เพื่อดูรายละเอียด · อัพเดท Jun 28, 2026</p>
-
-<div class="phase-tabs">
-  <div class="tab done" onclick="showPhase(0)">Phase 1 ✅ Stable</div>
-  <div class="tab active-phase" onclick="showPhase(1)">Phase 2 🟡 NOW</div>
-  <div class="tab next" onclick="showPhase(2)">Phase 3 🔷 Next</div>
-  <div class="tab future" onclick="showPhase(3)">Phase 4 ⬜ Future</div>
+<main>
+<header>
+<span class="badge">AP-HOME PLATFORM · DOCUMENTATION</span>
+<h1>Intelligence Loop Roadmap</h1>
+<p>แผนพัฒนาตามช่องว่างจริง โดยไม่ถือว่า roadmap เดิมเสร็จแล้ว</p>
+<p>ทบทวน 22 กันยายน 2026 · อ้างอิง main <code>1dddb46</code>
+</p>
+</header>
+<nav aria-label="เอกสาร">
+<a href="index.html">เอกสารทั้งหมด</a>
+<a href="ap_home_platform_os_map.html">ภาพรวมสถานะ</a>
+</nav>
+<div class="note">ยืนยันเส้นทางจากโค้ดและ ADR ณ commit ที่ระบุ การมีโค้ดไม่ยืนยันว่า deployment, credentials และ workflow ที่ active ทำงานครบแล้ว รอบนี้ไม่ได้รันงาน production</div>
+<h2>ฐานที่มีอยู่และสิ่งที่ยังขาด</h2>
+<p>Fix &amp; Flip / Develop 60% · ที่ปรึกษาและตรวจสอบ 30% · นายหน้า 10% เป็นสัดส่วนธุรกิจตามเอกสาร ไม่ใช่ยอดรายได้ที่ดึงจากฐานข้อมูล</p>
+<p>ให้ความรู้เรื่องสร้างบ้านได้ แต่ห้ามอ้างว่า Finnhouses รับจ้างสร้างบ้านให้ลูกค้า การพัฒนาทรัพย์ของบริษัทเพื่อขายเป็นอีกกรณีหนึ่ง</p>
+<div class="table">
+<table>
+<thead>
+<tr>
+<th>ลำดับ</th>
+<th>มีในโค้ด/เอกสารแล้ว</th>
+<th>งานถัดไป</th>
+<th>หลักฐานก่อนปิดงาน</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1 · ข้อมูลและ workflow</td>
+<td>CRUD, queue, Quality Gate/QC feedback</td>
+<td>ยืนยัน active workflow และแก้ผลบล็อกผิด</td>
+<td>export revision + execution + ผลตรวจบทความเต็ม</td>
+</tr>
+<tr>
+<td>2 · เชื่อมบริบท</td>
+<td>Brains รวม market/deals/QC/content</td>
+<td>เติมความสัมพันธ์เฉพาะเมื่อมี ID จริง</td>
+<td>ไม่เดา project↔deal; ทดสอบ filter และข้อมูลว่าง</td>
+</tr>
+<tr>
+<td>3 · ผู้ช่วยวิเคราะห์</td>
+<td>Assistant อ่าน tools; กฎ internal-only ใน prompt</td>
+<td>บังคับหลักฐาน คำนวณที่ตรวจย้อนกลับได้ แยก what-if</td>
+<td>คำตอบอ้าง record/เวลาได้; ไม่เติมตัวเลขนอกระบบ</td>
+</tr>
+<tr>
+<td>4 · ความจำและต้นทุน</td>
+<td>ประวัติชั่วคราว; usage เฉพาะบางระบบ</td>
+<td>ออกแบบ memory และ budget accounting ร่วม</td>
+<td>reload กู้ได้ตามสิทธิ์; usage ครอบคลุม retry/ภาพ/n8n</td>
+</tr>
+<tr>
+<td>5 · วงจรปรับปรุง</td>
+<td>มี human feedback และ actual deal fields</td>
+<td>ใช้ชุดประเมินก่อนเปลี่ยน prompt/model</td>
+<td>ผลก่อน/หลัง ชุดทดสอบที่แยกจากชุดปรับ และ rollback</td>
+</tr>
+</tbody>
+</table>
 </div>
-
-<div class="main" id="mainGrid">
-
-  <!-- Intelligence Layers -->
-  <div class="intel-col">
-    <div class="section-label">Intelligence Layers</div>
-
-    <div class="intel-card done" onclick="selectCard('market')">
-      <div class="card-header">
-        <span class="card-icon">🗺️</span>
-        <span class="card-title">Market Intelligence</span>
-        <span class="status-badge badge-partial">Partial</span>
-      </div>
-      <div class="card-body">area_memory · ราคาตลาด · timing signal</div>
-    </div>
-
-    <div class="intel-card partial" onclick="selectCard('buyer')">
-      <div class="card-header">
-        <span class="card-icon">👤</span>
-        <span class="card-title">Buyer Intelligence</span>
-        <span class="status-badge badge-partial">Building</span>
-      </div>
-      <div class="card-body">buyer_profiles · context_signals · decision triggers</div>
-    </div>
-
-    <div class="intel-card partial" onclick="selectCard('seller')">
-      <div class="card-header">
-        <span class="card-icon">🏠</span>
-        <span class="card-title">Seller + Property Intelligence</span>
-        <span class="status-badge badge-partial">Partial</span>
-      </div>
-      <div class="card-body">LINE intake · properties table · PropertyReview</div>
-    </div>
-
-    <div class="intel-card missing" onclick="selectCard('construction')">
-      <div class="card-header">
-        <span class="card-icon">🏗️</span>
-        <span class="card-title">Construction Intelligence</span>
-        <span class="status-badge badge-next">Phase 3</span>
-      </div>
-      <div class="card-body">BOQ accuracy · งวดงาน · cost overrun prediction</div>
-    </div>
-
-    <div class="intel-card missing" onclick="selectCard('renovation')">
-      <div class="card-header">
-        <span class="card-icon">🔨</span>
-        <span class="card-title">Renovation Intelligence</span>
-        <span class="status-badge badge-next">Phase 3</span>
-      </div>
-      <div class="card-body">fix&flip ROI · renovation cost vs value-add</div>
-    </div>
-
-    <div class="intel-card done" onclick="selectCard('quality')">
-      <div class="card-header">
-        <span class="card-icon">✅</span>
-        <span class="card-title">Quality Intelligence</span>
-        <span class="status-badge badge-done">LIVE</span>
-      </div>
-      <div class="card-body">QC Line LINE OA · GPT-4o Vision · calibration fix · 4 หมวด</div>
-    </div>
-  </div>
-
-  <!-- Business Units -->
-  <div class="intel-col">
-    <div class="section-label">Business Units → Data Generated</div>
-
-    <div class="bu-card" onclick="selectCard('brokerage')">
-      <div class="bu-header">
-        <span class="card-icon">🤝</span>
-        <span class="bu-title">รับฝากขาย (Brokerage)</span>
-      </div>
-      <div class="bu-body">พื้นที่: ปทุมธานี · นนทบุรี</div>
-      <div style="margin-top:6px">
-        <span class="data-tag feeds">→ Seller Data</span>
-        <span class="data-tag feeds">→ Buyer Data</span>
-        <span class="data-tag feeds">→ Price Data</span>
-        <span class="data-tag needs">← Market Intel</span>
-        <span class="data-tag needs">← Buyer Intel</span>
-      </div>
-    </div>
-
-    <div class="bu-card" onclick="selectCard('construction_bu')">
-      <div class="bu-header">
-        <span class="card-icon">🏠</span>
-        <span class="bu-title">รับสร้างบ้าน (Construction)</span>
-      </div>
-      <div class="bu-body">พื้นที่: BKK + ปริมณฑล · 5M+ บาท</div>
-      <div style="margin-top:6px">
-        <span class="data-tag feeds">→ BOQ Data</span>
-        <span class="data-tag feeds">→ Cost Data</span>
-        <span class="data-tag needs">← Construction Intel</span>
-        <span class="data-tag needs">← Buyer Intel</span>
-      </div>
-    </div>
-
-    <div class="bu-card" onclick="selectCard('flip_bu')">
-      <div class="bu-header">
-        <span class="card-icon">💰</span>
-        <span class="bu-title">รีโนเวทเพื่อขาย (Fix & Flip)</span>
-      </div>
-      <div class="bu-body">พื้นที่: ปทุมธานี · นนทบุรี</div>
-      <div style="margin-top:6px">
-        <span class="data-tag feeds">→ Reno Cost Data</span>
-        <span class="data-tag feeds">→ ROI Data</span>
-        <span class="data-tag needs">← Market Intel</span>
-        <span class="data-tag needs">← Renovation Intel</span>
-      </div>
-    </div>
-
-    <div class="bu-card" onclick="selectCard('qc_bu')">
-      <div class="bu-header">
-        <span class="card-icon">🔍</span>
-        <span class="bu-title">ที่ปรึกษา + ตรวจงาน</span>
-      </div>
-      <div class="bu-body">ตรวจบ้าน · ตรวจงานระหว่างก่อสร้าง · BOQ</div>
-      <div style="margin-top:6px">
-        <span class="data-tag feeds">→ Defect Data</span>
-        <span class="data-tag feeds">→ Quality Data</span>
-        <span class="data-tag needs">← Quality Intel</span>
-        <span class="data-tag needs">← Construction Intel</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- Detail Panel (hidden by default) -->
-  <div class="detail-panel" id="detailPanel">
-    <div class="detail-title" id="detailTitle"></div>
-    <div class="detail-grid" id="detailGrid"></div>
-  </div>
-
-  <!-- Intelligence Loop Flow -->
-  <div class="loop-section">
-    <div class="loop-title">Intelligence Loop — การไหลของข้อมูล</div>
-    <div class="loop-flow">
-      <div class="loop-node highlight">
-        <span class="node-icon">🤝</span>
-        <span class="node-text">รับฝากขาย</span>
-        <span class="node-sub">Property + Buyer data</span>
-      </div>
-      <div class="loop-arrow">→</div>
-      <div class="loop-node highlight">
-        <span class="node-icon">🗺️</span>
-        <span class="node-text">Market Intel</span>
-        <span class="node-sub">ราคา · ทำเล</span>
-      </div>
-      <div class="loop-arrow">→</div>
-      <div class="loop-node">
-        <span class="node-icon">🔨</span>
-        <span class="node-text">Fix & Flip</span>
-        <span class="node-sub">Reno ROI data</span>
-      </div>
-      <div class="loop-arrow">→</div>
-      <div class="loop-node">
-        <span class="node-icon">📊</span>
-        <span class="node-text">Investment Intel</span>
-        <span class="node-sub">ROI · Risk</span>
-      </div>
-      <div class="loop-arrow">→</div>
-      <div class="loop-node">
-        <span class="node-icon">🏠</span>
-        <span class="node-text">สร้างบ้าน</span>
-        <span class="node-sub">BOQ · Cost data</span>
-      </div>
-      <div class="loop-arrow">→</div>
-      <div class="loop-node">
-        <span class="node-icon">🏗️</span>
-        <span class="node-text">Construction Intel</span>
-        <span class="node-sub">Accuracy · Risk</span>
-      </div>
-      <div class="loop-arrow">→</div>
-      <div class="loop-node">
-        <span class="node-icon">🔍</span>
-        <span class="node-text">ตรวจงาน</span>
-        <span class="node-sub">Defect data</span>
-      </div>
-      <div class="loop-arrow">→</div>
-      <div class="loop-node">
-        <span class="node-icon">✅</span>
-        <span class="node-text">Quality Intel</span>
-        <span class="node-sub">QC patterns</span>
-      </div>
-      <div class="loop-arrow">→</div>
-      <div class="loop-node highlight">
-        <span class="node-icon">🧠</span>
-        <span class="node-text">AP-Home OS</span>
-        <span class="node-sub">Self-improving</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- Phase Roadmap -->
-  <div class="phase-detail" id="phaseDetail">
-    <div class="loop-title" style="margin-bottom:8px">Roadmap ทั้งหมด</div>
-    <div class="phase-rows">
-      <div class="phase-row ph-done">
-        <div class="phase-num">1</div>
-        <div class="phase-info">
-          <div class="phase-name">Stabilize Core Platform ✅</div>
-          <div class="phase-desc">Platform stable — WF2, FB Token, retry, proxy, queue monitoring</div>
-          <div class="phase-items">
-            <span class="pi pi-done">Dashboard OS</span>
-            <span class="pi pi-done">CRM Supabase</span>
-            <span class="pi pi-done">FB Content Engine</span>
-            <span class="pi pi-done">Blog Runner</span>
-            <span class="pi pi-done">Market Intel</span>
-            <span class="pi pi-done">Property Review</span>
-          </div>
-        </div>
-      </div>
-      <div class="phase-row ph-current">
-        <div class="phase-num">2</div>
-        <div class="phase-info">
-          <div class="phase-name">Build Proprietary Data Advantage 🟡 NOW</div>
-          <div class="phase-desc">เก็บข้อมูลเฉพาะทางที่คนอื่นไม่มี — Buyer patterns, Area signals, Lead conversion data</div>
-          <div class="phase-items">
-            <span class="pi pi-done">buyer_profiles</span>
-            <span class="pi pi-done">buyer_context_signals</span>
-            <span class="pi pi-done">area_memory (4 records)</span>
-            <span class="pi pi-todo">CRM → auto parse notes</span>
-            <span class="pi pi-todo">Seller motivation signals</span>
-            <span class="pi pi-todo">Price sensitivity data</span>
-            <span class="pi pi-todo">SEO + Landing /lamlukkha</span>
-          </div>
-        </div>
-      </div>
-      <div class="phase-row ph-next">
-        <div class="phase-num">3</div>
-        <div class="phase-info">
-          <div class="phase-name">Complete Intelligence Layers 🔷 Next</div>
-          <div class="phase-desc">สร้าง Intelligence ที่ยังขาด — Construction, Renovation, QC Line</div>
-          <div class="phase-items">
-            <span class="pi pi-next">Construction Intel module</span>
-            <span class="pi pi-next">BOQ accuracy tracking</span>
-            <span class="pi pi-next">Renovation ROI database</span>
-            <span class="pi pi-done">QC Line (LINE OA) ✅</span>
-            <span class="pi pi-next">Contractor scoring</span>
-            <span class="pi pi-next">Fix&Flip deal analyzer</span>
-          </div>
-        </div>
-      </div>
-      <div class="phase-row ph-future">
-        <div class="phase-num">4</div>
-        <div class="phase-info">
-          <div class="phase-name">Intelligence Loop — Self-Improving ⬜ Future</div>
-          <div class="phase-desc">ระบบปรับตัวเองจากข้อมูลจริง — content ปรับจาก engagement, BOQ ปรับจาก actual cost, lead scoring อัพเดทอัตโนมัติ</div>
-          <div class="phase-items">
-            <span class="pi pi-future">FB engagement → content prompt</span>
-            <span class="pi pi-future">Actual cost → BOQ predictor</span>
-            <span class="pi pi-future">Lead convert rate → scoring model</span>
-            <span class="pi pi-future">QC defect → contractor rank</span>
-            <span class="pi pi-future">Market trend → deal filter</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-</div>
-
-<script>
-const details = {
-  market: {
-    title: '🗺️ Market Intelligence — สิ่งที่มีแล้ว vs ต้องเพิ่ม',
-    sections: [
-      { title: 'Done ✅', items: [
-        {text:'area_memory table (4 records)', cls:'done-item'},
-        {text:'Market Intel n8n workflow', cls:'done-item'},
-        {text:'Telegram → Market Intel input', cls:'done-item'},
-        {text:'Dashboard Market Intel tab', cls:'done-item'},
-      ]},
-      { title: 'Phase 2 ต้องทำ', items: [
-        {text:'เพิ่ม area_memory records (ทุกทำเลที่ทำ)', cls:'todo-item'},
-        {text:'Price trend tracking รายไตรมาส', cls:'todo-item'},
-        {text:'Competitor listing monitor', cls:'todo-item'},
-      ]},
-      { title: 'Phase 4 (Loop)', items: [
-        {text:'Market signal → auto adjust content angle', cls:'future-item'},
-        {text:'Deal filter based on market timing', cls:'future-item'},
-      ]}
-    ]
-  },
-  buyer: {
-    title: '👤 Buyer Intelligence — กำลังสร้าง (Phase 2)',
-    sections: [
-      { title: 'Done ✅', items: [
-        {text:'buyer_profiles table', cls:'done-item'},
-        {text:'buyer_context_signals (5 records)', cls:'done-item'},
-        {text:'BRAND_FACTS update (decision maker, triggers)', cls:'done-item'},
-      ]},
-      { title: 'Phase 2 ต้องทำ', items: [
-        {text:'CRM notes → auto parse → signals', cls:'todo-item'},
-        {text:'Price sensitivity by area', cls:'todo-item'},
-        {text:'Ghost signal tracking (ไม่รับสาย)', cls:'todo-item'},
-        {text:'Family profile patterns', cls:'todo-item'},
-      ]},
-      { title: 'Phase 4 (Loop)', items: [
-        {text:'Lead score model จาก conversion history', cls:'future-item'},
-        {text:'Predict ซื้อ vs ไม่ซื้อ จาก signals', cls:'future-item'},
-      ]}
-    ]
-  },
-  seller: {
-    title: '🏠 Seller + Property Intelligence',
-    sections: [
-      { title: 'Done ✅', items: [
-        {text:'LINE Seller Intake v6 (n8n)', cls:'done-item'},
-        {text:'properties table + Supabase', cls:'done-item'},
-        {text:'PropertyReview module (4-slot images)', cls:'done-item'},
-        {text:'WP CPT property + taxonomy', cls:'done-item'},
-      ]},
-      { title: 'Phase 2 ต้องทำ', items: [
-        {text:'Seller motivation field (urgent/not)', cls:'todo-item'},
-        {text:'Days on market tracking', cls:'todo-item'},
-        {text:'Price reduction history', cls:'todo-item'},
-      ]},
-      { title: 'Phase 3', items: [
-        {text:'Seller lead scoring', cls:'future-item'},
-        {text:'Match seller → buyer profile auto', cls:'future-item'},
-      ]}
-    ]
-  },
-  construction: {
-    title: '🏗️ Construction Intelligence — Phase 3',
-    sections: [
-      { title: 'ที่มีแล้ว (partial)', items: [
-        {text:'Budget Tool (/budget) — lead capture', cls:'done-item'},
-        {text:'BOQ input form', cls:'done-item'},
-      ]},
-      { title: 'Phase 3 ต้องสร้าง', items: [
-        {text:'BOQ template database (by house type)', cls:'todo-item'},
-        {text:'Actual cost vs BOQ tracking', cls:'todo-item'},
-        {text:'Cost overrun patterns by trade', cls:'todo-item'},
-        {text:'งวดงาน progress tracker', cls:'todo-item'},
-      ]},
-      { title: 'Phase 4 (Loop)', items: [
-        {text:'BOQ predictor ปรับจาก actual cost', cls:'future-item'},
-        {text:'Risk flag: trades ที่มักเกินงบ', cls:'future-item'},
-      ]}
-    ]
-  },
-  renovation: {
-    title: '🔨 Renovation Intelligence — Phase 3 (ยังไม่มีเลย)',
-    sections: [
-      { title: 'ยังไม่มี ❌', items: [
-        {text:'ไม่มี module หรือ table ใดๆ', cls:'todo-item'},
-      ]},
-      { title: 'Phase 3 ต้องสร้าง', items: [
-        {text:'Fix & Flip deal analyzer (ซื้อราคา X รีโนเวท Y ขาย Z)', cls:'todo-item'},
-        {text:'Renovation cost database by type', cls:'todo-item'},
-        {text:'Value-add ROI calculator', cls:'todo-item'},
-        {text:'Area demand score for flip targets', cls:'todo-item'},
-      ]},
-      { title: 'Phase 4 (Loop)', items: [
-        {text:'Historical ROI → predict next deal', cls:'future-item'},
-        {text:'Auto-flag deals with high ROI potential', cls:'future-item'},
-      ]}
-    ]
-  },
-  quality: {
-    title: '✅ Quality Intelligence — LIVE (QC Line)',
-    sections: [
-      { title: 'Done ✅', items: [
-        {text:'QC Line: LINE OA → GPT-4o Vision → Reply Thai ≤15s', cls:'done-item'},
-        {text:'4 หมวด: ฉาบ / คอนกรีตโครงสร้าง / สี / เส้น', cls:'done-item'},
-        {text:'Calibration fix: แยก concrete 3 ประเภท (ลด false positive)', cls:'done-item'},
-        {text:'wf_qc_line_hardcoded.json v8 (n8n workflow)', cls:'done-item'},
-        {text:'Supabase Storage: qc-standards reference photos', cls:'done-item'},
-      ]},
-      { title: 'Phase 2 ยังต้องทำ', items: [
-        {text:'QC Line end-to-end test จาก LINE OA จริง ⏳', cls:'todo-item'},
-        {text:'Verify calibration: concrete score ≥80', cls:'todo-item'},
-      ]},
-      { title: 'Phase 4 (Quality Intel Loop)', items: [
-        {text:'Defect pattern database by trade', cls:'future-item'},
-        {text:'Contractor quality score จาก QC history', cls:'future-item'},
-        {text:'QC pass rate tracking รายโครงการ', cls:'future-item'},
-        {text:'Predict defect risk by phase', cls:'future-item'},
-      ]}
-    ]
-  }
-};
-
-let selectedCard = null;
-
-function selectCard(id) {
-  const panel = document.getElementById('detailPanel');
-  if (selectedCard === id) {
-    panel.classList.remove('visible');
-    selectedCard = null;
-    document.querySelectorAll('.intel-card, .bu-card').forEach(c => c.classList.remove('selected'));
-    return;
-  }
-  selectedCard = id;
-  document.querySelectorAll('.intel-card, .bu-card').forEach(c => c.classList.remove('selected'));
-  event.currentTarget.classList.add('selected');
-  
-  const d = details[id];
-  if (!d) { panel.classList.remove('visible'); return; }
-  
-  document.getElementById('detailTitle').textContent = d.title;
-  document.getElementById('detailGrid').innerHTML = d.sections.map(s => `
-    <div class="detail-section">
-      <h4>${s.title}</h4>
-      <ul>${s.items.map(i => `<li class="${i.cls}">${i.text}</li>`).join('')}</ul>
-    </div>
-  `).join('');
-  panel.classList.add('visible');
-  panel.scrollIntoView({behavior:'smooth', block:'nearest'});
-}
-
-function showPhase(n) {
-  // Just visual highlight — already visible in roadmap
-  document.querySelectorAll('.tab').forEach((t,i) => {
-    t.classList.toggle('selected', i === n);
-  });
-}
-</script>
+<h2>ความหมายของ Intelligence Loop</h2>
+<p>เก็บข้อมูลจริง → ตรวจคุณภาพและความสัมพันธ์ → วิเคราะห์ด้วยหลักฐาน → มนุษย์ตัดสินใจ → เก็บผลจริงเพื่อประเมินรอบต่อไป ขณะนี้มีชิ้นส่วนของวงจร แต่ยังไม่ควรระบุว่าระบบปรับตัวเองอัตโนมัติครบสาย</p>
+<h2>Hub v2 เป็นงานอีกด้านหนึ่ง</h2>
+<p>การเปลี่ยนโครงสร้าง backend ช่วยบำรุงรักษา แต่ไม่ใช่เงื่อนไขว่าต้องย้าย v2 ก่อนจึงทำผู้ช่วยวิเคราะห์ได้ ต้องประเมินงานด้านหลักฐาน ข้อมูล สิทธิ์และต้นทุนแยกจากงานย้าย API</p>
+<h2>ข้อกำหนดที่ต้องรักษา</h2>
+<ul>
+<li>ไม่กลับไปอ้างว่าธุรกิจรับจ้างสร้างบ้าน; Content ให้ความรู้ยังทำได้</li>
+<li>ไม่รวม Land Project กับ Fix & Flip Deal เอง</li>
+<li>ไม่ถือ feedback เป็นคำสั่ง retrain หรือ publish อัตโนมัติ</li>
+<li>ไม่มีเปอร์เซ็นต์ความพร้อม วันที่เสร็จ หรือต้นทุนประหยัดที่ยังไม่ได้วัด</li>
+</ul>
+<h2>หลักฐานที่ใช้ตรวจ</h2>
+<ul>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/app/api/assistant/route.ts">app/api/assistant/route.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/app/api/brains/context/route.ts">app/api/brains/context/route.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/components/Deals.tsx">components/Deals.tsx</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/docs/v2/04-decisions/accepted/ADR-027.md">docs/v2/04-decisions/accepted/ADR-027.md</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/docs/v2/04-decisions/accepted/ADR-016.md">docs/v2/04-decisions/accepted/ADR-016.md</a>
+</li>
+</ul>
+<footer>สถานะตามโค้ด · ข้อมูลจริงต้องตรวจวันที่ แหล่งที่มา และขอบเขตผลค้นทุกครั้ง</footer>
+</main>
 </body>
 </html>

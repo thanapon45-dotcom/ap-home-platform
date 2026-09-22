@@ -1,287 +1,164 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="th">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Finnhouses Platform — Data Flow (Graph View)</title>
-<style>
-  * { box-sizing: border-box; }
-  html, body {
-    margin: 0; padding: 0; width: 100%; height: 100%;
-    background: #ffffff; font-family: 'Segoe UI', -apple-system, sans-serif;
-    overflow: hidden;
-  }
-  #top {
-    position: absolute; top: 0; left: 0; right: 0;
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 14px 22px; z-index: 10; pointer-events: none;
-  }
-  #top .title { font-size: 15px; color: #37352f; font-weight: 600; pointer-events: auto; }
-  #top .sub { font-size: 11px; color: #9a9a97; margin-top: 2px; }
-  #controls {
-    position: absolute; top: 14px; right: 20px; display: flex; gap: 6px; z-index: 10;
-  }
-  #controls button {
-    background: #f6f6f5; border: 1px solid #e3e3e0; border-radius: 6px;
-    width: 30px; height: 30px; cursor: pointer; color: #6b6b68; font-size: 14px;
-  }
-  #controls button:hover { background: #ebebe9; }
-  #legend {
-    position: absolute; bottom: 16px; left: 20px; z-index: 10;
-    background: rgba(255,255,255,.9); border: 1px solid #e8e8e6; border-radius: 10px;
-    padding: 10px 14px; font-size: 11px; color: #6b6b68; line-height: 1.9;
-  }
-  #legend .row { display: flex; align-items: center; gap: 8px; }
-  #legend .dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
-  #tooltip {
-    position: absolute; pointer-events: none; z-index: 20;
-    background: #202020; color: #f0f0ee; font-size: 11px; line-height: 1.6;
-    padding: 8px 11px; border-radius: 7px; max-width: 240px;
-    opacity: 0; transition: opacity .12s; box-shadow: 0 6px 20px rgba(0,0,0,.25);
-  }
-  svg { width: 100vw; height: 100vh; display: block; cursor: grab; }
-  svg:active { cursor: grabbing; }
-  .link { stroke: #d8d8d5; stroke-width: 1.2px; }
-  .link.dim { stroke: #ececea; }
-  .node-label {
-    font-size: 11px; fill: #37352f; pointer-events: none; user-select: none;
-    font-family: 'Segoe UI', sans-serif;
-  }
-  .node-label.dim { fill: #cfcfcc; }
-  .node-label.root { font-weight: 700; font-size: 13px; }
-  circle.node { cursor: pointer; stroke: #ffffff; stroke-width: 1.5px; }
-  circle.node.dim { opacity: .25; }
-</style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Graph View · เส้นทางบริการ · 22 ก.ย. 2026</title>
+<style>*{box-sizing:border-box}body{margin:0;background:#0d1422;color:#e7edf6;font:16px/1.8 Tahoma,system-ui,sans-serif}main{max-width:1160px;margin:auto;padding:34px 28px 70px}h1{font-size:34px;line-height:1.4;color:#f4d478}h2{font-size:24px;margin-top:38px}h3{font-size:18px;color:#b9e7ed}a{color:#8adbea}code{color:#b9e7ed;overflow-wrap:anywhere;font-size:.88em}header p,.muted{color:#adbacd}.badge{display:inline-block;background:#20344b;color:#acdcd7;border-radius:5px;padding:3px 9px;font-size:12px;letter-spacing:.5px}.note{border-left:3px solid #f4d478;background:#252a31;padding:15px 20px;margin:22px 0}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.card,details{background:#162236;border:1px solid #344158;border-radius:12px;padding:20px;min-width:0}.card h3{margin-top:0}summary{cursor:pointer;font-weight:700;color:#b9e7ed}details{margin:12px 0}table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:13px;text-align:left;vertical-align:top;border-bottom:1px solid #344158;overflow-wrap:anywhere}th{color:#f4d478}.table{overflow-x:auto}nav{display:flex;flex-wrap:wrap;gap:10px;margin:20px 0}nav a,button{background:#20344b;border:1px solid #40516b;border-radius:7px;padding:10px 14px;color:#e7edf6;text-decoration:none;font:inherit;cursor:pointer}button[aria-pressed=true]{background:#f4d478;color:#182235}a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid #f4d478;outline-offset:3px}li{margin:8px 0}footer{border-top:1px solid #344158;margin-top:36px;padding-top:18px;color:#adbacd;font-size:13px}.step{border-left:3px solid #75c4ce;padding:8px 18px;margin:12px 0}.step strong{color:#f4d478}svg{max-width:100%;height:auto}svg text{font-family:Tahoma,system-ui,sans-serif}#detail{min-height:100px}.branch{border-left:2px solid #75c4ce;padding:0 0 0 20px}.branch h3{margin-bottom:5px}@media(max-width:650px){main{padding:22px 16px}h1{font-size:27px}.grid{grid-template-columns:1fr}th,td{padding:9px;min-width:120px}}@media print{body{background:white;color:#111}main{padding:0}.card,details,.note{background:white;border-color:#aaa}h1,h2,h3,a,code,th,.muted,header p,footer{color:#111}nav,button{display:none}.card{break-inside:avoid}details{display:block}}</style>
 </head>
 <body>
-
-<div id="top">
-  <div>
-    <div class="title">Finnhouses Platform — Data Flow</div>
-    <div class="sub">Graph view · ลากจุดเพื่อจัดวางใหม่ · scroll เพื่อซูม · คลิกจุดเพื่อไฮไลต์เส้นทาง · อัปเดต 23 Jul 2026</div>
-  </div>
+<main>
+<header>
+<span class="badge">AP-HOME PLATFORM · DOCUMENTATION</span>
+<h1>Graph View · เส้นทางบริการ</h1>
+<p>สองชื่อไฟล์เดิมใช้ผังฉบับเดียวกัน เพื่อไม่ให้ข้อมูลขัดกัน</p>
+<p>ทบทวน 22 กันยายน 2026 · อ้างอิง main <code>1dddb46</code>
+</p>
+</header>
+<nav aria-label="เอกสาร">
+<a href="index.html">เอกสารทั้งหมด</a>
+<a href="ap_home_platform_os_map.html">ภาพรวมสถานะ</a>
+</nav>
+<div class="note">ยืนยันเส้นทางจากโค้ดและ ADR ณ commit ที่ระบุ การมีโค้ดไม่ยืนยันว่า deployment, credentials และ workflow ที่ active ทำงานครบแล้ว รอบนี้ไม่ได้รันงาน production</div>
+<svg viewBox="0 0 810 500" role="img" aria-label="ผังบริการ เลือกเส้นทางจากปุ่มด้านล่าง">
+<defs>
+<marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+<path d="M0 0L10 5L0 10Z" fill="#75c4ce"/>
+</marker>
+</defs>
+<path id="edge-0" d="M120 70 L120 145" stroke="#75c4ce" stroke-width="2" opacity=".35" fill="none" marker-end="url(#arrow)"/>
+<path id="edge-1" d="M220 170 L300 45" stroke="#75c4ce" stroke-width="2" opacity=".35" fill="none" marker-end="url(#arrow)"/>
+<path id="edge-2" d="M220 170 L300 170" stroke="#75c4ce" stroke-width="2" opacity=".35" fill="none" marker-end="url(#arrow)"/>
+<path id="edge-3" d="M220 170 L300 295" stroke="#75c4ce" stroke-width="2" opacity=".35" fill="none" marker-end="url(#arrow)"/>
+<path id="edge-4" d="M220 170 L300 420" stroke="#75c4ce" stroke-width="2" opacity=".35" fill="none" marker-end="url(#arrow)"/>
+<path id="edge-5" d="M220 170 L580 295" stroke="#75c4ce" stroke-width="2" opacity=".35" fill="none" marker-end="url(#arrow)"/>
+<path id="edge-6" d="M220 170 L580 45" stroke="#75c4ce" stroke-width="2" opacity=".35" fill="none" marker-end="url(#arrow)"/>
+<path id="edge-7" d="M500 45 L580 45" stroke="#75c4ce" stroke-width="2" opacity=".35" fill="none" marker-end="url(#arrow)"/>
+<path id="edge-8" d="M500 420 L580 295" stroke="#75c4ce" stroke-width="2" opacity=".35" fill="none" marker-end="url(#arrow)"/>
+<path id="edge-9" d="M500 170 L580 170" stroke="#75c4ce" stroke-width="2" opacity=".35" fill="none" marker-end="url(#arrow)"/>
+<path id="edge-10" d="M680 70 L680 145" stroke="#75c4ce" stroke-width="2" opacity=".35" fill="none" marker-end="url(#arrow)"/>
+<rect x="20" y="20" width="200" height="50" rx="9" fill="#20344b" stroke="#65758b"/>
+<text x="120" y="51" text-anchor="middle" fill="#e7edf6" font-size="16">Browser / UI</text>
+<rect x="20" y="145" width="200" height="50" rx="9" fill="#20344b" stroke="#65758b"/>
+<text x="120" y="176" text-anchor="middle" fill="#e7edf6" font-size="16">Next.js API</text>
+<rect x="300" y="20" width="200" height="50" rx="9" fill="#20344b" stroke="#65758b"/>
+<text x="400" y="51" text-anchor="middle" fill="#e7edf6" font-size="16">Hub v1</text>
+<rect x="300" y="145" width="200" height="50" rx="9" fill="#20344b" stroke="#65758b"/>
+<text x="400" y="176" text-anchor="middle" fill="#e7edf6" font-size="16">FB Backend</text>
+<rect x="300" y="270" width="200" height="50" rx="9" fill="#20344b" stroke="#65758b"/>
+<text x="400" y="301" text-anchor="middle" fill="#e7edf6" font-size="16">Claude / AI</text>
+<rect x="300" y="395" width="200" height="50" rx="9" fill="#20344b" stroke="#65758b"/>
+<text x="400" y="426" text-anchor="middle" fill="#e7edf6" font-size="16">Brains API</text>
+<rect x="580" y="20" width="200" height="50" rx="9" fill="#20344b" stroke="#65758b"/>
+<text x="680" y="51" text-anchor="middle" fill="#e7edf6" font-size="16">n8n</text>
+<rect x="580" y="270" width="200" height="50" rx="9" fill="#20344b" stroke="#65758b"/>
+<text x="680" y="301" text-anchor="middle" fill="#e7edf6" font-size="16">Supabase</text>
+<rect x="580" y="145" width="200" height="50" rx="9" fill="#20344b" stroke="#65758b"/>
+<text x="680" y="176" text-anchor="middle" fill="#e7edf6" font-size="16">WP / Facebook</text>
+</svg>
+<p class="muted">ลูกศรแสดงทิศทางคำขอ/การส่งงานเฉพาะเส้นทางที่ระบุ ไม่รวมทุก callback หรือทุกการเขียนฐานข้อมูลของ workflow</p>
+<nav aria-label="เลือกเส้นทาง">
+<button data-edge="0" aria-pressed="false">UI → API</button>
+<button data-edge="1" aria-pressed="false">API → HUB</button>
+<button data-edge="2" aria-pressed="false">API → FB</button>
+<button data-edge="3" aria-pressed="false">API → AI</button>
+<button data-edge="4" aria-pressed="false">API → BR</button>
+<button data-edge="5" aria-pressed="false">API → DB</button>
+<button data-edge="6" aria-pressed="false">API → N8N</button>
+<button data-edge="7" aria-pressed="false">HUB → N8N</button>
+<button data-edge="8" aria-pressed="false">BR → DB</button>
+<button data-edge="9" aria-pressed="false">FB → OUT</button>
+<button data-edge="10" aria-pressed="false">N8N → OUT</button>
+</nav>
+<div id="detail" class="note" aria-live="polite">เลือกปุ่มเส้นทางเพื่อดูหน้าที่และไฮไลต์ลูกศร</div>
+<div class="table">
+<table>
+<thead>
+<tr>
+<th>จาก</th>
+<th>ไป</th>
+<th>ความหมาย</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>UI</td>
+<td>API</td>
+<td>หน้าเว็บเรียก API ภายใน</td>
+</tr>
+<tr>
+<td>API</td>
+<td>HUB</td>
+<td>Blog/FB queue, state, QC/Property/BOQ ตาม route</td>
+</tr>
+<tr>
+<td>API</td>
+<td>FB</td>
+<td>โพสต์ FB ทันที: /api/fb/publish</td>
+</tr>
+<tr>
+<td>API</td>
+<td>AI</td>
+<td>Assistant / chat / image เรียก provider ตาม route</td>
+</tr>
+<tr>
+<td>API</td>
+<td>BR</td>
+<td>Assistant และ AI Content อ่าน shared context</td>
+</tr>
+<tr>
+<td>API</td>
+<td>DB</td>
+<td>CRM, Land, Deals และ feedback API อ่าน/เขียนโดยตรง</td>
+</tr>
+<tr>
+<td>API</td>
+<td>N8N</td>
+<td>Market Intel API ส่ง webhook</td>
+</tr>
+<tr>
+<td>HUB</td>
+<td>N8N</td>
+<td>Hub trigger งาน Blog ตาม workflow</td>
+</tr>
+<tr>
+<td>BR</td>
+<td>DB</td>
+<td>Brains อ่านรวมข้อมูล; ไม่เขียน memory</td>
+</tr>
+<tr>
+<td>FB</td>
+<td>OUT</td>
+<td>FB Backend เผยแพร่ Facebook</td>
+</tr>
+<tr>
+<td>N8N</td>
+<td>OUT</td>
+<td>WF1/WF2 → WordPress ตาม workflow ที่ active</td>
+</tr>
+</tbody>
+</table>
 </div>
-
-<div id="controls">
-  <button id="zoomIn" title="ซูมเข้า">+</button>
-  <button id="zoomOut" title="ซูมออก">−</button>
-  <button id="reset" title="รีเซ็ตมุมมอง">⤢</button>
-</div>
-
-<div id="legend"></div>
-<div id="tooltip"></div>
-
-<svg></svg>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
-<script>
-// ── Data model — mirrors the existing static mind-map (Hub-and-Spoke) ──────
-// group colors are intentionally muted (Obsidian-style subtle tag tint)
-const GROUPS = {
-  hub:     { label: "Hub (Railway orchestrator)", color: "#f59e0b" },
-  input:   { label: "Inputs",                     color: "#3b82f6" },
-  n8n:     { label: "n8n Automation",              color: "#f97316" },
-  output:  { label: "Outputs",                     color: "#d946ef" },
-  data:    { label: "Data (Supabase)",             color: "#10b981" },
-  module:  { label: "Modules (Dashboard OS)",      color: "#8b5cf6" },
-};
-
-const nodes = [
-  { id: "HUB",        group: "hub",    desc: "Hub v1 (server.cjs) บน Railway — orchestrator กลาง รับ/ส่ง webhook ทุกเส้นทาง, x-hub-token auth" },
-
-  { id: "INPUTS",      group: "input",  desc: "จุดรับข้อมูลเข้าเข้าระบบทั้งหมด 4 ช่องทาง" },
-  { id: "Web Budget",  group: "input",  desc: "ฟอร์มคำนวณงบ (ปิดให้บริการแล้ว — ดู ADR-018)" },
-  { id: "LINE Seller", group: "input",  desc: "รูปทรัพย์จาก LINE OA ผู้ขาย/inspector" },
-  { id: "FB Posts",    group: "input",  desc: "ข้อมูล Market Intel ที่ observe จาก Facebook" },
-  { id: "Archi Manual",group: "input",  desc: "ข้อมูลตลาดที่ Archi พิมพ์เข้าเองผ่าน Market Intel" },
-
-  { id: "n8n",         group: "n8n",    desc: "Automation layer — ประมวลผล/สร้าง content/callback กลับ Hub" },
-  { id: "Webhooks",    group: "n8n",    desc: "LINE + FB webhook triggers" },
-  { id: "Schedule",    group: "n8n",    desc: "Cron รายวัน 09:00-09:05 — Blog/FB queue auto-run" },
-  { id: "WF1+WF2",     group: "n8n",    desc: "WF1 Article+Publish (AI Quality Gate) → WF2 Image+Patch" },
-
-  { id: "OUTPUTS",     group: "output", desc: "ช่องทางที่ระบบส่งผลลัพธ์ออกไป 4 ช่องทาง" },
-  { id: "FB Post",     group: "output", desc: "โพสต์ขึ้น Finnhouses Facebook Page" },
-  { id: "Blog",        group: "output", desc: "บทความขึ้น finnhouses.com ผ่าน WordPress" },
-  { id: "Property WP", group: "output", desc: "ประกาศขายทรัพย์ขึ้น WordPress Listing" },
-  { id: "Telegram",    group: "output", desc: "แจ้งเตือน + content draft ส่งเข้า Telegram" },
-
-  { id: "DATA",        group: "data",   desc: "Supabase — แหล่งข้อมูลกลางของทุกโมดูล" },
-  { id: "leads",       group: "data",   desc: "ตาราง leads — new → closed, business_unit: consult/list" },
-  { id: "properties",  group: "data",   desc: "ตาราง properties — pending → live" },
-  { id: "market_insights", group: "data", desc: "135 แถว, AI confidence 1-5 ดาว, มี Calibration feedback แล้ว" },
-  { id: "quality_gate_log", group: "data", desc: "log การตัดสินใจของ AI Quality Gate (ADR-021)" },
-  { id: "reno_deals",  group: "data",   desc: "Fix & Flip / Renovate-to-Resell deal pipeline; แยกจาก Land Analyzer" },
-
-  { id: "MODULES",     group: "module", desc: "เครื่องมือที่ Archi ใช้งานจริงบน Dashboard OS" },
-  { id: "Dashboard",   group: "module", desc: "Overview + Live KPIs + Ops health" },
-  { id: "CRM",         group: "module", desc: "Lead Kanban — consult / list" },
-  { id: "AI Content",  group: "module", desc: "FB Content Studio — สร้างโพสต์ด้วย Claude" },
-  { id: "Blog Runner", group: "module", desc: "Queue จัดคิวบทความ + Quality Gate Accuracy tab" },
-  { id: "Market Intel",group: "module", desc: "บันทึกข้อมูลตลาด + Calibration feedback" },
-  { id: "Land Analyzer",group:"module", desc: "คำนวณการลงทุน Build-to-Sell → projects; แยกจาก Fix & Flip Deals" },
-  { id: "Deals",       group: "module", desc: "Fix & Flip Kanban + ROI จริง vs ประเมิน" },
-];
-
-const links = [
-  ["HUB","INPUTS"], ["HUB","n8n"], ["HUB","OUTPUTS"], ["HUB","DATA"], ["HUB","MODULES"],
-
-  ["INPUTS","Web Budget"], ["INPUTS","LINE Seller"], ["INPUTS","FB Posts"], ["INPUTS","Archi Manual"],
-
-  ["n8n","Webhooks"], ["n8n","Schedule"], ["n8n","WF1+WF2"],
-
-  ["OUTPUTS","FB Post"], ["OUTPUTS","Blog"], ["OUTPUTS","Property WP"], ["OUTPUTS","Telegram"],
-
-  ["DATA","leads"], ["DATA","properties"], ["DATA","market_insights"], ["DATA","quality_gate_log"], ["DATA","reno_deals"],
-
-  ["MODULES","Dashboard"], ["MODULES","CRM"], ["MODULES","AI Content"], ["MODULES","Blog Runner"],
-  ["MODULES","Market Intel"], ["MODULES","Land Analyzer"], ["MODULES","Deals"],
-
-  // cross-links — the actual data relationships, not just hub-and-spoke
-  ["LINE Seller","Property WP"],
-  ["Archi Manual","market_insights"],
-  ["FB Posts","market_insights"],
-  ["WF1+WF2","Blog"],
-  ["WF1+WF2","quality_gate_log"],
-  ["Schedule","Blog Runner"],
-  ["CRM","leads"],
-  ["AI Content","FB Post"],
-  ["Blog Runner","Blog"],
-  ["Blog Runner","quality_gate_log"],
-  ["Market Intel","market_insights"],
-  
-  ["Deals","reno_deals"],
-  ["Dashboard","leads"],
-  ["Dashboard","properties"],
-];
-
-// ── Build degree map for node sizing (more connections = bigger, like Obsidian) ──
-const degree = {};
-nodes.forEach(n => degree[n.id] = 0);
-links.forEach(([a,b]) => { degree[a]++; degree[b]++; });
-
-function nodeRadius(n) {
-  if (n.id === "HUB") return 22;
-  const d = degree[n.id] || 1;
-  return Math.min(16, 6 + d * 1.6);
-}
-
-// ── D3 setup ────────────────────────────────────────────────────────────────
-const svg = d3.select("svg");
-const width = window.innerWidth, height = window.innerHeight;
-
-const g = svg.append("g");
-
-const zoom = d3.zoom()
-  .scaleExtent([0.25, 4])
-  .on("zoom", (event) => g.attr("transform", event.transform));
-svg.call(zoom);
-
-const linkData = links.map(([source, target]) => ({ source, target }));
-
-const simulation = d3.forceSimulation(nodes)
-  .force("link", d3.forceLink(linkData).id(d => d.id).distance(d => {
-    if (d.source.id === "HUB" || d.target.id === "HUB") return 140;
-    return 70;
-  }).strength(0.7))
-  .force("charge", d3.forceManyBody().strength(-260))
-  .force("center", d3.forceCenter(width / 2, height / 2))
-  .force("collide", d3.forceCollide().radius(d => nodeRadius(d) + 26));
-
-const link = g.append("g")
-  .selectAll("line")
-  .data(linkData)
-  .join("line")
-  .attr("class", "link");
-
-const nodeGroup = g.append("g")
-  .selectAll("g")
-  .data(nodes)
-  .join("g")
-  .call(drag(simulation));
-
-const circles = nodeGroup.append("circle")
-  .attr("class", "node")
-  .attr("r", nodeRadius)
-  .attr("fill", d => GROUPS[d.group].color)
-  .attr("fill-opacity", d => d.id === "HUB" ? 1 : 0.85);
-
-const labels = nodeGroup.append("text")
-  .attr("class", d => "node-label" + (d.id === "HUB" ? " root" : ""))
-  .attr("x", d => nodeRadius(d) + 6)
-  .attr("y", 4)
-  .text(d => d.id);
-
-const tooltip = d3.select("#tooltip");
-
-nodeGroup
-  .on("mouseenter", (event, d) => {
-    tooltip.style("opacity", 1).html(`<b>${d.id}</b><br>${d.desc || ""}`);
-  })
-  .on("mousemove", (event) => {
-    tooltip.style("left", (event.pageX + 16) + "px").style("top", (event.pageY + 10) + "px");
-  })
-  .on("mouseleave", () => tooltip.style("opacity", 0))
-  .on("click", (event, d) => highlight(d.id));
-
-// ── Highlight connected subgraph on click ───────────────────────────────────
-let highlighted = null;
-function highlight(id) {
-  if (highlighted === id) { highlighted = null; clearHighlight(); return; }
-  highlighted = id;
-  const connected = new Set([id]);
-  linkData.forEach(l => {
-    if (l.source.id === id) connected.add(l.target.id);
-    if (l.target.id === id) connected.add(l.source.id);
-  });
-  circles.classed("dim", d => !connected.has(d.id));
-  labels.classed("dim", d => !connected.has(d.id));
-  link.classed("dim", l => !(connected.has(l.source.id) && connected.has(l.target.id)));
-}
-function clearHighlight() {
-  circles.classed("dim", false);
-  labels.classed("dim", false);
-  link.classed("dim", false);
-}
-svg.on("click", (event) => { if (event.target.tagName === "svg") { highlighted = null; clearHighlight(); } });
-
-simulation.on("tick", () => {
-  link
-    .attr("x1", d => d.source.x).attr("y1", d => d.source.y)
-    .attr("x2", d => d.target.x).attr("y2", d => d.target.y);
-  nodeGroup.attr("transform", d => `translate(${d.x},${d.y})`);
-});
-
-function drag(sim) {
-  function dragstarted(event, d) {
-    if (!event.active) sim.alphaTarget(0.25).restart();
-    d.fx = d.x; d.fy = d.y;
-  }
-  function dragged(event, d) { d.fx = event.x; d.fy = event.y; }
-  function dragended(event, d) {
-    if (!event.active) sim.alphaTarget(0);
-    d.fx = null; d.fy = null;
-  }
-  return d3.drag().on("start", dragstarted).on("drag", dragged).on("end", dragended);
-}
-
-// ── Controls ────────────────────────────────────────────────────────────────
-d3.select("#zoomIn").on("click", () => svg.transition().call(zoom.scaleBy, 1.3));
-d3.select("#zoomOut").on("click", () => svg.transition().call(zoom.scaleBy, 0.75));
-d3.select("#reset").on("click", () => svg.transition().call(zoom.transform, d3.zoomIdentity));
-
-// ── Legend ──────────────────────────────────────────────────────────────────
-const legend = d3.select("#legend");
-Object.entries(GROUPS).forEach(([key, g2]) => {
-  const row = legend.append("div").attr("class", "row");
-  row.append("div").attr("class", "dot").style("background", g2.color);
-  row.append("div").text(g2.label);
-});
-
-window.addEventListener("resize", () => {
-  simulation.force("center", d3.forceCenter(window.innerWidth / 2, window.innerHeight / 2));
-  simulation.alpha(0.3).restart();
-});
-</script>
+<h2>ข้อมูลที่ห้ามตีความเกินผัง</h2>
+<p>Brains เป็นตัวอ่านรวมข้อมูลเดิม ไม่ใช่ฐานข้อมูลใหม่และไม่ได้ฝึกโมเดลเอง อ่าน market insights, summary, area memory, buyer signals, deals, QC และ content frames แต่ไม่อ่านประวัติแชท, projects หรือ BOQ ใน endpoint นี้</p>
+<p>ตัวกรองพื้นที่ใช้กับ market insights, summary, area memory และ deals เท่านั้น ส่วน buyer signals, QC และ content frames ไม่ได้กรองตามพื้นที่ ค่า <code>verified_insights</code> หมายถึง confidence ≥ 4 ไม่ใช่การยืนยันโดยมนุษย์ จำนวนที่คืนเป็นผลค้นจำกัดจำนวนต่อแหล่งข้อมูล ไม่ใช่ยอดรวมทั้งระบบ</p>
+<h2>หลักฐานที่ใช้ตรวจ</h2>
+<ul>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/app/api/fb/publish/route.ts">app/api/fb/publish/route.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/app/api/market-intel/route.ts">app/api/market-intel/route.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/app/api/brains/context/route.ts">app/api/brains/context/route.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/app/api/assistant/route.ts">app/api/assistant/route.ts</a>
+</li>
+</ul>
+<footer>สถานะตามโค้ด · ข้อมูลจริงต้องตรวจวันที่ แหล่งที่มา และขอบเขตผลค้นทุกครั้ง</footer>
+</main>
+<script>const edges=[["UI", "API", "หน้าเว็บเรียก API ภายใน"], ["API", "HUB", "Blog/FB queue, state, QC/Property/BOQ ตาม route"], ["API", "FB", "โพสต์ FB ทันที: /api/fb/publish"], ["API", "AI", "Assistant / chat / image เรียก provider ตาม route"], ["API", "BR", "Assistant และ AI Content อ่าน shared context"], ["API", "DB", "CRM, Land, Deals และ feedback API อ่าน/เขียนโดยตรง"], ["API", "N8N", "Market Intel API ส่ง webhook"], ["HUB", "N8N", "Hub trigger งาน Blog ตาม workflow"], ["BR", "DB", "Brains อ่านรวมข้อมูล; ไม่เขียน memory"], ["FB", "OUT", "FB Backend เผยแพร่ Facebook"], ["N8N", "OUT", "WF1/WF2 → WordPress ตาม workflow ที่ active"]];document.querySelectorAll('[data-edge]').forEach(b=>b.onclick=()=>{let n=Number(b.dataset.edge);document.querySelectorAll('[data-edge]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));edges.forEach((_,i)=>{let p=document.getElementById('edge-'+i);p.style.opacity=i===n?'1':'.12';p.style.strokeWidth=i===n?'5':'2'});document.getElementById('detail').textContent=edges[n].join(' · ')});</script>
 </body>
 </html>
