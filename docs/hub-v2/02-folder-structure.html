@@ -1,1 +1,292 @@
-<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hub v2 · โครงสร้างไฟล์จริง · 22 ก.ย. 2026</title><style>*{box-sizing:border-box}body{margin:0;background:#0d1422;color:#e7edf6;font:16px/1.8 Tahoma,system-ui,sans-serif}main{max-width:1160px;margin:auto;padding:34px 28px 70px}h1{font-size:34px;line-height:1.4;color:#f4d478}h2{font-size:24px;margin-top:38px}h3{font-size:18px;color:#b9e7ed}a{color:#8adbea}code{color:#b9e7ed;overflow-wrap:anywhere;font-size:.88em}header p,.muted{color:#adbacd}.badge{display:inline-block;background:#20344b;color:#acdcd7;border-radius:5px;padding:3px 9px;font-size:12px;letter-spacing:.5px}.note{border-left:3px solid #f4d478;background:#252a31;padding:15px 20px;margin:22px 0}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.card,details{background:#162236;border:1px solid #344158;border-radius:12px;padding:20px;min-width:0}.card h3{margin-top:0}summary{cursor:pointer;font-weight:700;color:#b9e7ed}details{margin:12px 0}table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:13px;text-align:left;vertical-align:top;border-bottom:1px solid #344158;overflow-wrap:anywhere}th{color:#f4d478}.table{overflow-x:auto}nav{display:flex;flex-wrap:wrap;gap:10px;margin:20px 0}nav a,button{background:#20344b;border:1px solid #40516b;border-radius:7px;padding:10px 14px;color:#e7edf6;text-decoration:none;font:inherit;cursor:pointer}button[aria-pressed=true]{background:#f4d478;color:#182235}a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid #f4d478;outline-offset:3px}li{margin:8px 0}footer{border-top:1px solid #344158;margin-top:36px;padding-top:18px;color:#adbacd;font-size:13px}.step{border-left:3px solid #75c4ce;padding:8px 18px;margin:12px 0}.step strong{color:#f4d478}svg{max-width:100%;height:auto}svg text{font-family:Tahoma,system-ui,sans-serif}#detail{min-height:100px}.branch{border-left:2px solid #75c4ce;padding:0 0 0 20px}.branch h3{margin-bottom:5px}@media(max-width:650px){main{padding:22px 16px}h1{font-size:27px}.grid{grid-template-columns:1fr}th,td{padding:9px;min-width:120px}}@media print{body{background:white;color:#111}main{padding:0}.card,details,.note{background:white;border-color:#aaa}h1,h2,h3,a,code,th,.muted,header p,footer{color:#111}nav,button{display:none}.card{break-inside:avoid}details{display:block}}</style></head><body><main><header><span class="badge">AP-HOME PLATFORM · DOCUMENTATION</span><h1>Hub v2 · โครงสร้างไฟล์จริง</h1><p>รายการ source files และความรับผิดชอบของแต่ละชั้น</p><p>ทบทวน 22 กันยายน 2026 · อ้างอิง main <code>1dddb46</code></p></header><div class="note">ยืนยันเส้นทางจากโค้ดและ ADR ณ commit ที่ระบุ การมีโค้ดไม่ยืนยันว่า deployment, credentials และ workflow ที่ active ทำงานครบแล้ว รอบนี้ไม่ได้รันงาน production</div><h2>โฟลเดอร์จากไฟล์จริง</h2><p>ตารางนี้นับไฟล์ TypeScript ใน src ณ commit ที่ระบุ ไม่ใช่เปอร์เซ็นต์ความพร้อม production; src/server.ts เป็น entry point แยกจากหมวดด้านล่าง</p><div class="table"><table><thead><tr><th>โฟลเดอร์</th><th>จำนวน .ts</th><th>ไฟล์</th></tr></thead><tbody><tr><td>core/domain</td><td>14</td><td><ul><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/core/domain/entities/BlogRun.ts">core/domain/entities/BlogRun.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/core/domain/entities/QcInspection.ts">core/domain/entities/QcInspection.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/core/domain/events/BlogRunCompleted.ts">core/domain/events/BlogRunCompleted.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/core/domain/events/BlogRunFailed.ts">core/domain/events/BlogRunFailed.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/core/domain/events/BlogRunStarted.ts">core/domain/events/BlogRunStarted.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/core/domain/events/DomainEvent.ts">core/domain/events/DomainEvent.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/core/domain/events/FbPublished.ts">core/domain/events/FbPublished.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/core/domain/events/HealthAlertTriggered.ts">core/domain/events/HealthAlertTriggered.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/core/domain/events/LeadReceived.ts">core/domain/events/LeadReceived.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/core/domain/events/QcDefectFound.ts">core/domain/events/QcDefectFound.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/core/domain/events/QcInspectionCompleted.ts">core/domain/events/QcInspectionCompleted.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/core/domain/value-objects/QcCategory.ts">core/domain/value-objects/QcCategory.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/core/domain/value-objects/RunId.ts">core/domain/value-objects/RunId.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/core/domain/value-objects/Severity.ts">core/domain/value-objects/Severity.ts</a></li></ul></td></tr><tr><td>core/application/ports</td><td>6</td><td><ul><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/core/application/ports/IAiProvider.ts">core/application/ports/IAiProvider.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/core/application/ports/IEventBus.ts">core/application/ports/IEventBus.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/core/application/ports/INotifier.ts">core/application/ports/INotifier.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/core/application/ports/IQcRepository.ts">core/application/ports/IQcRepository.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/core/application/ports/IStateRepository.ts">core/application/ports/IStateRepository.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/core/application/ports/IWorkflowEngine.ts">core/application/ports/IWorkflowEngine.ts</a></li></ul></td></tr><tr><td>modules</td><td>11</td><td><ul><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/modules/ai/AiGateway.ts">modules/ai/AiGateway.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/modules/ai/ClaudeProvider.ts">modules/ai/ClaudeProvider.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/modules/ai/GeminiProvider.ts">modules/ai/GeminiProvider.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/modules/ai/OpenAiProvider.ts">modules/ai/OpenAiProvider.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/modules/blog/BlogUseCase.ts">modules/blog/BlogUseCase.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/modules/config/Config.ts">modules/config/Config.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/modules/eventbus/InMemoryEventBus.ts">modules/eventbus/InMemoryEventBus.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/modules/fb/FbUseCase.ts">modules/fb/FbUseCase.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/modules/health/HealthMonitor.ts">modules/health/HealthMonitor.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/modules/qc/QcUseCase.ts">modules/qc/QcUseCase.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/modules/state/StateManager.ts">modules/state/StateManager.ts</a></li></ul></td></tr><tr><td>infrastructure</td><td>8</td><td><ul><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/infrastructure/facebook/FbBackendAdapter.ts">infrastructure/facebook/FbBackendAdapter.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/infrastructure/line/LineAdapter.ts">infrastructure/line/LineAdapter.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/infrastructure/n8n/N8nWorkflowAdapter.ts">infrastructure/n8n/N8nWorkflowAdapter.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/infrastructure/supabase/SupabaseClient.ts">infrastructure/supabase/SupabaseClient.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/infrastructure/supabase/SupabaseQcRepository.ts">infrastructure/supabase/SupabaseQcRepository.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/infrastructure/supabase/SupabaseStateRepository.ts">infrastructure/supabase/SupabaseStateRepository.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/infrastructure/telegram/TelegramNotifier.ts">infrastructure/telegram/TelegramNotifier.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/infrastructure/wordpress/WordPressPublisher.ts">infrastructure/wordpress/WordPressPublisher.ts</a></li></ul></td></tr><tr><td>presentation</td><td>7</td><td><ul><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/presentation/middleware/auth.ts">presentation/middleware/auth.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/presentation/middleware/errorHandler.ts">presentation/middleware/errorHandler.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/presentation/routes/blogRoutes.ts">presentation/routes/blogRoutes.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/presentation/routes/fbRoutes.ts">presentation/routes/fbRoutes.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/presentation/routes/healthRoutes.ts">presentation/routes/healthRoutes.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/presentation/routes/qcRoutes.ts">presentation/routes/qcRoutes.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/presentation/routes/stateRoutes.ts">presentation/routes/stateRoutes.ts</a></li></ul></td></tr><tr><td>shared</td><td>5</td><td><ul><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/shared/errors.ts">shared/errors.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/shared/id.ts">shared/id.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/shared/logger.ts">shared/logger.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/shared/retry.ts">shared/retry.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/shared/time.ts">shared/time.ts</a></li></ul></td></tr></tbody></table></div><h2>Path aliases</h2><div class="table"><table><thead><tr><th>Alias</th><th>Target</th></tr></thead><tbody><tr><td>@core/*</td><td>src/core/*</td></tr><tr><td>@modules/*</td><td>src/modules/*</td></tr><tr><td>@infra/*</td><td>src/infrastructure/*</td></tr><tr><td>@presentation/*</td><td>src/presentation/*</td></tr><tr><td>@shared/*</td><td>src/shared/*</td></tr></tbody></table></div><h2>วางโค้ดที่ไหน</h2><ul><li>กฎธุรกิจอยู่ใน domain/use case; ไม่ให้ผูกกับ HTTP หรือ provider โดยตรง</li><li>สัญญาระหว่าง use case กับบริการภายนอกอยู่ใน ports และ implementation อยู่ infrastructure</li><li>HTTP validation/auth/response อยู่ presentation</li><li>server.ts ประกอบ dependencies; server.cjs ของ v1 ยังเป็นอีก implementation หนึ่ง ไม่ถือว่าลบออกได้ทันที</li></ul><h2>สถานะการย้าย</h2><p>v2 ใช้ x-hub-secret ต่างจาก v1 x-hub-token; Blog queue มี route แล้ว แต่ FB queue ยังไม่ครบใน fbRoutes.ts การมี folder ครบไม่ยืนยัน API parity หรือ cutover สำเร็จ</p><h2>หลักฐานที่ใช้ตรวจ</h2><ul><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/tsconfig.json">services/backend-hub/tsconfig.json</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/server.ts">services/backend-hub/src/server.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/presentation/routes/fbRoutes.ts">services/backend-hub/src/presentation/routes/fbRoutes.ts</a></li></ul><footer>สถานะตามโค้ด · ข้อมูลจริงต้องตรวจวันที่ แหล่งที่มา และขอบเขตผลค้นทุกครั้ง</footer></main></body></html>
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hub v2 · โครงสร้างไฟล์จริง · 22 ก.ย. 2026</title>
+<style>*{box-sizing:border-box}body{margin:0;background:#0d1422;color:#e7edf6;font:16px/1.8 Tahoma,system-ui,sans-serif}main{max-width:1160px;margin:auto;padding:34px 28px 70px}h1{font-size:34px;line-height:1.4;color:#f4d478}h2{font-size:24px;margin-top:38px}h3{font-size:18px;color:#b9e7ed}a{color:#8adbea}code{color:#b9e7ed;overflow-wrap:anywhere;font-size:.88em}header p,.muted{color:#adbacd}.badge{display:inline-block;background:#20344b;color:#acdcd7;border-radius:5px;padding:3px 9px;font-size:12px;letter-spacing:.5px}.note{border-left:3px solid #f4d478;background:#252a31;padding:15px 20px;margin:22px 0}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.card,details{background:#162236;border:1px solid #344158;border-radius:12px;padding:20px;min-width:0}.card h3{margin-top:0}summary{cursor:pointer;font-weight:700;color:#b9e7ed}details{margin:12px 0}table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:13px;text-align:left;vertical-align:top;border-bottom:1px solid #344158;overflow-wrap:anywhere}th{color:#f4d478}.table{overflow-x:auto}nav{display:flex;flex-wrap:wrap;gap:10px;margin:20px 0}nav a,button{background:#20344b;border:1px solid #40516b;border-radius:7px;padding:10px 14px;color:#e7edf6;text-decoration:none;font:inherit;cursor:pointer}button[aria-pressed=true]{background:#f4d478;color:#182235}a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid #f4d478;outline-offset:3px}li{margin:8px 0}footer{border-top:1px solid #344158;margin-top:36px;padding-top:18px;color:#adbacd;font-size:13px}.step{border-left:3px solid #75c4ce;padding:8px 18px;margin:12px 0}.step strong{color:#f4d478}svg{max-width:100%;height:auto}svg text{font-family:Tahoma,system-ui,sans-serif}#detail{min-height:100px}.branch{border-left:2px solid #75c4ce;padding:0 0 0 20px}.branch h3{margin-bottom:5px}@media(max-width:650px){main{padding:22px 16px}h1{font-size:27px}.grid{grid-template-columns:1fr}th,td{padding:9px;min-width:120px}}@media print{body{background:white;color:#111}main{padding:0}.card,details,.note{background:white;border-color:#aaa}h1,h2,h3,a,code,th,.muted,header p,footer{color:#111}nav,button{display:none}.card{break-inside:avoid}details{display:block}}</style>
+</head>
+<body>
+<main>
+<header>
+<span class="badge">AP-HOME PLATFORM · DOCUMENTATION</span>
+<h1>Hub v2 · โครงสร้างไฟล์จริง</h1>
+<p>รายการ source files และความรับผิดชอบของแต่ละชั้น</p>
+<p>ทบทวน 22 กันยายน 2026 · อ้างอิง main <code>1dddb46</code>
+</p>
+</header>
+<div class="note">ยืนยันเส้นทางจากโค้ดและ ADR ณ commit ที่ระบุ การมีโค้ดไม่ยืนยันว่า deployment, credentials และ workflow ที่ active ทำงานครบแล้ว รอบนี้ไม่ได้รันงาน production</div>
+<h2>โฟลเดอร์จากไฟล์จริง</h2>
+<p>ตารางนี้นับไฟล์ TypeScript ใน src ณ commit ที่ระบุ ไม่ใช่เปอร์เซ็นต์ความพร้อม production; src/server.ts เป็น entry point แยกจากหมวดด้านล่าง</p>
+<div class="table">
+<table>
+<thead>
+<tr>
+<th>โฟลเดอร์</th>
+<th>จำนวน .ts</th>
+<th>ไฟล์</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>core/domain</td>
+<td>14</td>
+<td>
+<ul>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/core/domain/entities/BlogRun.ts">core/domain/entities/BlogRun.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/core/domain/entities/QcInspection.ts">core/domain/entities/QcInspection.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/core/domain/events/BlogRunCompleted.ts">core/domain/events/BlogRunCompleted.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/core/domain/events/BlogRunFailed.ts">core/domain/events/BlogRunFailed.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/core/domain/events/BlogRunStarted.ts">core/domain/events/BlogRunStarted.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/core/domain/events/DomainEvent.ts">core/domain/events/DomainEvent.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/core/domain/events/FbPublished.ts">core/domain/events/FbPublished.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/core/domain/events/HealthAlertTriggered.ts">core/domain/events/HealthAlertTriggered.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/core/domain/events/LeadReceived.ts">core/domain/events/LeadReceived.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/core/domain/events/QcDefectFound.ts">core/domain/events/QcDefectFound.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/core/domain/events/QcInspectionCompleted.ts">core/domain/events/QcInspectionCompleted.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/core/domain/value-objects/QcCategory.ts">core/domain/value-objects/QcCategory.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/core/domain/value-objects/RunId.ts">core/domain/value-objects/RunId.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/core/domain/value-objects/Severity.ts">core/domain/value-objects/Severity.ts</a>
+</li>
+</ul>
+</td>
+</tr>
+<tr>
+<td>core/application/ports</td>
+<td>6</td>
+<td>
+<ul>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/core/application/ports/IAiProvider.ts">core/application/ports/IAiProvider.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/core/application/ports/IEventBus.ts">core/application/ports/IEventBus.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/core/application/ports/INotifier.ts">core/application/ports/INotifier.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/core/application/ports/IQcRepository.ts">core/application/ports/IQcRepository.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/core/application/ports/IStateRepository.ts">core/application/ports/IStateRepository.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/core/application/ports/IWorkflowEngine.ts">core/application/ports/IWorkflowEngine.ts</a>
+</li>
+</ul>
+</td>
+</tr>
+<tr>
+<td>modules</td>
+<td>11</td>
+<td>
+<ul>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/modules/ai/AiGateway.ts">modules/ai/AiGateway.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/modules/ai/ClaudeProvider.ts">modules/ai/ClaudeProvider.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/modules/ai/GeminiProvider.ts">modules/ai/GeminiProvider.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/modules/ai/OpenAiProvider.ts">modules/ai/OpenAiProvider.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/modules/blog/BlogUseCase.ts">modules/blog/BlogUseCase.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/modules/config/Config.ts">modules/config/Config.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/modules/eventbus/InMemoryEventBus.ts">modules/eventbus/InMemoryEventBus.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/modules/fb/FbUseCase.ts">modules/fb/FbUseCase.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/modules/health/HealthMonitor.ts">modules/health/HealthMonitor.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/modules/qc/QcUseCase.ts">modules/qc/QcUseCase.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/modules/state/StateManager.ts">modules/state/StateManager.ts</a>
+</li>
+</ul>
+</td>
+</tr>
+<tr>
+<td>infrastructure</td>
+<td>8</td>
+<td>
+<ul>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/infrastructure/facebook/FbBackendAdapter.ts">infrastructure/facebook/FbBackendAdapter.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/infrastructure/line/LineAdapter.ts">infrastructure/line/LineAdapter.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/infrastructure/n8n/N8nWorkflowAdapter.ts">infrastructure/n8n/N8nWorkflowAdapter.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/infrastructure/supabase/SupabaseClient.ts">infrastructure/supabase/SupabaseClient.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/infrastructure/supabase/SupabaseQcRepository.ts">infrastructure/supabase/SupabaseQcRepository.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/infrastructure/supabase/SupabaseStateRepository.ts">infrastructure/supabase/SupabaseStateRepository.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/infrastructure/telegram/TelegramNotifier.ts">infrastructure/telegram/TelegramNotifier.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/infrastructure/wordpress/WordPressPublisher.ts">infrastructure/wordpress/WordPressPublisher.ts</a>
+</li>
+</ul>
+</td>
+</tr>
+<tr>
+<td>presentation</td>
+<td>7</td>
+<td>
+<ul>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/presentation/middleware/auth.ts">presentation/middleware/auth.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/presentation/middleware/errorHandler.ts">presentation/middleware/errorHandler.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/presentation/routes/blogRoutes.ts">presentation/routes/blogRoutes.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/presentation/routes/fbRoutes.ts">presentation/routes/fbRoutes.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/presentation/routes/healthRoutes.ts">presentation/routes/healthRoutes.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/presentation/routes/qcRoutes.ts">presentation/routes/qcRoutes.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/presentation/routes/stateRoutes.ts">presentation/routes/stateRoutes.ts</a>
+</li>
+</ul>
+</td>
+</tr>
+<tr>
+<td>shared</td>
+<td>5</td>
+<td>
+<ul>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/shared/errors.ts">shared/errors.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/shared/id.ts">shared/id.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/shared/logger.ts">shared/logger.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/shared/retry.ts">shared/retry.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/shared/time.ts">shared/time.ts</a>
+</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h2>Path aliases</h2>
+<div class="table">
+<table>
+<thead>
+<tr>
+<th>Alias</th>
+<th>Target</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>@core/*</td>
+<td>src/core/*</td>
+</tr>
+<tr>
+<td>@modules/*</td>
+<td>src/modules/*</td>
+</tr>
+<tr>
+<td>@infra/*</td>
+<td>src/infrastructure/*</td>
+</tr>
+<tr>
+<td>@presentation/*</td>
+<td>src/presentation/*</td>
+</tr>
+<tr>
+<td>@shared/*</td>
+<td>src/shared/*</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h2>วางโค้ดที่ไหน</h2>
+<ul>
+<li>กฎธุรกิจอยู่ใน domain/use case; ไม่ให้ผูกกับ HTTP หรือ provider โดยตรง</li>
+<li>สัญญาระหว่าง use case กับบริการภายนอกอยู่ใน ports และ implementation อยู่ infrastructure</li>
+<li>HTTP validation/auth/response อยู่ presentation</li>
+<li>server.ts ประกอบ dependencies; server.cjs ของ v1 ยังเป็นอีก implementation หนึ่ง ไม่ถือว่าลบออกได้ทันที</li>
+</ul>
+<h2>สถานะการย้าย</h2>
+<p>v2 ใช้ x-hub-secret ต่างจาก v1 x-hub-token; Blog queue มี route แล้ว แต่ FB queue ยังไม่ครบใน fbRoutes.ts การมี folder ครบไม่ยืนยัน API parity หรือ cutover สำเร็จ</p>
+<h2>หลักฐานที่ใช้ตรวจ</h2>
+<ul>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/tsconfig.json">services/backend-hub/tsconfig.json</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/server.ts">services/backend-hub/src/server.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/presentation/routes/fbRoutes.ts">services/backend-hub/src/presentation/routes/fbRoutes.ts</a>
+</li>
+</ul>
+<footer>สถานะตามโค้ด · ข้อมูลจริงต้องตรวจวันที่ แหล่งที่มา และขอบเขตผลค้นทุกครั้ง</footer>
+</main>
+</body>
+</html>

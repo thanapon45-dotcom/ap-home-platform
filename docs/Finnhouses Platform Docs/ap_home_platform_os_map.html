@@ -11,86 +11,379 @@
 @media print{body{background:white;color:#111}main{max-width:none;padding:0}.card,.note{background:white;color:#111;border-color:#aaa}h1,h2,h3,th,.facts,a,code,.muted,footer{color:#111}.nav{display:none}.card{break-inside:avoid}section{margin-top:20px}}
 </style>
 </head>
-<body><main>
+<body>
+<main>
 <header>
 <div class="eyebrow">ACHIDA · FINNHOUSES · BUSINESS OPERATING PLATFORM</div>
 <h1>AP-Home Platform OS</h1>
 <p class="lead">ระบบกลางสำหรับข้อมูลและการทำงานธุรกิจอสังหาฯ เพื่อช่วยเจ้าของธุรกิจวิเคราะห์และตัดสินใจ</p>
 <p class="muted">อัปเดต 21 กันยายน 2026 · อ้างอิงโค้ด main ณ <code>ea4565f</code>, ADR ที่เกี่ยวข้อง และข้อมูลค่าใช้จ่ายจากเจ้าของระบบ</p>
-<div class="legend"><span class="tag code">ยืนยันจากโค้ด / เอกสาร</span><span class="tag pending">ต้องตรวจ runtime เพิ่ม</span><span class="tag">ข้อเสนอ — ยังไม่ได้ทำ</span></div>
+<div class="legend">
+<span class="tag code">ยืนยันจากโค้ด / เอกสาร</span>
+<span class="tag pending">ต้องตรวจ runtime เพิ่ม</span>
+<span class="tag">ข้อเสนอ — ยังไม่ได้ทำ</span>
+</div>
 <div class="note">นี่คือสถานะตามหลักฐานที่ตรวจ ไม่ใช่ผลทดสอบ production ทุกบริการ การแก้เอกสารหรือ merge ADR ไม่ทำให้ prompt ใน n8n เปลี่ยนเอง</div>
-<nav class="nav" aria-label="หัวข้อเอกสาร"><a href="#business">ธุรกิจ</a><a href="#modules">เครื่องมือ</a><a href="#routes">เส้นทางข้อมูล</a><a href="#assistant">Assistant และความจำ</a><a href="#wf1">WF1 / Quality Gate</a><a href="#cost">ค่าใช้จ่าย</a><a href="#next">งานที่เหลือ</a><a href="#sources">หลักฐาน</a></nav>
+<nav class="nav" aria-label="หัวข้อเอกสาร">
+<a href="#business">ธุรกิจ</a>
+<a href="#modules">เครื่องมือ</a>
+<a href="#routes">เส้นทางข้อมูล</a>
+<a href="#assistant">Assistant และความจำ</a>
+<a href="#wf1">WF1 / Quality Gate</a>
+<a href="#cost">ค่าใช้จ่าย</a>
+<a href="#next">งานที่เหลือ</a>
+<a href="#sources">หลักฐาน</a>
+</nav>
 </header>
-<section id="business"><h2>01 · ธุรกิจที่ระบบรองรับ</h2>
-<div class="grid three"><article class="card"><div class="facts">60%</div><h3>Fix &amp; Flip / Develop</h3><p>ลงทุนพัฒนาทรัพย์ของบริษัท ทั้งซื้อบ้านรีโนเวทขาย และประเมินที่ดินเพื่อสร้างบ้านขาย โดยแยกข้อมูลสองรูปแบบลงทุนออกจากกัน</p></article><article class="card"><div class="facts">30%</div><h3>Consulting / Inspection</h3><p>ให้คำปรึกษา ตรวจบ้าน ตรวจงานระหว่างก่อสร้าง ตรวจรับงาน และตรวจ BOQ / คุณภาพ</p></article><article class="card"><div class="facts">10%</div><h3>Brokerage / Agency</h3><p>นายหน้า รับฝากขายบ้านและที่ดิน พร้อมเครื่องมือจัดการทรัพย์ การตลาด และติดตามลูกค้า</p></article></div>
+<section id="business">
+<h2>01 · ธุรกิจที่ระบบรองรับ</h2>
+<div class="grid three">
+<article class="card">
+<div class="facts">60%</div>
+<h3>Fix &amp; Flip / Develop</h3>
+<p>ลงทุนพัฒนาทรัพย์ของบริษัท ทั้งซื้อบ้านรีโนเวทขาย และประเมินที่ดินเพื่อสร้างบ้านขาย โดยแยกข้อมูลสองรูปแบบลงทุนออกจากกัน</p>
+</article>
+<article class="card">
+<div class="facts">30%</div>
+<h3>Consulting / Inspection</h3>
+<p>ให้คำปรึกษา ตรวจบ้าน ตรวจงานระหว่างก่อสร้าง ตรวจรับงาน และตรวจ BOQ / คุณภาพ</p>
+</article>
+<article class="card">
+<div class="facts">10%</div>
+<h3>Brokerage / Agency</h3>
+<p>นายหน้า รับฝากขายบ้านและที่ดิน พร้อมเครื่องมือจัดการทรัพย์ การตลาด และติดตามลูกค้า</p>
+</article>
+</div>
 <p class="muted small">สัดส่วนจาก Business Model ไม่ใช่ยอดรายได้จริงที่คำนวณจากฐานข้อมูล</p>
-<div class="note"><strong>ไม่รับจ้างสร้างบ้านใหม่ให้ลูกค้า แต่เผยแพร่ความรู้เรื่องสร้างบ้านได้</strong> รวมแบบบ้าน งบประมาณ BOQ และการเลือกผู้รับเหมา ห้ามเนื้อหาหรือ CTA อ้างว่า Finnhouses รับจ้างสร้างบ้านให้ผู้อ่าน</div>
-<div class="pillars"><article class="card"><h3>การตลาดและขาย</h3><p>Content · CRM · Properties · Market Intelligence · ฝั่งขายของ Deals</p></article><article class="card"><h3>การบริหารงานก่อสร้างและลงทุน</h3><p>Land Analyzer · Deals · BOQ · QC / Inspection</p></article></div>
+<div class="note">
+<strong>ไม่รับจ้างสร้างบ้านใหม่ให้ลูกค้า แต่เผยแพร่ความรู้เรื่องสร้างบ้านได้</strong> รวมแบบบ้าน งบประมาณ BOQ และการเลือกผู้รับเหมา ห้ามเนื้อหาหรือ CTA อ้างว่า Finnhouses รับจ้างสร้างบ้านให้ผู้อ่าน</div>
+<div class="pillars">
+<article class="card">
+<h3>การตลาดและขาย</h3>
+<p>Content · CRM · Properties · Market Intelligence · ฝั่งขายของ Deals</p>
+</article>
+<article class="card">
+<h3>การบริหารงานก่อสร้างและลงทุน</h3>
+<p>Land Analyzer · Deals · BOQ · QC / Inspection</p>
+</article>
+</div>
 <p class="muted small">สองด้านนี้ใช้ข้อมูลประกอบกัน แต่ยังไม่ใช่วงจรอัตโนมัติครบทุกโมดูล AI เป็นเครื่องมือภายในระบบ ไม่ใช่ระบบปฏิบัติการระดับฮาร์ดแวร์แบบ Android</p>
 </section>
-<section id="modules"><h2>02 · เครื่องมือและขอบเขตข้อมูล</h2>
-<div class="table-wrap"><table><thead><tr><th>เครื่องมือ</th><th>หน้าที่ / ข้อมูลหลัก</th><th>ข้อจำกัดที่ต้องรู้</th></tr></thead><tbody>
-<tr><td>Dashboard / Marketing</td><td>ดูสถานะ Hub, คิว Blog / FB และผลการทำงาน</td><td>สถานะการรันไม่เท่ากับความถูกต้องของเนื้อหา</td></tr>
-<tr><td>CRM</td><td>Lead และการติดตามลูกค้า; <code>consult</code> / <code>list</code></td><td>Fix &amp; Flip ไม่ใช่ CRM business_unit; lead ใช้ manual entry / CSV ตาม Business Model</td></tr>
-<tr><td>Land Analyzer</td><td>Build-to-Sell → <code>projects</code></td><td>ไม่ใช่ต้นทางสร้าง Fix &amp; Flip Deal อัตโนมัติ</td></tr>
-<tr><td>Fix &amp; Flip Deals</td><td>Renovate-to-Resell → <code>reno_deals</code>; evaluating / renovating / listed / closed</td><td>ไม่มี <code>land_project_id</code> ตาม ADR-027; ต้องไม่เดาว่าเป็นโครงการเดียวกับ Land Analyzer</td></tr>
-<tr><td>BOQ</td><td>รายการ ปริมาณ วัสดุ ค่าแรง และต้นทุนตาม project</td><td>หน้าหลักยังไม่ถอดปริมาณ DWG/CAD อัตโนมัติ</td></tr>
-<tr><td>QC</td><td><code>qc_inspections</code>; เชื่อม <code>site_id</code> / <code>deal_id</code> เมื่อมีข้อมูล</td><td>ผล AI ต้องตรวจด้วย human feedback; ไม่มีการรับรองเวลาตอบตายตัว</td></tr>
-<tr><td>Market Intelligence</td><td>ข้อมูลตลาดและ structured signals ในระบบ</td><td>ข้อมูลที่ AI สกัดไม่เท่ากับข้อเท็จจริงที่มนุษย์ยืนยันทุกแถว</td></tr>
-<tr><td>Properties / Content</td><td>ข้อมูลทรัพย์ เนื้อหา คิว และการเผยแพร่</td><td>AI ต้องไม่แต่งข้อมูลบริการ/คุณสมบัติทรัพย์ที่ไม่มีหลักฐาน</td></tr>
-<tr><td>Brains context</td><td>อ่านข้อมูลข้ามโมดูลผ่าน <code>/api/brains/context</code></td><td>เป็นการรวมข้อมูลเดิม ไม่ใช่ฐานข้อมูลใหม่หรือระบบเรียนรู้ด้วยตัวเอง</td></tr>
-<tr><td>Budget Tool เดิม</td><td><span class="tag closed">ปิดบริการ /budget</span></td><td>ไม่ใช่ช่องทาง public lead capture ที่ active แล้ว</td></tr>
-</tbody></table></div></section>
-<section id="routes"><h2>03 · เส้นทางข้อมูลตาม implementation</h2>
+<section id="modules">
+<h2>02 · เครื่องมือและขอบเขตข้อมูล</h2>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>เครื่องมือ</th>
+<th>หน้าที่ / ข้อมูลหลัก</th>
+<th>ข้อจำกัดที่ต้องรู้</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Dashboard / Marketing</td>
+<td>ดูสถานะ Hub, คิว Blog / FB และผลการทำงาน</td>
+<td>สถานะการรันไม่เท่ากับความถูกต้องของเนื้อหา</td>
+</tr>
+<tr>
+<td>CRM</td>
+<td>Lead และการติดตามลูกค้า; <code>consult</code> / <code>list</code>
+</td>
+<td>Fix &amp; Flip ไม่ใช่ CRM business_unit; lead ใช้ manual entry / CSV ตาม Business Model</td>
+</tr>
+<tr>
+<td>Land Analyzer</td>
+<td>Build-to-Sell → <code>projects</code>
+</td>
+<td>ไม่ใช่ต้นทางสร้าง Fix &amp; Flip Deal อัตโนมัติ</td>
+</tr>
+<tr>
+<td>Fix &amp; Flip Deals</td>
+<td>Renovate-to-Resell → <code>reno_deals</code>; evaluating / renovating / listed / closed</td>
+<td>ไม่มี <code>land_project_id</code> ตาม ADR-027; ต้องไม่เดาว่าเป็นโครงการเดียวกับ Land Analyzer</td>
+</tr>
+<tr>
+<td>BOQ</td>
+<td>รายการ ปริมาณ วัสดุ ค่าแรง และต้นทุนตาม project</td>
+<td>หน้าหลักยังไม่ถอดปริมาณ DWG/CAD อัตโนมัติ</td>
+</tr>
+<tr>
+<td>QC</td>
+<td>
+<code>qc_inspections</code>; เชื่อม <code>site_id</code> / <code>deal_id</code> เมื่อมีข้อมูล</td>
+<td>ผล AI ต้องตรวจด้วย human feedback; ไม่มีการรับรองเวลาตอบตายตัว</td>
+</tr>
+<tr>
+<td>Market Intelligence</td>
+<td>ข้อมูลตลาดและ structured signals ในระบบ</td>
+<td>ข้อมูลที่ AI สกัดไม่เท่ากับข้อเท็จจริงที่มนุษย์ยืนยันทุกแถว</td>
+</tr>
+<tr>
+<td>Properties / Content</td>
+<td>ข้อมูลทรัพย์ เนื้อหา คิว และการเผยแพร่</td>
+<td>AI ต้องไม่แต่งข้อมูลบริการ/คุณสมบัติทรัพย์ที่ไม่มีหลักฐาน</td>
+</tr>
+<tr>
+<td>Brains context</td>
+<td>อ่านข้อมูลข้ามโมดูลผ่าน <code>/api/brains/context</code>
+</td>
+<td>เป็นการรวมข้อมูลเดิม ไม่ใช่ฐานข้อมูลใหม่หรือระบบเรียนรู้ด้วยตัวเอง</td>
+</tr>
+<tr>
+<td>Budget Tool เดิม</td>
+<td>
+<span class="tag closed">ปิดบริการ /budget</span>
+</td>
+<td>ไม่ใช่ช่องทาง public lead capture ที่ active แล้ว</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="routes">
+<h2>03 · เส้นทางข้อมูลตาม implementation</h2>
 <p>Hub v1 เป็นเส้นทาง production ตามบันทึก ADR-004; Hub v2 เป็นงานแยกที่ยังไม่ควรถือว่าเข้ามาแทนทั้งหมด ไม่แสดงเปอร์เซ็นต์ความพร้อมเก่าหรืออ้างว่า “ทุก request ผ่าน Hub”</p>
 <div class="grid">
-<article class="card"><span class="tag code">Blog / FB orchestration</span><h3>หน้าจอ → API proxy → Hub v1</h3><p class="path">Dashboard เรียก Next.js API<br>API ส่ง <code>x-hub-token</code> ไป Hub<br>Hub จัดคิวและเรียก n8n / backend ที่เกี่ยวข้อง<br>ผล callback กลับมาอัปเดตสถานะ</p><p class="small muted">ตัวอย่าง Blog queue ใช้ <code>/action/blog/queue/run-next</code> บน Hub</p></article>
-<article class="card"><span class="tag code">Assistant</span><h3>หน้าจอ → /api/assistant → Claude</h3><p>API เป็นตัวเรียก Claude โดยตรง พร้อม tools ที่อ่าน Hub, Supabase และ Brains จึงไม่ได้ผ่าน AI Gateway ของ Hub v2 ทุกครั้ง</p><p>คำสั่งเขียนที่มีอยู่คือรัน Blog และโพสต์ FB ตัวถัดไป โดย UI ขอให้กดยืนยันก่อน</p></article>
-<article class="card"><span class="tag code">Shared Business Context</span><h3>Brains → Supabase แบบอ่านอย่างเดียว</h3><p>รวม market insights, market summary, area memory, buyer signals, deals, QC และ content frames</p><p class="small muted">ไม่อ่านประวัติแชท และไม่ได้ดึง <code>projects</code> / BOQ ใน endpoint นี้ ตัวกรองพื้นที่ไม่ได้ใช้กับทุกชุดข้อมูล จึงห้ามสรุปว่าทั้งคำตอบเป็นข้อมูลเฉพาะพื้นที่เดียวกันทั้งหมด</p></article>
-<article class="card"><span class="tag code">AI endpoints แยก</span><h3>/api/chat · /api/image · QC Hub</h3><p>Content / CRM ใช้ API chat; ภาพใช้ API image; QC ingest เรียก AI จาก Hub การควบคุมงบจึงต้องครอบคลุมหลายเส้นทาง รวม n8n ที่เรียก AI เอง</p></article>
+<article class="card">
+<span class="tag code">Blog / FB orchestration</span>
+<h3>หน้าจอ → API proxy → Hub v1</h3>
+<p class="path">Dashboard เรียก Next.js API<br>API ส่ง <code>x-hub-token</code> ไป Hub<br>Hub จัดคิวและเรียก n8n / backend ที่เกี่ยวข้อง<br>ผล callback กลับมาอัปเดตสถานะ</p>
+<p class="small muted">ตัวอย่าง Blog queue ใช้ <code>/action/blog/queue/run-next</code> บน Hub</p>
+</article>
+<article class="card">
+<span class="tag code">Assistant</span>
+<h3>หน้าจอ → /api/assistant → Claude</h3>
+<p>API เป็นตัวเรียก Claude โดยตรง พร้อม tools ที่อ่าน Hub, Supabase และ Brains จึงไม่ได้ผ่าน AI Gateway ของ Hub v2 ทุกครั้ง</p>
+<p>คำสั่งเขียนที่มีอยู่คือรัน Blog และโพสต์ FB ตัวถัดไป โดย UI ขอให้กดยืนยันก่อน</p>
+</article>
+<article class="card">
+<span class="tag code">Shared Business Context</span>
+<h3>Brains → Supabase แบบอ่านอย่างเดียว</h3>
+<p>รวม market insights, market summary, area memory, buyer signals, deals, QC และ content frames</p>
+<p class="small muted">ไม่อ่านประวัติแชท และไม่ได้ดึง <code>projects</code> / BOQ ใน endpoint นี้ ตัวกรองพื้นที่ไม่ได้ใช้กับทุกชุดข้อมูล จึงห้ามสรุปว่าทั้งคำตอบเป็นข้อมูลเฉพาะพื้นที่เดียวกันทั้งหมด</p>
+</article>
+<article class="card">
+<span class="tag code">AI endpoints แยก</span>
+<h3>/api/chat · /api/image · QC Hub</h3>
+<p>Content / CRM ใช้ API chat; ภาพใช้ API image; QC ingest เรียก AI จาก Hub การควบคุมงบจึงต้องครอบคลุมหลายเส้นทาง รวม n8n ที่เรียก AI เอง</p>
+</article>
 </div>
-<details><summary>ข้อควรอ่านของ Brains: confidence ไม่ใช่การตรวจรับโดยมนุษย์</summary><p>โค้ดส่ง <code>verified_insights</code> โดยเลือก insight ที่ confidence ≥ 4 ชื่อนี้ไม่ใช่หลักฐานว่ามีคนยืนยันแล้ว ต้องตรวจ feedback/หลักฐานต้นทางก่อนนำไปใช้เป็นข้อเท็จจริง</p></details>
+<details>
+<summary>ข้อควรอ่านของ Brains: confidence ไม่ใช่การตรวจรับโดยมนุษย์</summary>
+<p>โค้ดส่ง <code>verified_insights</code> โดยเลือก insight ที่ confidence ≥ 4 ชื่อนี้ไม่ใช่หลักฐานว่ามีคนยืนยันแล้ว ต้องตรวจ feedback/หลักฐานต้นทางก่อนนำไปใช้เป็นข้อเท็จจริง</p>
+</details>
 </section>
-<section id="assistant"><h2>04 · Assistant จำอะไรได้ในปัจจุบัน</h2>
-<div class="grid"><article class="card"><span class="tag code">ยืนยันจากโค้ด</span><h3>จำได้ระหว่างหน้าเว็บยังอยู่</h3><ul><li>ข้อความอยู่ใน React state: <code>displayMessages</code> และ <code>apiMessages</code></li><li>แต่ละคำถามส่งประวัติใน state ไปให้ API อีกครั้ง</li><li>ย่อช่องแชทแล้วเปิดใหม่ในหน้าเดิม ประวัติยังอยู่</li><li>เมื่อ reload / เปิดหน้าใหม่ ไม่มีระบบกู้ประวัติแชทจากฐานข้อมูล</li></ul></article>
-<article class="card"><span class="tag">ข้อเสนอ — ยังไม่ได้ทำ</span><h3>ความจำถาวรที่ควบคุมต้นทุน</h3><ul><li>เก็บข้อความในฐานข้อมูลเดิมหลังตรวจพื้นที่และสิทธิ์เข้าถึง</li><li>เลือกเฉพาะประวัติที่จำเป็นส่งให้ AI ไม่ส่งทุกบทสนทนา</li><li>แยกข้อมูลดีลที่ยืนยันแล้วออกจากตัวเลขสมมติในแชท</li><li>ผูกแชทกับดีลให้ชัด และให้ยืนยันก่อนแก้ข้อมูลหลัก</li><li>ยังไม่เพิ่มการเรียก AI สรุปทุกข้อความ</li></ul></article></div>
-<div class="note"><strong>พิมพ์ข้อมูลบ้านในแชท ไม่ได้ทำให้เกิดดีลใน /deals อัตโนมัติ</strong> API ปัจจุบันมี tool อ่านดีล แต่ไม่มี tool สร้างหรือแก้ดีล การบันทึกข้อมูลธุรกิจกับการเก็บประวัติแชทเป็นคนละเรื่อง</div>
+<section id="assistant">
+<h2>04 · Assistant จำอะไรได้ในปัจจุบัน</h2>
+<div class="grid">
+<article class="card">
+<span class="tag code">ยืนยันจากโค้ด</span>
+<h3>จำได้ระหว่างหน้าเว็บยังอยู่</h3>
+<ul>
+<li>ข้อความอยู่ใน React state: <code>displayMessages</code> และ <code>apiMessages</code>
+</li>
+<li>แต่ละคำถามส่งประวัติใน state ไปให้ API อีกครั้ง</li>
+<li>ย่อช่องแชทแล้วเปิดใหม่ในหน้าเดิม ประวัติยังอยู่</li>
+<li>เมื่อ reload / เปิดหน้าใหม่ ไม่มีระบบกู้ประวัติแชทจากฐานข้อมูล</li>
+</ul>
+</article>
+<article class="card">
+<span class="tag">ข้อเสนอ — ยังไม่ได้ทำ</span>
+<h3>ความจำถาวรที่ควบคุมต้นทุน</h3>
+<ul>
+<li>เก็บข้อความในฐานข้อมูลเดิมหลังตรวจพื้นที่และสิทธิ์เข้าถึง</li>
+<li>เลือกเฉพาะประวัติที่จำเป็นส่งให้ AI ไม่ส่งทุกบทสนทนา</li>
+<li>แยกข้อมูลดีลที่ยืนยันแล้วออกจากตัวเลขสมมติในแชท</li>
+<li>ผูกแชทกับดีลให้ชัด และให้ยืนยันก่อนแก้ข้อมูลหลัก</li>
+<li>ยังไม่เพิ่มการเรียก AI สรุปทุกข้อความ</li>
+</ul>
+</article>
+</div>
+<div class="note">
+<strong>พิมพ์ข้อมูลบ้านในแชท ไม่ได้ทำให้เกิดดีลใน /deals อัตโนมัติ</strong> API ปัจจุบันมี tool อ่านดีล แต่ไม่มี tool สร้างหรือแก้ดีล การบันทึกข้อมูลธุรกิจกับการเก็บประวัติแชทเป็นคนละเรื่อง</div>
 <p>Assistant ใช้ <code>claude-sonnet-4-6</code>, จำกัด output ต่อการเรียกไว้ 4,096 tokens และวน tool loop ได้สูงสุด 6 รอบต่อ request หนึ่งคำถามจึงอาจมีหลาย AI calls โค้ดยังไม่มีบัญชีค่าใช้จ่ายกลางหรือการตัดประวัติตามงบ</p>
 <p class="small muted">คำตอบต้องอิงข้อมูลจาก tools หรือข้อมูลที่ผู้ใช้ระบุ หากขาดข้อมูลให้ถาม ไม่เติมตัวเลขจากความรู้ทั่วไปนอกระบบตามกติกาเจ้าของระบบ ข้อกำหนด internal-only ยังอยู่ใน prompt; โค้ดส่งข้อความจากโมเดลกลับมา จึงยังไม่ได้บังคับคำตอบจากหลักฐานฝั่งเซิร์ฟเวอร์ครบถ้วน สถานะนี้อ้างอิง application code ไม่ใช่คำรับรองนโยบายเก็บข้อมูลของผู้ให้บริการ AI</p>
 </section>
-<section id="wf1"><h2>05 · WF1 และ AI Quality Gate</h2>
-<div class="grid"><article class="card"><span class="tag code">ADR-016 amendment merge แล้ว</span><h3>หัวข้อ Content ≠ บริการที่ขาย</h3><p>บทความสร้างบ้าน แบบบ้าน ค่าใช้จ่าย และเลือกผู้รับเหมาทำได้ บล็อก <code>brand_guardrail_violation</code> เมื่อเนื้อหาหรือ CTA อ้างว่า Finnhouses รับจ้างสร้างบ้านให้ลูกค้า ต้องอ่านบริบทและมีข้อความหลักฐานจริง</p><p>ยังต้องตรวจภาษาไทย ข้อเท็จจริง และ structural / dedupe guard ตามเดิม มีตัวอย่างด้าน brand 13 กรณีใน ADR</p></article>
-<article class="card"><span class="tag pending">ยังไม่ยืนยัน active n8n revision</span><h3>เอกสารเปลี่ยนแล้ว ≠ workflow เปลี่ยนแล้ว</h3><p>PR #3 merge แล้ว (<code>ea4565f</code>) แต่รอบนี้ไม่ได้ import / activate หรือทดสอบ prompt บน n8n การมีไฟล์ WF1 ฉบับแก้ไขแยกต่างหากไม่ยืนยันว่า instance ใช้ฉบับนั้น</p><p>ต้อง export ตัว active และตรวจ writer / gate ก่อนยืนยันผล production</p></article></div>
-<div class="table-wrap"><table><thead><tr><th>ลำดับตาม ADR</th><th>หน้าที่</th><th>เมื่อไม่ผ่าน / ข้อจำกัด</th></tr></thead><tbody>
-<tr><td>รับงานและสร้างบทความ</td><td>ใช้ keyword / category และสร้าง payload</td><td>ต้องใช้ business context เดียวกับ reviewer</td></tr>
-<tr><td>ตรวจสองทาง</td><td>Structural guard + AI Quality Gate</td><td>AI ตรวจ brand, ภาษาไทย และ unsupported claims</td></tr>
-<tr><td>Parse / Log / Combine</td><td>รวมเหตุผล และบันทึกการตัดสินใจลง <code>quality_gate_log</code></td><td>ADR เดิมกำหนด AI infra/parse error เป็น fail-open; ไม่ได้เปลี่ยน policy นี้ใน amendment</td></tr>
-<tr><td>ผ่าน / บล็อก</td><td>ผ่านจึงเข้าสู่ทางเผยแพร่; บล็อกเข้าสู่ทางแจ้งผล</td><td>ผัง node และ connection ที่ active ต้องตรวจจาก export จริง</td></tr>
-<tr><td>Human feedback</td><td>ยืนยันถูก / ผิดผ่าน Quality Gate dashboard</td><td>การกดยืนยันไม่ได้ปรับ prompt หรือฝึกโมเดลอัตโนมัติ</td></tr>
-</tbody></table></div>
+<section id="wf1">
+<h2>05 · WF1 และ AI Quality Gate</h2>
+<div class="grid">
+<article class="card">
+<span class="tag code">ADR-016 amendment merge แล้ว</span>
+<h3>หัวข้อ Content ≠ บริการที่ขาย</h3>
+<p>บทความสร้างบ้าน แบบบ้าน ค่าใช้จ่าย และเลือกผู้รับเหมาทำได้ บล็อก <code>brand_guardrail_violation</code> เมื่อเนื้อหาหรือ CTA อ้างว่า Finnhouses รับจ้างสร้างบ้านให้ลูกค้า ต้องอ่านบริบทและมีข้อความหลักฐานจริง</p>
+<p>ยังต้องตรวจภาษาไทย ข้อเท็จจริง และ structural / dedupe guard ตามเดิม มีตัวอย่างด้าน brand 13 กรณีใน ADR</p>
+</article>
+<article class="card">
+<span class="tag pending">ยังไม่ยืนยัน active n8n revision</span>
+<h3>เอกสารเปลี่ยนแล้ว ≠ workflow เปลี่ยนแล้ว</h3>
+<p>PR #3 merge แล้ว (<code>ea4565f</code>) แต่รอบนี้ไม่ได้ import / activate หรือทดสอบ prompt บน n8n การมีไฟล์ WF1 ฉบับแก้ไขแยกต่างหากไม่ยืนยันว่า instance ใช้ฉบับนั้น</p>
+<p>ต้อง export ตัว active และตรวจ writer / gate ก่อนยืนยันผล production</p>
+</article>
+</div>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>ลำดับตาม ADR</th>
+<th>หน้าที่</th>
+<th>เมื่อไม่ผ่าน / ข้อจำกัด</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>รับงานและสร้างบทความ</td>
+<td>ใช้ keyword / category และสร้าง payload</td>
+<td>ต้องใช้ business context เดียวกับ reviewer</td>
+</tr>
+<tr>
+<td>ตรวจสองทาง</td>
+<td>Structural guard + AI Quality Gate</td>
+<td>AI ตรวจ brand, ภาษาไทย และ unsupported claims</td>
+</tr>
+<tr>
+<td>Parse / Log / Combine</td>
+<td>รวมเหตุผล และบันทึกการตัดสินใจลง <code>quality_gate_log</code>
+</td>
+<td>ADR เดิมกำหนด AI infra/parse error เป็น fail-open; ไม่ได้เปลี่ยน policy นี้ใน amendment</td>
+</tr>
+<tr>
+<td>ผ่าน / บล็อก</td>
+<td>ผ่านจึงเข้าสู่ทางเผยแพร่; บล็อกเข้าสู่ทางแจ้งผล</td>
+<td>ผัง node และ connection ที่ active ต้องตรวจจาก export จริง</td>
+</tr>
+<tr>
+<td>Human feedback</td>
+<td>ยืนยันถูก / ผิดผ่าน Quality Gate dashboard</td>
+<td>การกดยืนยันไม่ได้ปรับ prompt หรือฝึกโมเดลอัตโนมัติ</td>
+</tr>
+</tbody>
+</table>
+</div>
 <p class="small muted">Snapshot จากเจ้าของระบบวันที่ 21 ก.ย. 2026: 47 ครั้ง, ผ่าน 1 / บล็อก 46, ถูก 25 / ผิด 22, accuracy 53.2%, false positive 22 / false negative 0 — ไม่ใช่ผลหลังแก้ และยังไม่ได้ตรวจบทความเต็มทั้งชุด API accuracy อ่านล่าสุดไม่เกิน 200 แถว จึงไม่ใช่ยอดตลอดอายุระบบเมื่อเกินจำนวนนี้</p>
 </section>
-<section id="cost"><h2>06 · ค่าใช้จ่ายที่เจ้าของระบบแจ้ง</h2>
-<div class="grid"><article class="card"><span class="tag code">ข้อมูลผู้ใช้ · ต่อเดือน</span><div class="table-wrap"><table class="cost"><thead><tr><th>รายการ</th><th>USD / เดือน</th></tr></thead><tbody><tr><td>OpenAI</td><td>$5</td></tr><tr><td>Claude</td><td>$5</td></tr><tr><td>Railway</td><td>$10–15</td></tr><tr class="total"><td>รวมรายการที่แจ้ง</td><td>$20–25</td></tr></tbody></table></div><p class="small muted">AI รวม $10/เดือน แยกจาก Railway ตัวเลขนี้เป็นยอดที่เจ้าของระบบแจ้ง ไม่ใช่ invoice ที่ตรวจแล้ว และไม่ใช่ hard cap ที่ระบบบังคับอยู่</p></article>
-<article class="card"><span class="tag pending">ยังไม่มีเพดานรวมที่ยืนยันได้</span><h3>มีตัวคุมเฉพาะ QC</h3><p>QC มี <code>qc_daily_usage</code> เก็บ tokens และต้นทุนประมาณการ โค้ดตั้งค่าเริ่มต้น <code>QC_DAILY_BUDGET_THB = 300</code> บาท/วัน อาจมี env บน server ทับค่าอยู่ ซึ่งยังไม่ได้ตรวจ</p><p>Assistant, chat และ image routes ที่ตรวจไม่บันทึกค่าใช้จ่ายรวมทุกผู้ให้บริการ และไม่มี monthly budget gate ร่วมกัน</p></article></div>
-<p><strong>n8n ใช้แบบฟรีตามที่เจ้าของระบบแจ้ง</strong> แต่การเรียก AI จาก workflow ใช้บัญชี API ของผู้ให้บริการแยกกัน ห้ามนับว่า AI ฟรีตาม n8n และไม่เพิ่มค่า Railway อีกก้อนโดยไม่มีบิลรองรับ</p>
-<details><summary>สิ่งที่ต้องมี ก่อนรับรองว่าคุมค่าใช้จ่ายได้จริง</summary><ol><li>เทียบ Usage / Billing ของทุกบัญชี AI กับงานที่รันจริง รวม retry, fallback, ภาพ และ n8n</li><li>เก็บ usage ต่อ request, provider, model และงาน โดยแยกยอดประมาณการกับยอดเรียกเก็บจริง</li><li>กำหนดวงเงินร่วมและจองงบก่อนเรียก เพื่อคุมงานที่รันพร้อมกัน</li><li>ยืนยันวงเงินกับเจ้าของระบบจากฐานค่าใช้จ่ายล่าสุด ไม่ใช้เพดานรวม $15 ที่เกิดจากความเข้าใจผิดก่อนหน้า</li></ol><p class="muted small">ทั้งหมดเป็นงานที่ยังไม่ได้ implement; ไม่รับรองว่าบันทึกแชทแล้วค่าใช้จ่ายจะเท่าเดิมจนกว่าจะตรวจพื้นที่และ token usage</p></details>
+<section id="cost">
+<h2>06 · ค่าใช้จ่ายที่เจ้าของระบบแจ้ง</h2>
+<div class="grid">
+<article class="card">
+<span class="tag code">ข้อมูลผู้ใช้ · ต่อเดือน</span>
+<div class="table-wrap">
+<table class="cost">
+<thead>
+<tr>
+<th>รายการ</th>
+<th>USD / เดือน</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>OpenAI</td>
+<td>$5</td>
+</tr>
+<tr>
+<td>Claude</td>
+<td>$5</td>
+</tr>
+<tr>
+<td>Railway</td>
+<td>$10–15</td>
+</tr>
+<tr class="total">
+<td>รวมรายการที่แจ้ง</td>
+<td>$20–25</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p class="small muted">AI รวม $10/เดือน แยกจาก Railway ตัวเลขนี้เป็นยอดที่เจ้าของระบบแจ้ง ไม่ใช่ invoice ที่ตรวจแล้ว และไม่ใช่ hard cap ที่ระบบบังคับอยู่</p>
+</article>
+<article class="card">
+<span class="tag pending">ยังไม่มีเพดานรวมที่ยืนยันได้</span>
+<h3>มีตัวคุมเฉพาะ QC</h3>
+<p>QC มี <code>qc_daily_usage</code> เก็บ tokens และต้นทุนประมาณการ โค้ดตั้งค่าเริ่มต้น <code>QC_DAILY_BUDGET_THB = 300</code> บาท/วัน อาจมี env บน server ทับค่าอยู่ ซึ่งยังไม่ได้ตรวจ</p>
+<p>Assistant, chat และ image routes ที่ตรวจไม่บันทึกค่าใช้จ่ายรวมทุกผู้ให้บริการ และไม่มี monthly budget gate ร่วมกัน</p>
+</article>
+</div>
+<p>
+<strong>n8n ใช้แบบฟรีตามที่เจ้าของระบบแจ้ง</strong> แต่การเรียก AI จาก workflow ใช้บัญชี API ของผู้ให้บริการแยกกัน ห้ามนับว่า AI ฟรีตาม n8n และไม่เพิ่มค่า Railway อีกก้อนโดยไม่มีบิลรองรับ</p>
+<details>
+<summary>สิ่งที่ต้องมี ก่อนรับรองว่าคุมค่าใช้จ่ายได้จริง</summary>
+<ol>
+<li>เทียบ Usage / Billing ของทุกบัญชี AI กับงานที่รันจริง รวม retry, fallback, ภาพ และ n8n</li>
+<li>เก็บ usage ต่อ request, provider, model และงาน โดยแยกยอดประมาณการกับยอดเรียกเก็บจริง</li>
+<li>กำหนดวงเงินร่วมและจองงบก่อนเรียก เพื่อคุมงานที่รันพร้อมกัน</li>
+<li>ยืนยันวงเงินกับเจ้าของระบบจากฐานค่าใช้จ่ายล่าสุด ไม่ใช้เพดานรวม $15 ที่เกิดจากความเข้าใจผิดก่อนหน้า</li>
+</ol>
+<p class="muted small">ทั้งหมดเป็นงานที่ยังไม่ได้ implement; ไม่รับรองว่าบันทึกแชทแล้วค่าใช้จ่ายจะเท่าเดิมจนกว่าจะตรวจพื้นที่และ token usage</p>
+</details>
 </section>
-<section id="next"><h2>07 · งานที่ยังเหลือ</h2><div class="table-wrap"><table><thead><tr><th>งาน</th><th>สถานะ</th><th>หลักฐานก่อนปิดงาน</th></tr></thead><tbody>
-<tr><td>ADR-016 และ business context</td><td>merge เอกสารแล้ว</td><td>PR #3 / commit ea4565f</td></tr>
-<tr><td>นำ policy ไปใช้กับ WF1</td><td>รอตรวจ active workflow</td><td>workflow ID/version + pass/block tests + execution จริง</td></tr>
-<tr><td>ตรวจงบ AI รวม</td><td>ตรวจโค้ดบางเส้นทางแล้ว; ยังไม่มียอด billing</td><td>Usage / Billing และ export workflow ที่ active</td></tr>
-<tr><td>ประวัติแชทถาวร</td><td>ข้อเสนอ ยังไม่พัฒนา</td><td>ออกแบบสิทธิ์/ดีล/ข้อมูลสมมติ/พื้นที่ และทดสอบ reload แล้วเรียกประวัติได้</td></tr>
-<tr><td>Hub v2 cutover</td><td>ยังไม่ถือว่าแทน v1 แล้ว</td><td>ตรวจทุก route ที่ผู้ใช้และ workflow เรียกจริงก่อนย้าย</td></tr>
-</tbody></table></div></section>
-<section id="sources"><h2>08 · หลักฐานและขอบเขตการตรวจ</h2><p>ลิงก์โค้ดอ้างอิง commit ที่ตรวจ เพื่อให้ย้อนดูข้อสรุปได้ เอกสารไม่แสดง API keys หรือข้อมูลรับรองการเข้าถึง</p><ul>
-<li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/ea4565ffb019bb4a4fbe9b9723fada94add67268/docs/BUSINESS_MODEL.md">Business Model และขอบเขต Content</a></li>
-<li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/ea4565ffb019bb4a4fbe9b9723fada94add67268/docs/v2/04-decisions/accepted/ADR-027.md">ADR-027 — แยกสองรูปแบบลงทุน</a> · <a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/ea4565ffb019bb4a4fbe9b9723fada94add67268/docs/v2/04-decisions/accepted/ADR-004.md">ADR-004 — Hub v1 / v2</a></li>
-<li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/ea4565ffb019bb4a4fbe9b9723fada94add67268/components/AssistantChat.tsx">AssistantChat — state ในหน้าเว็บ</a> · <a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/ea4565ffb019bb4a4fbe9b9723fada94add67268/app/api/assistant/route.ts">Assistant API / tools</a></li>
-<li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/ea4565ffb019bb4a4fbe9b9723fada94add67268/app/api/brains/context/route.ts">Brains aggregation</a> · <a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/ea4565ffb019bb4a4fbe9b9723fada94add67268/app/budget/page.tsx">Budget Tool ปิดบริการ</a></li>
-<li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/pull/3">PR #3 — ADR-016 amendment</a> · <a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/ea4565ffb019bb4a4fbe9b9723fada94add67268/app/api/quality-gate/accuracy/route.ts">Quality Gate accuracy</a></li>
-<li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/ea4565ffb019bb4a4fbe9b9723fada94add67268/services/backend-hub/server.cjs">Hub / QC usage</a> · <a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/ea4565ffb019bb4a4fbe9b9723fada94add67268/app/api/chat/route.ts">Chat API</a> · <a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/ea4565ffb019bb4a4fbe9b9723fada94add67268/app/api/image/route.ts">Image API</a></li>
+<section id="next">
+<h2>07 · งานที่ยังเหลือ</h2>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>งาน</th>
+<th>สถานะ</th>
+<th>หลักฐานก่อนปิดงาน</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ADR-016 และ business context</td>
+<td>merge เอกสารแล้ว</td>
+<td>PR #3 / commit ea4565f</td>
+</tr>
+<tr>
+<td>นำ policy ไปใช้กับ WF1</td>
+<td>รอตรวจ active workflow</td>
+<td>workflow ID/version + pass/block tests + execution จริง</td>
+</tr>
+<tr>
+<td>ตรวจงบ AI รวม</td>
+<td>ตรวจโค้ดบางเส้นทางแล้ว; ยังไม่มียอด billing</td>
+<td>Usage / Billing และ export workflow ที่ active</td>
+</tr>
+<tr>
+<td>ประวัติแชทถาวร</td>
+<td>ข้อเสนอ ยังไม่พัฒนา</td>
+<td>ออกแบบสิทธิ์/ดีล/ข้อมูลสมมติ/พื้นที่ และทดสอบ reload แล้วเรียกประวัติได้</td>
+</tr>
+<tr>
+<td>Hub v2 cutover</td>
+<td>ยังไม่ถือว่าแทน v1 แล้ว</td>
+<td>ตรวจทุก route ที่ผู้ใช้และ workflow เรียกจริงก่อนย้าย</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="sources">
+<h2>08 · หลักฐานและขอบเขตการตรวจ</h2>
+<p>ลิงก์โค้ดอ้างอิง commit ที่ตรวจ เพื่อให้ย้อนดูข้อสรุปได้ เอกสารไม่แสดง API keys หรือข้อมูลรับรองการเข้าถึง</p>
+<ul>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/ea4565ffb019bb4a4fbe9b9723fada94add67268/docs/BUSINESS_MODEL.md">Business Model และขอบเขต Content</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/ea4565ffb019bb4a4fbe9b9723fada94add67268/docs/v2/04-decisions/accepted/ADR-027.md">ADR-027 — แยกสองรูปแบบลงทุน</a> · <a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/ea4565ffb019bb4a4fbe9b9723fada94add67268/docs/v2/04-decisions/accepted/ADR-004.md">ADR-004 — Hub v1 / v2</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/ea4565ffb019bb4a4fbe9b9723fada94add67268/components/AssistantChat.tsx">AssistantChat — state ในหน้าเว็บ</a> · <a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/ea4565ffb019bb4a4fbe9b9723fada94add67268/app/api/assistant/route.ts">Assistant API / tools</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/ea4565ffb019bb4a4fbe9b9723fada94add67268/app/api/brains/context/route.ts">Brains aggregation</a> · <a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/ea4565ffb019bb4a4fbe9b9723fada94add67268/app/budget/page.tsx">Budget Tool ปิดบริการ</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/pull/3">PR #3 — ADR-016 amendment</a> · <a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/ea4565ffb019bb4a4fbe9b9723fada94add67268/app/api/quality-gate/accuracy/route.ts">Quality Gate accuracy</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/ea4565ffb019bb4a4fbe9b9723fada94add67268/services/backend-hub/server.cjs">Hub / QC usage</a> · <a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/ea4565ffb019bb4a4fbe9b9723fada94add67268/app/api/chat/route.ts">Chat API</a> · <a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/ea4565ffb019bb4a4fbe9b9723fada94add67268/app/api/image/route.ts">Image API</a>
+</li>
 <li>ยอด OpenAI $5, Claude $5, Railway $10–15 และ n8n ฟรี: เจ้าของระบบแจ้งในบทสนทนาวันที่ 21 กันยายน 2026</li>
-</ul></section>
+</ul>
+</section>
 <footer>AP-Home Platform OS · Current-state reference · 21 September 2026<br>เอกสารชุดเดียวกันในหน้า index ทบทวนวันที่ 21 กันยายน 2026; แต่ละหน้าระบุหลักฐานและข้อจำกัดการตรวจ</footer>
-</main></body></html>
+</main>
+</body>
+</html>

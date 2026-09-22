@@ -1,1 +1,132 @@
-<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ระบบทำงานอย่างไร · 22 ก.ย. 2026</title><style>*{box-sizing:border-box}body{margin:0;background:#0d1422;color:#e7edf6;font:16px/1.8 Tahoma,system-ui,sans-serif}main{max-width:1160px;margin:auto;padding:34px 28px 70px}h1{font-size:34px;line-height:1.4;color:#f4d478}h2{font-size:24px;margin-top:38px}h3{font-size:18px;color:#b9e7ed}a{color:#8adbea}code{color:#b9e7ed;overflow-wrap:anywhere;font-size:.88em}header p,.muted{color:#adbacd}.badge{display:inline-block;background:#20344b;color:#acdcd7;border-radius:5px;padding:3px 9px;font-size:12px;letter-spacing:.5px}.note{border-left:3px solid #f4d478;background:#252a31;padding:15px 20px;margin:22px 0}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.card,details{background:#162236;border:1px solid #344158;border-radius:12px;padding:20px;min-width:0}.card h3{margin-top:0}summary{cursor:pointer;font-weight:700;color:#b9e7ed}details{margin:12px 0}table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:13px;text-align:left;vertical-align:top;border-bottom:1px solid #344158;overflow-wrap:anywhere}th{color:#f4d478}.table{overflow-x:auto}nav{display:flex;flex-wrap:wrap;gap:10px;margin:20px 0}nav a,button{background:#20344b;border:1px solid #40516b;border-radius:7px;padding:10px 14px;color:#e7edf6;text-decoration:none;font:inherit;cursor:pointer}button[aria-pressed=true]{background:#f4d478;color:#182235}a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid #f4d478;outline-offset:3px}li{margin:8px 0}footer{border-top:1px solid #344158;margin-top:36px;padding-top:18px;color:#adbacd;font-size:13px}.step{border-left:3px solid #75c4ce;padding:8px 18px;margin:12px 0}.step strong{color:#f4d478}svg{max-width:100%;height:auto}svg text{font-family:Tahoma,system-ui,sans-serif}#detail{min-height:100px}.branch{border-left:2px solid #75c4ce;padding:0 0 0 20px}.branch h3{margin-bottom:5px}@media(max-width:650px){main{padding:22px 16px}h1{font-size:27px}.grid{grid-template-columns:1fr}th,td{padding:9px;min-width:120px}}@media print{body{background:white;color:#111}main{padding:0}.card,details,.note{background:white;border-color:#aaa}h1,h2,h3,a,code,th,.muted,header p,footer{color:#111}nav,button{display:none}.card{break-inside:avoid}details{display:block}}</style></head><body><main><header><span class="badge">AP-HOME PLATFORM · DOCUMENTATION</span><h1>ระบบทำงานอย่างไร</h1><p>เลือกกระบวนการ แล้วอ่านเส้นทางจากคำสั่งจนถึงผลลัพธ์</p><p>ทบทวน 22 กันยายน 2026 · อ้างอิง main <code>1dddb46</code></p></header><nav aria-label="เอกสาร"><a href="index.html">เอกสารทั้งหมด</a><a href="ap_home_platform_os_map.html">ภาพรวมสถานะ</a></nav><div class="note">ยืนยันเส้นทางจากโค้ดและ ADR ณ commit ที่ระบุ การมีโค้ดไม่ยืนยันว่า deployment, credentials และ workflow ที่ active ทำงานครบแล้ว รอบนี้ไม่ได้รันงาน production</div><h2>เลือกเส้นทางเพื่อดูทีละขั้น</h2><nav aria-label="เลือกกระบวนการ"><button data-flow="0" aria-pressed="true">อ่านภาพรวม</button><button data-flow="1" aria-pressed="false">สร้างบทความ</button><button data-flow="2" aria-pressed="false">Facebook ทันที / Queue</button><button data-flow="3" aria-pressed="false">ดีลและงานก่อสร้าง</button><button data-flow="4" aria-pressed="false">ถาม Assistant</button><button data-flow="5" aria-pressed="false">Market Intelligence</button></nav><div id="flow-panel" aria-live="polite"></div><h2>ทุกเส้นทางสำหรับอ่านและพิมพ์</h2><details><summary>อ่านภาพรวม</summary><div class="step"><strong>01</strong> · Dashboard เรียก /api/leads สำหรับ lead และ /api/blog/state สำหรับ engine state</div><div class="step"><strong>02</strong> · API อ่าน Supabase หรือ Hub /api/state ตามประเภทข้อมูล</div><div class="step"><strong>03</strong> · หน้าเว็บแสดงผล; API error ต้องตรวจแยกจากไม่มีข้อมูล</div></details><details><summary>สร้างบทความ</summary><div class="step"><strong>01</strong> · ผู้ใช้สั่งผ่าน /marketing หรือ schedule ที่ตั้งใน n8n</div><div class="step"><strong>02</strong> · Next.js proxy เรียก Hub /action/blog/queue/run-next; Assistant ใช้ /action/blog/run เมื่อระบุ keyword</div><div class="step"><strong>03</strong> · Hub เรียก WF1; ลำดับ writer/guard/gate ต้องตรวจ active export</div><div class="step"><strong>04</strong> · ทางผ่านเผยแพร่ WordPress; ทางบล็อกแจ้งเหตุผล; callback กลับ Hub ต้องสัมพันธ์ run ID</div><div class="step"><strong>05</strong> · ตรวจ quality_gate_log และ human feedback แยกจากเพียงสถานะ execution สำเร็จ</div></details><details><summary>Facebook ทันที / Queue</summary><div class="step"><strong>01</strong> · AI Content เรียก /api/chat และ /api/image ตามงานที่เลือก</div><div class="step"><strong>02</strong> · ผู้ใช้ตรวจข้อความ รูป และข้อมูลก่อนสั่งเผยแพร่</div><div class="step"><strong>03</strong> · โพสต์ทันที: /api/fb/publish → FB Backend → Facebook</div><div class="step"><strong>04</strong> · Queue: /api/fb/queue/* → Hub v1 → กลไกเผยแพร่ของ queue</div><div class="step"><strong>05</strong> · ตรวจผลโพสต์จริงก่อน retry ไม่อนุมานว่ารับ request แล้วโพสต์สำเร็จ</div></details><details><summary>ดีลและงานก่อสร้าง</summary><div class="step"><strong>01</strong> · สร้างดีลด้วยฟอร์ม /deals → /api/deals → reno_deals</div><div class="step"><strong>02</strong> · เลือก site_id เมื่อมี site จริง; QC ใช้ deal_id/site_id เชื่อมเมื่อบันทึกไว้</div><div class="step"><strong>03</strong> · แก้ stage และต้นทุนจริงผ่าน /api/deals/[id]</div><div class="step"><strong>04</strong> · Brains อ่านข้อมูลดีล/QC มาประกอบการตอบ แต่ไม่รวม Land Project เป็นดีลเดียวกันเอง</div></details><details><summary>ถาม Assistant</summary><div class="step"><strong>01</strong> · ข้อความ + ประวัติหน้าเว็บ → /api/assistant → Claude</div><div class="step"><strong>02</strong> · โมเดลเลือก tools อ่าน Hub, Supabase หรือ Brains</div><div class="step"><strong>03</strong> · ถ้าเป็น run_blog_now หรือ run_fb_queue_next ให้ UI ขอการยืนยัน</div><div class="step"><strong>04</strong> · ผล tool กลับไปให้โมเดลเขียนคำตอบ; prompt ห้ามข้อมูลนอกระบบยังไม่ใช่การตรวจหลักฐานเชิงบังคับ</div><div class="step"><strong>05</strong> · reload หน้าเว็บแล้วไม่มีการกู้แชทถาวร; ไม่มี tool บันทึกดีลจากข้อความ</div></details><details><summary>Market Intelligence</summary><div class="step"><strong>01</strong> · ผู้ใช้ส่ง text / area / timing ผ่าน /api/market-intel</div><div class="step"><strong>02</strong> · Next.js ส่งต่อ webhook ของ n8n ตาม env</div><div class="step"><strong>03</strong> · Collector ตาม ADR เขียน market_insights, buyer_context_signals, content_frames และส่งผลตาม workflow</div><div class="step"><strong>04</strong> · ตรวจ execution และข้อมูลที่เขียนจริง; Brains อ่านต่อเมื่อมี record แล้ว</div><div class="step"><strong>05</strong> · Human calibration บันทึกความถูก/ผิด ไม่ได้ retrain อัตโนมัติ</div></details><h2>หลักฐานที่ใช้ตรวจ</h2><ul><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/components/DashboardOS.tsx">components/DashboardOS.tsx</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/components/AIContent.tsx">components/AIContent.tsx</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/app/api/assistant/route.ts">app/api/assistant/route.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/app/api/deals/route.ts">app/api/deals/route.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/app/api/market-intel/route.ts">app/api/market-intel/route.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/app/api/blog/queue/run-next/route.ts">app/api/blog/queue/run-next/route.ts</a></li></ul><footer>สถานะตามโค้ด · ข้อมูลจริงต้องตรวจวันที่ แหล่งที่มา และขอบเขตผลค้นทุกครั้ง</footer></main><script>const flows=[["อ่านภาพรวม", ["Dashboard เรียก /api/leads สำหรับ lead และ /api/blog/state สำหรับ engine state", "API อ่าน Supabase หรือ Hub /api/state ตามประเภทข้อมูล", "หน้าเว็บแสดงผล; API error ต้องตรวจแยกจากไม่มีข้อมูล"]], ["สร้างบทความ", ["ผู้ใช้สั่งผ่าน /marketing หรือ schedule ที่ตั้งใน n8n", "Next.js proxy เรียก Hub /action/blog/queue/run-next; Assistant ใช้ /action/blog/run เมื่อระบุ keyword", "Hub เรียก WF1; ลำดับ writer/guard/gate ต้องตรวจ active export", "ทางผ่านเผยแพร่ WordPress; ทางบล็อกแจ้งเหตุผล; callback กลับ Hub ต้องสัมพันธ์ run ID", "ตรวจ quality_gate_log และ human feedback แยกจากเพียงสถานะ execution สำเร็จ"]], ["Facebook ทันที / Queue", ["AI Content เรียก /api/chat และ /api/image ตามงานที่เลือก", "ผู้ใช้ตรวจข้อความ รูป และข้อมูลก่อนสั่งเผยแพร่", "โพสต์ทันที: /api/fb/publish → FB Backend → Facebook", "Queue: /api/fb/queue/* → Hub v1 → กลไกเผยแพร่ของ queue", "ตรวจผลโพสต์จริงก่อน retry ไม่อนุมานว่ารับ request แล้วโพสต์สำเร็จ"]], ["ดีลและงานก่อสร้าง", ["สร้างดีลด้วยฟอร์ม /deals → /api/deals → reno_deals", "เลือก site_id เมื่อมี site จริง; QC ใช้ deal_id/site_id เชื่อมเมื่อบันทึกไว้", "แก้ stage และต้นทุนจริงผ่าน /api/deals/[id]", "Brains อ่านข้อมูลดีล/QC มาประกอบการตอบ แต่ไม่รวม Land Project เป็นดีลเดียวกันเอง"]], ["ถาม Assistant", ["ข้อความ + ประวัติหน้าเว็บ → /api/assistant → Claude", "โมเดลเลือก tools อ่าน Hub, Supabase หรือ Brains", "ถ้าเป็น run_blog_now หรือ run_fb_queue_next ให้ UI ขอการยืนยัน", "ผล tool กลับไปให้โมเดลเขียนคำตอบ; prompt ห้ามข้อมูลนอกระบบยังไม่ใช่การตรวจหลักฐานเชิงบังคับ", "reload หน้าเว็บแล้วไม่มีการกู้แชทถาวร; ไม่มี tool บันทึกดีลจากข้อความ"]], ["Market Intelligence", ["ผู้ใช้ส่ง text / area / timing ผ่าน /api/market-intel", "Next.js ส่งต่อ webhook ของ n8n ตาม env", "Collector ตาม ADR เขียน market_insights, buyer_context_signals, content_frames และส่งผลตาม workflow", "ตรวจ execution และข้อมูลที่เขียนจริง; Brains อ่านต่อเมื่อมี record แล้ว", "Human calibration บันทึกความถูก/ผิด ไม่ได้ retrain อัตโนมัติ"]]];function show(i){document.querySelectorAll('[data-flow]').forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.flow)===i)));let p=document.getElementById('flow-panel');p.replaceChildren();let h=document.createElement('h3');h.textContent=flows[i][0];p.append(h);flows[i][1].forEach((v,n)=>{let d=document.createElement('div');d.className='step';d.textContent=(n+1)+'. '+v;p.append(d)})}document.querySelectorAll('[data-flow]').forEach(b=>b.onclick=()=>show(Number(b.dataset.flow)));show(0);</script></body></html>
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ระบบทำงานอย่างไร · 22 ก.ย. 2026</title>
+<style>*{box-sizing:border-box}body{margin:0;background:#0d1422;color:#e7edf6;font:16px/1.8 Tahoma,system-ui,sans-serif}main{max-width:1160px;margin:auto;padding:34px 28px 70px}h1{font-size:34px;line-height:1.4;color:#f4d478}h2{font-size:24px;margin-top:38px}h3{font-size:18px;color:#b9e7ed}a{color:#8adbea}code{color:#b9e7ed;overflow-wrap:anywhere;font-size:.88em}header p,.muted{color:#adbacd}.badge{display:inline-block;background:#20344b;color:#acdcd7;border-radius:5px;padding:3px 9px;font-size:12px;letter-spacing:.5px}.note{border-left:3px solid #f4d478;background:#252a31;padding:15px 20px;margin:22px 0}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.card,details{background:#162236;border:1px solid #344158;border-radius:12px;padding:20px;min-width:0}.card h3{margin-top:0}summary{cursor:pointer;font-weight:700;color:#b9e7ed}details{margin:12px 0}table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:13px;text-align:left;vertical-align:top;border-bottom:1px solid #344158;overflow-wrap:anywhere}th{color:#f4d478}.table{overflow-x:auto}nav{display:flex;flex-wrap:wrap;gap:10px;margin:20px 0}nav a,button{background:#20344b;border:1px solid #40516b;border-radius:7px;padding:10px 14px;color:#e7edf6;text-decoration:none;font:inherit;cursor:pointer}button[aria-pressed=true]{background:#f4d478;color:#182235}a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid #f4d478;outline-offset:3px}li{margin:8px 0}footer{border-top:1px solid #344158;margin-top:36px;padding-top:18px;color:#adbacd;font-size:13px}.step{border-left:3px solid #75c4ce;padding:8px 18px;margin:12px 0}.step strong{color:#f4d478}svg{max-width:100%;height:auto}svg text{font-family:Tahoma,system-ui,sans-serif}#detail{min-height:100px}.branch{border-left:2px solid #75c4ce;padding:0 0 0 20px}.branch h3{margin-bottom:5px}@media(max-width:650px){main{padding:22px 16px}h1{font-size:27px}.grid{grid-template-columns:1fr}th,td{padding:9px;min-width:120px}}@media print{body{background:white;color:#111}main{padding:0}.card,details,.note{background:white;border-color:#aaa}h1,h2,h3,a,code,th,.muted,header p,footer{color:#111}nav,button{display:none}.card{break-inside:avoid}details{display:block}}</style>
+</head>
+<body>
+<main>
+<header>
+<span class="badge">AP-HOME PLATFORM · DOCUMENTATION</span>
+<h1>ระบบทำงานอย่างไร</h1>
+<p>เลือกกระบวนการ แล้วอ่านเส้นทางจากคำสั่งจนถึงผลลัพธ์</p>
+<p>ทบทวน 22 กันยายน 2026 · อ้างอิง main <code>1dddb46</code>
+</p>
+</header>
+<nav aria-label="เอกสาร">
+<a href="index.html">เอกสารทั้งหมด</a>
+<a href="ap_home_platform_os_map.html">ภาพรวมสถานะ</a>
+</nav>
+<div class="note">ยืนยันเส้นทางจากโค้ดและ ADR ณ commit ที่ระบุ การมีโค้ดไม่ยืนยันว่า deployment, credentials และ workflow ที่ active ทำงานครบแล้ว รอบนี้ไม่ได้รันงาน production</div>
+<h2>เลือกเส้นทางเพื่อดูทีละขั้น</h2>
+<nav aria-label="เลือกกระบวนการ">
+<button data-flow="0" aria-pressed="true">อ่านภาพรวม</button>
+<button data-flow="1" aria-pressed="false">สร้างบทความ</button>
+<button data-flow="2" aria-pressed="false">Facebook ทันที / Queue</button>
+<button data-flow="3" aria-pressed="false">ดีลและงานก่อสร้าง</button>
+<button data-flow="4" aria-pressed="false">ถาม Assistant</button>
+<button data-flow="5" aria-pressed="false">Market Intelligence</button>
+</nav>
+<div id="flow-panel" aria-live="polite">
+</div>
+<h2>ทุกเส้นทางสำหรับอ่านและพิมพ์</h2>
+<details>
+<summary>อ่านภาพรวม</summary>
+<div class="step">
+<strong>01</strong> · Dashboard เรียก /api/leads สำหรับ lead และ /api/blog/state สำหรับ engine state</div>
+<div class="step">
+<strong>02</strong> · API อ่าน Supabase หรือ Hub /api/state ตามประเภทข้อมูล</div>
+<div class="step">
+<strong>03</strong> · หน้าเว็บแสดงผล; API error ต้องตรวจแยกจากไม่มีข้อมูล</div>
+</details>
+<details>
+<summary>สร้างบทความ</summary>
+<div class="step">
+<strong>01</strong> · ผู้ใช้สั่งผ่าน /marketing หรือ schedule ที่ตั้งใน n8n</div>
+<div class="step">
+<strong>02</strong> · Next.js proxy เรียก Hub /action/blog/queue/run-next; Assistant ใช้ /action/blog/run เมื่อระบุ keyword</div>
+<div class="step">
+<strong>03</strong> · Hub เรียก WF1; ลำดับ writer/guard/gate ต้องตรวจ active export</div>
+<div class="step">
+<strong>04</strong> · ทางผ่านเผยแพร่ WordPress; ทางบล็อกแจ้งเหตุผล; callback กลับ Hub ต้องสัมพันธ์ run ID</div>
+<div class="step">
+<strong>05</strong> · ตรวจ quality_gate_log และ human feedback แยกจากเพียงสถานะ execution สำเร็จ</div>
+</details>
+<details>
+<summary>Facebook ทันที / Queue</summary>
+<div class="step">
+<strong>01</strong> · AI Content เรียก /api/chat และ /api/image ตามงานที่เลือก</div>
+<div class="step">
+<strong>02</strong> · ผู้ใช้ตรวจข้อความ รูป และข้อมูลก่อนสั่งเผยแพร่</div>
+<div class="step">
+<strong>03</strong> · โพสต์ทันที: /api/fb/publish → FB Backend → Facebook</div>
+<div class="step">
+<strong>04</strong> · Queue: /api/fb/queue/* → Hub v1 → กลไกเผยแพร่ของ queue</div>
+<div class="step">
+<strong>05</strong> · ตรวจผลโพสต์จริงก่อน retry ไม่อนุมานว่ารับ request แล้วโพสต์สำเร็จ</div>
+</details>
+<details>
+<summary>ดีลและงานก่อสร้าง</summary>
+<div class="step">
+<strong>01</strong> · สร้างดีลด้วยฟอร์ม /deals → /api/deals → reno_deals</div>
+<div class="step">
+<strong>02</strong> · เลือก site_id เมื่อมี site จริง; QC ใช้ deal_id/site_id เชื่อมเมื่อบันทึกไว้</div>
+<div class="step">
+<strong>03</strong> · แก้ stage และต้นทุนจริงผ่าน /api/deals/[id]</div>
+<div class="step">
+<strong>04</strong> · Brains อ่านข้อมูลดีล/QC มาประกอบการตอบ แต่ไม่รวม Land Project เป็นดีลเดียวกันเอง</div>
+</details>
+<details>
+<summary>ถาม Assistant</summary>
+<div class="step">
+<strong>01</strong> · ข้อความ + ประวัติหน้าเว็บ → /api/assistant → Claude</div>
+<div class="step">
+<strong>02</strong> · โมเดลเลือก tools อ่าน Hub, Supabase หรือ Brains</div>
+<div class="step">
+<strong>03</strong> · ถ้าเป็น run_blog_now หรือ run_fb_queue_next ให้ UI ขอการยืนยัน</div>
+<div class="step">
+<strong>04</strong> · ผล tool กลับไปให้โมเดลเขียนคำตอบ; prompt ห้ามข้อมูลนอกระบบยังไม่ใช่การตรวจหลักฐานเชิงบังคับ</div>
+<div class="step">
+<strong>05</strong> · reload หน้าเว็บแล้วไม่มีการกู้แชทถาวร; ไม่มี tool บันทึกดีลจากข้อความ</div>
+</details>
+<details>
+<summary>Market Intelligence</summary>
+<div class="step">
+<strong>01</strong> · ผู้ใช้ส่ง text / area / timing ผ่าน /api/market-intel</div>
+<div class="step">
+<strong>02</strong> · Next.js ส่งต่อ webhook ของ n8n ตาม env</div>
+<div class="step">
+<strong>03</strong> · Collector ตาม ADR เขียน market_insights, buyer_context_signals, content_frames และส่งผลตาม workflow</div>
+<div class="step">
+<strong>04</strong> · ตรวจ execution และข้อมูลที่เขียนจริง; Brains อ่านต่อเมื่อมี record แล้ว</div>
+<div class="step">
+<strong>05</strong> · Human calibration บันทึกความถูก/ผิด ไม่ได้ retrain อัตโนมัติ</div>
+</details>
+<h2>หลักฐานที่ใช้ตรวจ</h2>
+<ul>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/components/DashboardOS.tsx">components/DashboardOS.tsx</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/components/AIContent.tsx">components/AIContent.tsx</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/app/api/assistant/route.ts">app/api/assistant/route.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/app/api/deals/route.ts">app/api/deals/route.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/app/api/market-intel/route.ts">app/api/market-intel/route.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/app/api/blog/queue/run-next/route.ts">app/api/blog/queue/run-next/route.ts</a>
+</li>
+</ul>
+<footer>สถานะตามโค้ด · ข้อมูลจริงต้องตรวจวันที่ แหล่งที่มา และขอบเขตผลค้นทุกครั้ง</footer>
+</main>
+<script>const flows=[["อ่านภาพรวม", ["Dashboard เรียก /api/leads สำหรับ lead และ /api/blog/state สำหรับ engine state", "API อ่าน Supabase หรือ Hub /api/state ตามประเภทข้อมูล", "หน้าเว็บแสดงผล; API error ต้องตรวจแยกจากไม่มีข้อมูล"]], ["สร้างบทความ", ["ผู้ใช้สั่งผ่าน /marketing หรือ schedule ที่ตั้งใน n8n", "Next.js proxy เรียก Hub /action/blog/queue/run-next; Assistant ใช้ /action/blog/run เมื่อระบุ keyword", "Hub เรียก WF1; ลำดับ writer/guard/gate ต้องตรวจ active export", "ทางผ่านเผยแพร่ WordPress; ทางบล็อกแจ้งเหตุผล; callback กลับ Hub ต้องสัมพันธ์ run ID", "ตรวจ quality_gate_log และ human feedback แยกจากเพียงสถานะ execution สำเร็จ"]], ["Facebook ทันที / Queue", ["AI Content เรียก /api/chat และ /api/image ตามงานที่เลือก", "ผู้ใช้ตรวจข้อความ รูป และข้อมูลก่อนสั่งเผยแพร่", "โพสต์ทันที: /api/fb/publish → FB Backend → Facebook", "Queue: /api/fb/queue/* → Hub v1 → กลไกเผยแพร่ของ queue", "ตรวจผลโพสต์จริงก่อน retry ไม่อนุมานว่ารับ request แล้วโพสต์สำเร็จ"]], ["ดีลและงานก่อสร้าง", ["สร้างดีลด้วยฟอร์ม /deals → /api/deals → reno_deals", "เลือก site_id เมื่อมี site จริง; QC ใช้ deal_id/site_id เชื่อมเมื่อบันทึกไว้", "แก้ stage และต้นทุนจริงผ่าน /api/deals/[id]", "Brains อ่านข้อมูลดีล/QC มาประกอบการตอบ แต่ไม่รวม Land Project เป็นดีลเดียวกันเอง"]], ["ถาม Assistant", ["ข้อความ + ประวัติหน้าเว็บ → /api/assistant → Claude", "โมเดลเลือก tools อ่าน Hub, Supabase หรือ Brains", "ถ้าเป็น run_blog_now หรือ run_fb_queue_next ให้ UI ขอการยืนยัน", "ผล tool กลับไปให้โมเดลเขียนคำตอบ; prompt ห้ามข้อมูลนอกระบบยังไม่ใช่การตรวจหลักฐานเชิงบังคับ", "reload หน้าเว็บแล้วไม่มีการกู้แชทถาวร; ไม่มี tool บันทึกดีลจากข้อความ"]], ["Market Intelligence", ["ผู้ใช้ส่ง text / area / timing ผ่าน /api/market-intel", "Next.js ส่งต่อ webhook ของ n8n ตาม env", "Collector ตาม ADR เขียน market_insights, buyer_context_signals, content_frames และส่งผลตาม workflow", "ตรวจ execution และข้อมูลที่เขียนจริง; Brains อ่านต่อเมื่อมี record แล้ว", "Human calibration บันทึกความถูก/ผิด ไม่ได้ retrain อัตโนมัติ"]]];function show(i){document.querySelectorAll('[data-flow]').forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.flow)===i)));let p=document.getElementById('flow-panel');p.replaceChildren();let h=document.createElement('h3');h.textContent=flows[i][0];p.append(h);flows[i][1].forEach((v,n)=>{let d=document.createElement('div');d.className='step';d.textContent=(n+1)+'. '+v;p.append(d)})}document.querySelectorAll('[data-flow]').forEach(b=>b.onclick=()=>show(Number(b.dataset.flow)));show(0);</script>
+</body>
+</html>

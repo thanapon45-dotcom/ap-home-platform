@@ -1,1 +1,112 @@
-<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Workflow หลักและจุดตรวจ · 22 ก.ย. 2026</title><style>*{box-sizing:border-box}body{margin:0;background:#0d1422;color:#e7edf6;font:16px/1.8 Tahoma,system-ui,sans-serif}main{max-width:1160px;margin:auto;padding:34px 28px 70px}h1{font-size:34px;line-height:1.4;color:#f4d478}h2{font-size:24px;margin-top:38px}h3{font-size:18px;color:#b9e7ed}a{color:#8adbea}code{color:#b9e7ed;overflow-wrap:anywhere;font-size:.88em}header p,.muted{color:#adbacd}.badge{display:inline-block;background:#20344b;color:#acdcd7;border-radius:5px;padding:3px 9px;font-size:12px;letter-spacing:.5px}.note{border-left:3px solid #f4d478;background:#252a31;padding:15px 20px;margin:22px 0}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.card,details{background:#162236;border:1px solid #344158;border-radius:12px;padding:20px;min-width:0}.card h3{margin-top:0}summary{cursor:pointer;font-weight:700;color:#b9e7ed}details{margin:12px 0}table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:13px;text-align:left;vertical-align:top;border-bottom:1px solid #344158;overflow-wrap:anywhere}th{color:#f4d478}.table{overflow-x:auto}nav{display:flex;flex-wrap:wrap;gap:10px;margin:20px 0}nav a,button{background:#20344b;border:1px solid #40516b;border-radius:7px;padding:10px 14px;color:#e7edf6;text-decoration:none;font:inherit;cursor:pointer}button[aria-pressed=true]{background:#f4d478;color:#182235}a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid #f4d478;outline-offset:3px}li{margin:8px 0}footer{border-top:1px solid #344158;margin-top:36px;padding-top:18px;color:#adbacd;font-size:13px}.step{border-left:3px solid #75c4ce;padding:8px 18px;margin:12px 0}.step strong{color:#f4d478}svg{max-width:100%;height:auto}svg text{font-family:Tahoma,system-ui,sans-serif}#detail{min-height:100px}.branch{border-left:2px solid #75c4ce;padding:0 0 0 20px}.branch h3{margin-bottom:5px}@media(max-width:650px){main{padding:22px 16px}h1{font-size:27px}.grid{grid-template-columns:1fr}th,td{padding:9px;min-width:120px}}@media print{body{background:white;color:#111}main{padding:0}.card,details,.note{background:white;border-color:#aaa}h1,h2,h3,a,code,th,.muted,header p,footer{color:#111}nav,button{display:none}.card{break-inside:avoid}details{display:block}}</style></head><body><main><header><span class="badge">AP-HOME PLATFORM · DOCUMENTATION</span><h1>Workflow หลักและจุดตรวจ</h1><p>แยกการประสานงานจากโค้ดออกจากลำดับ node ที่ต้องยืนยันใน n8n</p><p>ทบทวน 22 กันยายน 2026 · อ้างอิง main <code>1dddb46</code></p></header><nav aria-label="เอกสาร"><a href="index.html">เอกสารทั้งหมด</a><a href="ap_home_platform_os_map.html">ภาพรวมสถานะ</a></nav><div class="note">ยืนยันเส้นทางจากโค้ดและ ADR ณ commit ที่ระบุ การมีโค้ดไม่ยืนยันว่า deployment, credentials และ workflow ที่ active ทำงานครบแล้ว รอบนี้ไม่ได้รันงาน production</div><h2>WF1 · บทความและ Quality Gate</h2><p>ADR-016 แก้ขอบเขต brand แล้วใน PR #3: บทความให้ความรู้สร้างบ้านผ่านได้; บล็อกเมื่ออ้างบริการรับจ้างสร้างบ้านหรือ CTA ที่สื่อเช่นนั้น ยังต้องตรวจภาษา ข้อเท็จจริง โครงสร้างและเนื้อหาซ้ำ</p><p>ยังต้อง export workflow ที่ active เพื่อตรวจ writer / rewriter / gate และรันทดสอบทั้งกรณีผ่านและบล็อก การ merge เอกสารไม่แก้ prompt ใน n8n อัตโนมัติ Policy เดิมใน ADR ยังให้ AI infrastructure/parse error เป็น fail-open ซึ่งต้องแยกจากการตรวจเนื้อหาผ่านจริง</p><div class="step"><strong>01</strong> · ผู้ใช้สั่งผ่าน /marketing หรือ schedule ที่ตั้งใน n8n</div><div class="step"><strong>02</strong> · Next.js proxy เรียก Hub /action/blog/queue/run-next; Assistant ใช้ /action/blog/run เมื่อระบุ keyword</div><div class="step"><strong>03</strong> · Hub เรียก WF1; ลำดับ writer/guard/gate ต้องตรวจ active export</div><div class="step"><strong>04</strong> · ทางผ่านเผยแพร่ WordPress; ทางบล็อกแจ้งเหตุผล; callback กลับ Hub ต้องสัมพันธ์ run ID</div><div class="step"><strong>05</strong> · ตรวจ quality_gate_log และ human feedback แยกจากเพียงสถานะ execution สำเร็จ</div><p>Accuracy = feedback ที่ถูก ÷ แถวที่มี feedback; endpoint อ่านล่าสุดไม่เกิน 200 decisions และแสดง headline เมื่อมี feedback ≥10 ครั้ง False positive คือบล็อกผิด ส่วน false negative คือปล่อยผ่านผิด ตัวเลข 53.2% จากผู้ใช้เป็น snapshot ก่อนแก้ ไม่ใช่ผลหลังแก้</p><h2>WF2 · ภาพและการอัปเดตบทความ</h2><p>ตาม ADR / บันทึก workflow: WF1 ส่งงานภาพไป WF2 แล้วอัปเดต WordPress และ callback <code>/webhook/image-done</code> กลับ Hub ต้องตรวจ provider, fallback, guard และ connection จาก active export ไม่ถือว่าเส้นทาง /api/image ของ Content Studio เป็น workflow เดียวกัน</p><h2>Facebook</h2><div class="step"><strong>01</strong> · AI Content เรียก /api/chat และ /api/image ตามงานที่เลือก</div><div class="step"><strong>02</strong> · ผู้ใช้ตรวจข้อความ รูป และข้อมูลก่อนสั่งเผยแพร่</div><div class="step"><strong>03</strong> · โพสต์ทันที: /api/fb/publish → FB Backend → Facebook</div><div class="step"><strong>04</strong> · Queue: /api/fb/queue/* → Hub v1 → กลไกเผยแพร่ของ queue</div><div class="step"><strong>05</strong> · ตรวจผลโพสต์จริงก่อน retry ไม่อนุมานว่ารับ request แล้วโพสต์สำเร็จ</div><h2>Seller intake และ Property Review</h2><div class="step"><strong>01</strong> · LINE seller intake เป็น integration ตามเอกสารเดิม ต้องตรวจ webhook/active revision</div><div class="step"><strong>02</strong> · เมื่อมี properties รอตรวจ Dashboard อ่าน /api/property/pending</div><div class="step"><strong>03</strong> · เจ้าของระบบตรวจข้อมูลและ upload ภาพ จากนั้น /api/property/publish → Hub → WordPress</div><div class="step"><strong>04</strong> · ตรวจสถานะและ URL จริงหลังเผยแพร่</div><h2>QC LINE</h2><div class="step"><strong>01</strong> · LINE/n8n รับภาพตาม integration ที่ตั้งอยู่ แล้วส่งไป Hub QC ingest</div><div class="step"><strong>02</strong> · Hub เรียก AI และเก็บผลตรวจใน qc_inspections; ไม่รับรองเวลาคงที่</div><div class="step"><strong>03</strong> · มนุษย์ตรวจผลและส่ง feedback ผ่าน workflow ไป /api/qc/feedback</div><div class="step"><strong>04</strong> · Dashboard QC Accuracy อ่านข้อมูลประเมินผ่าน /api/qc/accuracy; การมี feedback ไม่เท่ากับ model เรียนรู้เอง</div><h2>Market Intelligence</h2><div class="step"><strong>01</strong> · ผู้ใช้ส่ง text / area / timing ผ่าน /api/market-intel</div><div class="step"><strong>02</strong> · Next.js ส่งต่อ webhook ของ n8n ตาม env</div><div class="step"><strong>03</strong> · Collector ตาม ADR เขียน market_insights, buyer_context_signals, content_frames และส่งผลตาม workflow</div><div class="step"><strong>04</strong> · ตรวจ execution และข้อมูลที่เขียนจริง; Brains อ่านต่อเมื่อมี record แล้ว</div><div class="step"><strong>05</strong> · Human calibration บันทึกความถูก/ผิด ไม่ได้ retrain อัตโนมัติ</div><h2>Schedule / Wake-up / Parser / Performance</h2><p>เวลา cron, timezone, workflow ID, revision และ credentials ต้องอ่านจาก n8n ที่ active งาน CRM Note Parser และ FB Performance Tracker ที่เคยระบุว่า LIVE ในเอกสารเก่าไม่ได้รับการยืนยัน runtime รอบนี้ ห้ามใช้ชื่อไฟล์ export หรือวันที่เดิมรับรองว่าทำงานอยู่ทุกวัน</p><h2>เมื่อ workflow ผิดพลาด</h2><div class="step"><strong>01</strong> · เก็บ run ID, execution ID, เวลาที่เกิดและ node ที่ผิดพลาด</div><div class="step"><strong>02</strong> · เทียบ input/output และข้อมูลปลายทางก่อน retry เพื่อป้องกันการเผยแพร่ซ้ำ</div><div class="step"><strong>03</strong> · แก้และทดสอบในขอบเขตงานนั้นก่อน activate; บันทึก revision และผล pass/block ให้ย้อนตรวจได้</div><h2>หลักฐานที่ใช้ตรวจ</h2><ul><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/docs/v2/04-decisions/accepted/ADR-016.md">docs/v2/04-decisions/accepted/ADR-016.md</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/app/api/quality-gate/accuracy/route.ts">app/api/quality-gate/accuracy/route.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/app/api/qc/accuracy/route.ts">app/api/qc/accuracy/route.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/app/api/property/publish/route.ts">app/api/property/publish/route.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/app/api/market-intel/route.ts">app/api/market-intel/route.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/server.cjs">services/backend-hub/server.cjs</a></li></ul><footer>สถานะตามโค้ด · ข้อมูลจริงต้องตรวจวันที่ แหล่งที่มา และขอบเขตผลค้นทุกครั้ง</footer></main></body></html>
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Workflow หลักและจุดตรวจ · 22 ก.ย. 2026</title>
+<style>*{box-sizing:border-box}body{margin:0;background:#0d1422;color:#e7edf6;font:16px/1.8 Tahoma,system-ui,sans-serif}main{max-width:1160px;margin:auto;padding:34px 28px 70px}h1{font-size:34px;line-height:1.4;color:#f4d478}h2{font-size:24px;margin-top:38px}h3{font-size:18px;color:#b9e7ed}a{color:#8adbea}code{color:#b9e7ed;overflow-wrap:anywhere;font-size:.88em}header p,.muted{color:#adbacd}.badge{display:inline-block;background:#20344b;color:#acdcd7;border-radius:5px;padding:3px 9px;font-size:12px;letter-spacing:.5px}.note{border-left:3px solid #f4d478;background:#252a31;padding:15px 20px;margin:22px 0}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.card,details{background:#162236;border:1px solid #344158;border-radius:12px;padding:20px;min-width:0}.card h3{margin-top:0}summary{cursor:pointer;font-weight:700;color:#b9e7ed}details{margin:12px 0}table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:13px;text-align:left;vertical-align:top;border-bottom:1px solid #344158;overflow-wrap:anywhere}th{color:#f4d478}.table{overflow-x:auto}nav{display:flex;flex-wrap:wrap;gap:10px;margin:20px 0}nav a,button{background:#20344b;border:1px solid #40516b;border-radius:7px;padding:10px 14px;color:#e7edf6;text-decoration:none;font:inherit;cursor:pointer}button[aria-pressed=true]{background:#f4d478;color:#182235}a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid #f4d478;outline-offset:3px}li{margin:8px 0}footer{border-top:1px solid #344158;margin-top:36px;padding-top:18px;color:#adbacd;font-size:13px}.step{border-left:3px solid #75c4ce;padding:8px 18px;margin:12px 0}.step strong{color:#f4d478}svg{max-width:100%;height:auto}svg text{font-family:Tahoma,system-ui,sans-serif}#detail{min-height:100px}.branch{border-left:2px solid #75c4ce;padding:0 0 0 20px}.branch h3{margin-bottom:5px}@media(max-width:650px){main{padding:22px 16px}h1{font-size:27px}.grid{grid-template-columns:1fr}th,td{padding:9px;min-width:120px}}@media print{body{background:white;color:#111}main{padding:0}.card,details,.note{background:white;border-color:#aaa}h1,h2,h3,a,code,th,.muted,header p,footer{color:#111}nav,button{display:none}.card{break-inside:avoid}details{display:block}}</style>
+</head>
+<body>
+<main>
+<header>
+<span class="badge">AP-HOME PLATFORM · DOCUMENTATION</span>
+<h1>Workflow หลักและจุดตรวจ</h1>
+<p>แยกการประสานงานจากโค้ดออกจากลำดับ node ที่ต้องยืนยันใน n8n</p>
+<p>ทบทวน 22 กันยายน 2026 · อ้างอิง main <code>1dddb46</code>
+</p>
+</header>
+<nav aria-label="เอกสาร">
+<a href="index.html">เอกสารทั้งหมด</a>
+<a href="ap_home_platform_os_map.html">ภาพรวมสถานะ</a>
+</nav>
+<div class="note">ยืนยันเส้นทางจากโค้ดและ ADR ณ commit ที่ระบุ การมีโค้ดไม่ยืนยันว่า deployment, credentials และ workflow ที่ active ทำงานครบแล้ว รอบนี้ไม่ได้รันงาน production</div>
+<h2>WF1 · บทความและ Quality Gate</h2>
+<p>ADR-016 แก้ขอบเขต brand แล้วใน PR #3: บทความให้ความรู้สร้างบ้านผ่านได้; บล็อกเมื่ออ้างบริการรับจ้างสร้างบ้านหรือ CTA ที่สื่อเช่นนั้น ยังต้องตรวจภาษา ข้อเท็จจริง โครงสร้างและเนื้อหาซ้ำ</p>
+<p>ยังต้อง export workflow ที่ active เพื่อตรวจ writer / rewriter / gate และรันทดสอบทั้งกรณีผ่านและบล็อก การ merge เอกสารไม่แก้ prompt ใน n8n อัตโนมัติ Policy เดิมใน ADR ยังให้ AI infrastructure/parse error เป็น fail-open ซึ่งต้องแยกจากการตรวจเนื้อหาผ่านจริง</p>
+<div class="step">
+<strong>01</strong> · ผู้ใช้สั่งผ่าน /marketing หรือ schedule ที่ตั้งใน n8n</div>
+<div class="step">
+<strong>02</strong> · Next.js proxy เรียก Hub /action/blog/queue/run-next; Assistant ใช้ /action/blog/run เมื่อระบุ keyword</div>
+<div class="step">
+<strong>03</strong> · Hub เรียก WF1; ลำดับ writer/guard/gate ต้องตรวจ active export</div>
+<div class="step">
+<strong>04</strong> · ทางผ่านเผยแพร่ WordPress; ทางบล็อกแจ้งเหตุผล; callback กลับ Hub ต้องสัมพันธ์ run ID</div>
+<div class="step">
+<strong>05</strong> · ตรวจ quality_gate_log และ human feedback แยกจากเพียงสถานะ execution สำเร็จ</div>
+<p>Accuracy = feedback ที่ถูก ÷ แถวที่มี feedback; endpoint อ่านล่าสุดไม่เกิน 200 decisions และแสดง headline เมื่อมี feedback ≥10 ครั้ง False positive คือบล็อกผิด ส่วน false negative คือปล่อยผ่านผิด ตัวเลข 53.2% จากผู้ใช้เป็น snapshot ก่อนแก้ ไม่ใช่ผลหลังแก้</p>
+<h2>WF2 · ภาพและการอัปเดตบทความ</h2>
+<p>ตาม ADR / บันทึก workflow: WF1 ส่งงานภาพไป WF2 แล้วอัปเดต WordPress และ callback <code>/webhook/image-done</code> กลับ Hub ต้องตรวจ provider, fallback, guard และ connection จาก active export ไม่ถือว่าเส้นทาง /api/image ของ Content Studio เป็น workflow เดียวกัน</p>
+<h2>Facebook</h2>
+<div class="step">
+<strong>01</strong> · AI Content เรียก /api/chat และ /api/image ตามงานที่เลือก</div>
+<div class="step">
+<strong>02</strong> · ผู้ใช้ตรวจข้อความ รูป และข้อมูลก่อนสั่งเผยแพร่</div>
+<div class="step">
+<strong>03</strong> · โพสต์ทันที: /api/fb/publish → FB Backend → Facebook</div>
+<div class="step">
+<strong>04</strong> · Queue: /api/fb/queue/* → Hub v1 → กลไกเผยแพร่ของ queue</div>
+<div class="step">
+<strong>05</strong> · ตรวจผลโพสต์จริงก่อน retry ไม่อนุมานว่ารับ request แล้วโพสต์สำเร็จ</div>
+<h2>Seller intake และ Property Review</h2>
+<div class="step">
+<strong>01</strong> · LINE seller intake เป็น integration ตามเอกสารเดิม ต้องตรวจ webhook/active revision</div>
+<div class="step">
+<strong>02</strong> · เมื่อมี properties รอตรวจ Dashboard อ่าน /api/property/pending</div>
+<div class="step">
+<strong>03</strong> · เจ้าของระบบตรวจข้อมูลและ upload ภาพ จากนั้น /api/property/publish → Hub → WordPress</div>
+<div class="step">
+<strong>04</strong> · ตรวจสถานะและ URL จริงหลังเผยแพร่</div>
+<h2>QC LINE</h2>
+<div class="step">
+<strong>01</strong> · LINE/n8n รับภาพตาม integration ที่ตั้งอยู่ แล้วส่งไป Hub QC ingest</div>
+<div class="step">
+<strong>02</strong> · Hub เรียก AI และเก็บผลตรวจใน qc_inspections; ไม่รับรองเวลาคงที่</div>
+<div class="step">
+<strong>03</strong> · มนุษย์ตรวจผลและส่ง feedback ผ่าน workflow ไป /api/qc/feedback</div>
+<div class="step">
+<strong>04</strong> · Dashboard QC Accuracy อ่านข้อมูลประเมินผ่าน /api/qc/accuracy; การมี feedback ไม่เท่ากับ model เรียนรู้เอง</div>
+<h2>Market Intelligence</h2>
+<div class="step">
+<strong>01</strong> · ผู้ใช้ส่ง text / area / timing ผ่าน /api/market-intel</div>
+<div class="step">
+<strong>02</strong> · Next.js ส่งต่อ webhook ของ n8n ตาม env</div>
+<div class="step">
+<strong>03</strong> · Collector ตาม ADR เขียน market_insights, buyer_context_signals, content_frames และส่งผลตาม workflow</div>
+<div class="step">
+<strong>04</strong> · ตรวจ execution และข้อมูลที่เขียนจริง; Brains อ่านต่อเมื่อมี record แล้ว</div>
+<div class="step">
+<strong>05</strong> · Human calibration บันทึกความถูก/ผิด ไม่ได้ retrain อัตโนมัติ</div>
+<h2>Schedule / Wake-up / Parser / Performance</h2>
+<p>เวลา cron, timezone, workflow ID, revision และ credentials ต้องอ่านจาก n8n ที่ active งาน CRM Note Parser และ FB Performance Tracker ที่เคยระบุว่า LIVE ในเอกสารเก่าไม่ได้รับการยืนยัน runtime รอบนี้ ห้ามใช้ชื่อไฟล์ export หรือวันที่เดิมรับรองว่าทำงานอยู่ทุกวัน</p>
+<h2>เมื่อ workflow ผิดพลาด</h2>
+<div class="step">
+<strong>01</strong> · เก็บ run ID, execution ID, เวลาที่เกิดและ node ที่ผิดพลาด</div>
+<div class="step">
+<strong>02</strong> · เทียบ input/output และข้อมูลปลายทางก่อน retry เพื่อป้องกันการเผยแพร่ซ้ำ</div>
+<div class="step">
+<strong>03</strong> · แก้และทดสอบในขอบเขตงานนั้นก่อน activate; บันทึก revision และผล pass/block ให้ย้อนตรวจได้</div>
+<h2>หลักฐานที่ใช้ตรวจ</h2>
+<ul>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/docs/v2/04-decisions/accepted/ADR-016.md">docs/v2/04-decisions/accepted/ADR-016.md</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/app/api/quality-gate/accuracy/route.ts">app/api/quality-gate/accuracy/route.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/app/api/qc/accuracy/route.ts">app/api/qc/accuracy/route.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/app/api/property/publish/route.ts">app/api/property/publish/route.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/app/api/market-intel/route.ts">app/api/market-intel/route.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/server.cjs">services/backend-hub/server.cjs</a>
+</li>
+</ul>
+<footer>สถานะตามโค้ด · ข้อมูลจริงต้องตรวจวันที่ แหล่งที่มา และขอบเขตผลค้นทุกครั้ง</footer>
+</main>
+</body>
+</html>

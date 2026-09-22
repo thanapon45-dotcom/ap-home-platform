@@ -1,1 +1,219 @@
-<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>คู่มือการใช้งาน Platform · 22 ก.ย. 2026</title><style>*{box-sizing:border-box}body{margin:0;background:#0d1422;color:#e7edf6;font:16px/1.8 Tahoma,system-ui,sans-serif}main{max-width:1160px;margin:auto;padding:34px 28px 70px}h1{font-size:34px;line-height:1.4;color:#f4d478}h2{font-size:24px;margin-top:38px}h3{font-size:18px;color:#b9e7ed}a{color:#8adbea}code{color:#b9e7ed;overflow-wrap:anywhere;font-size:.88em}header p,.muted{color:#adbacd}.badge{display:inline-block;background:#20344b;color:#acdcd7;border-radius:5px;padding:3px 9px;font-size:12px;letter-spacing:.5px}.note{border-left:3px solid #f4d478;background:#252a31;padding:15px 20px;margin:22px 0}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.card,details{background:#162236;border:1px solid #344158;border-radius:12px;padding:20px;min-width:0}.card h3{margin-top:0}summary{cursor:pointer;font-weight:700;color:#b9e7ed}details{margin:12px 0}table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:13px;text-align:left;vertical-align:top;border-bottom:1px solid #344158;overflow-wrap:anywhere}th{color:#f4d478}.table{overflow-x:auto}nav{display:flex;flex-wrap:wrap;gap:10px;margin:20px 0}nav a,button{background:#20344b;border:1px solid #40516b;border-radius:7px;padding:10px 14px;color:#e7edf6;text-decoration:none;font:inherit;cursor:pointer}button[aria-pressed=true]{background:#f4d478;color:#182235}a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid #f4d478;outline-offset:3px}li{margin:8px 0}footer{border-top:1px solid #344158;margin-top:36px;padding-top:18px;color:#adbacd;font-size:13px}.step{border-left:3px solid #75c4ce;padding:8px 18px;margin:12px 0}.step strong{color:#f4d478}svg{max-width:100%;height:auto}svg text{font-family:Tahoma,system-ui,sans-serif}#detail{min-height:100px}.branch{border-left:2px solid #75c4ce;padding:0 0 0 20px}.branch h3{margin-bottom:5px}@media(max-width:650px){main{padding:22px 16px}h1{font-size:27px}.grid{grid-template-columns:1fr}th,td{padding:9px;min-width:120px}}@media print{body{background:white;color:#111}main{padding:0}.card,details,.note{background:white;border-color:#aaa}h1,h2,h3,a,code,th,.muted,header p,footer{color:#111}nav,button{display:none}.card{break-inside:avoid}details{display:block}}</style></head><body><main><header><span class="badge">AP-HOME PLATFORM · DOCUMENTATION</span><h1>คู่มือการใช้งาน Platform</h1><p>วิธีทำงานในแต่ละหน้าและจุดที่ต้องตรวจ ก่อนเชื่อผลหรือสั่งเผยแพร่</p><p>ทบทวน 22 กันยายน 2026 · อ้างอิง main <code>1dddb46</code></p></header><nav aria-label="เอกสาร"><a href="https://github.com/thanapon45-dotcom/ap-home-platform/tree/main/docs/Finnhouses%20Platform%20Docs">เอกสารทั้งหมด</a><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/main/docs/Finnhouses%20Platform%20Docs/ap_home_platform_os_map.html">ภาพรวมสถานะ</a></nav><div class="note">ยืนยันเส้นทางจากโค้ดและ ADR ณ commit ที่ระบุ การมีโค้ดไม่ยืนยันว่า deployment, credentials และ workflow ที่ active ทำงานครบแล้ว รอบนี้ไม่ได้รันงาน production</div><h2>เลือกเครื่องมือให้ตรงงาน</h2><p>Fix &amp; Flip / Develop 60% · ที่ปรึกษาและตรวจสอบ 30% · นายหน้า 10% เป็นสัดส่วนธุรกิจตามเอกสาร ไม่ใช่ยอดรายได้ที่ดึงจากฐานข้อมูล</p><p>ให้ความรู้เรื่องสร้างบ้านได้ แต่ห้ามอ้างว่า Finnhouses รับจ้างสร้างบ้านให้ลูกค้า การพัฒนาทรัพย์ของบริษัทเพื่อขายเป็นอีกกรณีหนึ่ง</p><div class="table"><table><thead><tr><th>เครื่องมือ</th><th>หน้า</th><th>ใช้ทำอะไร</th></tr></thead><tbody><tr><td>Dashboard</td><td>/dashboard</td><td>ภาพรวม, Property Review, Market Intel, Ops, QC Accuracy, Content Performance, Quality Gate</td></tr><tr><td>CRM</td><td>/crm</td><td>เพิ่ม/นำเข้า CSV และติดตาม lead; business_unit = consult หรือ list</td></tr><tr><td>AI Content</td><td>/ai-content</td><td>Keyword, Blog, Listing, History, Queue และ Market Intel</td></tr><tr><td>Blog Runner</td><td>/marketing</td><td>จัดคิว/สั่งรันและดู state</td></tr><tr><td>Market Intelligence</td><td>/market-intel</td><td>ส่งข้อมูล, ดู insight / content frame และ human calibration</td></tr><tr><td>Land Analyzer</td><td>/land-analyzer</td><td>Build-to-Sell บันทึก projects</td></tr><tr><td>Deals</td><td>/deals</td><td>Renovate-to-Resell บันทึก reno_deals</td></tr><tr><td>BOQ</td><td>/boq</td><td>รายการปริมาณและต้นทุนผ่าน BOQ API</td></tr><tr><td>Budget เดิม</td><td>/budget</td><td>ปิดบริการ ไม่ใช่แหล่งรับ lead ที่ active</td></tr></tbody></table></div><h2>งานประจำวัน</h2><div class="step"><strong>01</strong> · เปิด Dashboard ตรวจสถานะ Blog / FB, รายการค้างและข้อความผิดพลาด แล้วดู execution ที่ตรง run ID ก่อนสั่งซ้ำ</div><div class="step"><strong>02</strong> · เปิด CRM ติดต่อ lead และอัปเดต stage/บันทึก; การปิด lead ไม่สร้างสัญญาหรือดีลอัตโนมัติ</div><div class="step"><strong>03</strong> · ตรวจเนื้อหาและข้อมูลทรัพย์ก่อนเผยแพร่ ตรวจผลที่ WordPress / Facebook อีกครั้งหลัง API ส่งผล</div><div class="step"><strong>04</strong> · เมื่อมีข้อมูลจริงเพิ่ม ให้บันทึกดีล ต้นทุน หรือ human feedback ในหน้าที่เกี่ยวข้อง</div><h2>CRM และ AI Content</h2><div class="grid"><article class="card"><h3>CRM</h3><div class="step"><strong>01</strong> · เพิ่ม lead หรือ import CSV และตรวจหน่วย consult / list ให้ถูกต้อง</div><div class="step"><strong>02</strong> · ติดตาม new → followup → qualified → closed พร้อม notes และผลการติดต่อ</div><div class="step"><strong>03</strong> · ข้อมูลบันทึกผ่าน /api/leads ไม่ควรตีความชื่อ source เก่า “Budget Tool” ว่าฟอร์มสาธารณะยังทำงาน</div></article><article class="card"><h3>Content Studio</h3><div class="step"><strong>01</strong> · เลือก Keyword / Blog URL / Listing ตามแหล่งข้อมูลที่มีจริง; Positioned ใช้กลุ่ม resale หรือ inspection ตาม UI</div><div class="step"><strong>02</strong> · Generate แล้วตรวจภาษา ราคา รายละเอียดและ CTA; History/Taste เป็นข้อมูลอ้างอิง ไม่ใช่หลักฐานการฝึกโมเดล</div><div class="step"><strong>03</strong> · เลือก Copy/Save, Post to Facebook หรือเตรียม Queue; โพสต์ทันทีและโพสต์จาก Queue ใช้คนละเส้นทาง</div></article></div><h2>ดีลรีโนเวทขายและการประเมินที่ดิน</h2><div class="step"><strong>01</strong> · ใน Deals เพิ่มชื่อดีล ราคาซื้อ งบรีโนเวท ราคาตั้งขาย และ site ที่เกี่ยวข้อง (ถ้ามี)</div><div class="step"><strong>02</strong> · ย้ายขั้น evaluating → renovating → listed → closed; กรอกต้นทุนรีโนเวทและราคาขายจริงเมื่อมีหลักฐาน</div><div class="step"><strong>03</strong> · ROI ในโค้ด = (ราคาขาย − ราคาซื้อ − ค่ารีโนเวท) ÷ (ราคาซื้อ + ค่ารีโนเวท) × 100 ยังไม่รวมภาษี ดอกเบี้ย ค่าถือครองหรือค่านายหน้าแยกต่างหาก</div><div class="step"><strong>04</strong> · ใช้ Land Analyzer สำหรับซื้อที่ดินพัฒนาเพื่อขายและบันทึก projects แยกจาก reno_deals; ไม่มีการสร้างดีลจาก Land Analyzer ตาม ADR-027</div><h2>ตรวจทรัพย์ก่อนเผยแพร่</h2><div class="step"><strong>01</strong> · Dashboard → ทรัพย์รอ Review: ตรวจชื่อ ประเภท ราคา ทำเลและรายละเอียดให้ตรงต้นทาง</div><div class="step"><strong>02</strong> · อัปโหลด COVER ให้ได้ media_id มากกว่า 0; gallery ที่ใส่ไว้ต้องอัปโหลดสำเร็จ ไม่ใช่แค่ URL โค้ดไม่ได้บังคับว่าต้องมีครบ 3 รูปเสมอ</div><div class="step"><strong>03</strong> · กด Approve แล้วตรวจ URL/ผลตอบกลับ; Dismiss เป็นการเปลี่ยนข้อมูล ไม่ใช่ซ่อนเฉพาะเบราว์เซอร์</div><h2>QC / Quality Gate / Market calibration</h2><p>QC ตรวจภาพงานก่อสร้าง ส่วน Quality Gate ตรวจบทความ เป็นคนละชุดข้อมูลและคนละ feedback อย่ารับรองเวลาตอบคงที่ 15 วินาที</p><p>Quality Gate ใน Dashboard กดยืนยันการตัดสินใจถูก/ผิดได้; QC feedback ผ่าน LINE ตาม workflow ที่ตั้งไว้ และ Market Intel มีหน้า Calibration การกด feedback บันทึกผลประเมิน ไม่ได้ปรับ prompt หรือฝึกโมเดลเอง เกณฑ์ ≥10 feedback เป็นเกณฑ์ UI ไม่ใช่การรับรองทางสถิติ</p><p>ADR-016 แก้ขอบเขต brand แล้วใน PR #3: บทความให้ความรู้สร้างบ้านผ่านได้; บล็อกเมื่ออ้างบริการรับจ้างสร้างบ้านหรือ CTA ที่สื่อเช่นนั้น ยังต้องตรวจภาษา ข้อเท็จจริง โครงสร้างและเนื้อหาซ้ำ</p><p>ยังต้อง export workflow ที่ active เพื่อตรวจ writer / rewriter / gate และรันทดสอบทั้งกรณีผ่านและบล็อก การ merge เอกสารไม่แก้ prompt ใน n8n อัตโนมัติ Policy เดิมใน ADR ยังให้ AI infrastructure/parse error เป็น fail-open ซึ่งต้องแยกจากการตรวจเนื้อหาผ่านจริง</p><h2>Assistant และข้อมูลที่จำได้</h2><p>Assistant ส่งข้อความและประวัติในหน้าเว็บไป <code>/api/assistant</code> ซึ่งเรียก Claude Sonnet 4.6 และเลือก tools อ่าน Hub / Supabase / Brains ได้ คำสั่งเขียนมีเพียงรัน Blog กับ FB queue โดยมีปุ่มยืนยันก่อนเรียก</p><p>ประวัติอยู่ใน React state; reload แล้วไม่กู้แชทจากฐานข้อมูล ไม่มี tool สร้างหรือแก้ดีลจากแชท ข้อมูลสมมติในบทสนทนาจึงไม่ใช่ข้อมูลดีลที่บันทึกแล้ว</p><p>ข้อกำหนดห้ามตอบด้วยข้อมูลนอกระบบอยู่ใน prompt แต่โค้ดยังส่งข้อความที่โมเดลสร้างกลับมา จึงยังไม่ใช่การบังคับคำตอบจากหลักฐานฝั่งเซิร์ฟเวอร์อย่างสมบูรณ์ ปุ่มยืนยันคำสั่งไม่ทดแทนระบบตรวจสิทธิ์ผู้ใช้</p><h2>Market Intel และ Brains</h2><p>ส่งข้อความตลาดพร้อมพื้นที่ผ่าน /market-intel หรือแท็บที่เกี่ยวข้อง แล้วตรวจว่า workflow เขียนข้อมูลสำเร็จ อย่าถือว่ารับ webhook แล้วเท่ากับบันทึกครบทุกตาราง</p><p>Brains เป็นตัวอ่านรวมข้อมูลเดิม ไม่ใช่ฐานข้อมูลใหม่และไม่ได้ฝึกโมเดลเอง อ่าน market insights, summary, area memory, buyer signals, deals, QC และ content frames แต่ไม่อ่านประวัติแชท, projects หรือ BOQ ใน endpoint นี้</p><p>ตัวกรองพื้นที่ใช้กับ market insights, summary, area memory และ deals เท่านั้น ส่วน buyer signals, QC และ content frames ไม่ได้กรองตามพื้นที่ ค่า <code>verified_insights</code> หมายถึง confidence ≥ 4 ไม่ใช่การยืนยันโดยมนุษย์ จำนวนที่คืนเป็นผลค้นจำกัดจำนวนต่อแหล่งข้อมูล ไม่ใช่ยอดรวมทั้งระบบ</p><h2>บำรุงรักษาและแก้ปัญหา</h2><div class="table"><table><thead><tr><th>อาการ/งาน</th><th>ตรวจอย่างไร</th></tr></thead><tbody><tr><td>Facebook โพสต์ไม่ได้</td><td>อ่านข้อความผิดพลาดจากหน้าเว็บ ตรวจ FB_BACKEND_URL และ backend logs ก่อนสรุปว่า token หมดอายุ ตรวจอายุ/สิทธิ์ token จากบัญชีจริง ไม่ใช้วัน Aug 2 เดิม</td></tr><tr><td>Blog ค้าง</td><td>หา execution/run ID และ callback ว่าไป published, blocked หรือ error; ตรวจว่ารันเดิมหยุดแล้วก่อน reset เพื่อไม่สร้างงานซ้ำ</td></tr><tr><td>ไม่พบข้อมูล</td><td>แยกผลค้นว่างออกจาก API error; ตรวจช่วงวันที่ ตัวกรองและสิทธิ์ของ service อย่าแทน error ด้วยศูนย์</td></tr><tr><td>n8n ไม่รันตามเวลา</td><td>ตรวจ active revision, trigger, timezone, execution ล่าสุดและบริการที่ใช้อยู่ ไม่ยึดเวลา 09:05 หรือรูปแบบ hosting จากคู่มือเก่า</td></tr><tr><td>WordPress ไม่แสดงผลใหม่</td><td>ตรวจ post/media response, URL และ cache ตาม hosting จริง ไม่ถือว่าต้องใช้ cPanel หรือรอ cache 5 นาทีเสมอ</td></tr><tr><td>ทบทวนค่าใช้จ่าย</td><td>ยอดผู้ใช้แจ้ง: OpenAI $5 + Claude $5 + Railway $10–15 = $20–25/เดือน; n8n ฟรี ไม่รวมว่า API AI ฟรีด้วย ยังไม่มี hard cap รวมที่ยืนยันได้</td></tr></tbody></table></div><h2>หลักฐานที่ใช้ตรวจ</h2><ul><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/components/DashboardOS.tsx">components/DashboardOS.tsx</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/components/CRM.tsx">components/CRM.tsx</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/components/AIContent.tsx">components/AIContent.tsx</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/components/Deals.tsx">components/Deals.tsx</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/components/LandAnalyzer.tsx">components/LandAnalyzer.tsx</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/components/PropertyReview.tsx">components/PropertyReview.tsx</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/components/AssistantChat.tsx">components/AssistantChat.tsx</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/app/api/assistant/route.ts">app/api/assistant/route.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/app/api/brains/context/route.ts">app/api/brains/context/route.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/app/api/quality-gate/accuracy/route.ts">app/api/quality-gate/accuracy/route.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/docs/v2/04-decisions/accepted/ADR-027.md">docs/v2/04-decisions/accepted/ADR-027.md</a></li></ul><footer>สถานะตามโค้ด · ข้อมูลจริงต้องตรวจวันที่ แหล่งที่มา และขอบเขตผลค้นทุกครั้ง</footer></main></body></html>
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>คู่มือการใช้งาน Platform · 22 ก.ย. 2026</title>
+<style>*{box-sizing:border-box}body{margin:0;background:#0d1422;color:#e7edf6;font:16px/1.8 Tahoma,system-ui,sans-serif}main{max-width:1160px;margin:auto;padding:34px 28px 70px}h1{font-size:34px;line-height:1.4;color:#f4d478}h2{font-size:24px;margin-top:38px}h3{font-size:18px;color:#b9e7ed}a{color:#8adbea}code{color:#b9e7ed;overflow-wrap:anywhere;font-size:.88em}header p,.muted{color:#adbacd}.badge{display:inline-block;background:#20344b;color:#acdcd7;border-radius:5px;padding:3px 9px;font-size:12px;letter-spacing:.5px}.note{border-left:3px solid #f4d478;background:#252a31;padding:15px 20px;margin:22px 0}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.card,details{background:#162236;border:1px solid #344158;border-radius:12px;padding:20px;min-width:0}.card h3{margin-top:0}summary{cursor:pointer;font-weight:700;color:#b9e7ed}details{margin:12px 0}table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:13px;text-align:left;vertical-align:top;border-bottom:1px solid #344158;overflow-wrap:anywhere}th{color:#f4d478}.table{overflow-x:auto}nav{display:flex;flex-wrap:wrap;gap:10px;margin:20px 0}nav a,button{background:#20344b;border:1px solid #40516b;border-radius:7px;padding:10px 14px;color:#e7edf6;text-decoration:none;font:inherit;cursor:pointer}button[aria-pressed=true]{background:#f4d478;color:#182235}a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid #f4d478;outline-offset:3px}li{margin:8px 0}footer{border-top:1px solid #344158;margin-top:36px;padding-top:18px;color:#adbacd;font-size:13px}.step{border-left:3px solid #75c4ce;padding:8px 18px;margin:12px 0}.step strong{color:#f4d478}svg{max-width:100%;height:auto}svg text{font-family:Tahoma,system-ui,sans-serif}#detail{min-height:100px}.branch{border-left:2px solid #75c4ce;padding:0 0 0 20px}.branch h3{margin-bottom:5px}@media(max-width:650px){main{padding:22px 16px}h1{font-size:27px}.grid{grid-template-columns:1fr}th,td{padding:9px;min-width:120px}}@media print{body{background:white;color:#111}main{padding:0}.card,details,.note{background:white;border-color:#aaa}h1,h2,h3,a,code,th,.muted,header p,footer{color:#111}nav,button{display:none}.card{break-inside:avoid}details{display:block}}</style>
+</head>
+<body>
+<main>
+<header>
+<span class="badge">AP-HOME PLATFORM · DOCUMENTATION</span>
+<h1>คู่มือการใช้งาน Platform</h1>
+<p>วิธีทำงานในแต่ละหน้าและจุดที่ต้องตรวจ ก่อนเชื่อผลหรือสั่งเผยแพร่</p>
+<p>ทบทวน 22 กันยายน 2026 · อ้างอิง main <code>1dddb46</code>
+</p>
+</header>
+<nav aria-label="เอกสาร">
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/tree/main/docs/Finnhouses%20Platform%20Docs">เอกสารทั้งหมด</a>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/main/docs/Finnhouses%20Platform%20Docs/ap_home_platform_os_map.html">ภาพรวมสถานะ</a>
+</nav>
+<div class="note">ยืนยันเส้นทางจากโค้ดและ ADR ณ commit ที่ระบุ การมีโค้ดไม่ยืนยันว่า deployment, credentials และ workflow ที่ active ทำงานครบแล้ว รอบนี้ไม่ได้รันงาน production</div>
+<h2>เลือกเครื่องมือให้ตรงงาน</h2>
+<p>Fix &amp; Flip / Develop 60% · ที่ปรึกษาและตรวจสอบ 30% · นายหน้า 10% เป็นสัดส่วนธุรกิจตามเอกสาร ไม่ใช่ยอดรายได้ที่ดึงจากฐานข้อมูล</p>
+<p>ให้ความรู้เรื่องสร้างบ้านได้ แต่ห้ามอ้างว่า Finnhouses รับจ้างสร้างบ้านให้ลูกค้า การพัฒนาทรัพย์ของบริษัทเพื่อขายเป็นอีกกรณีหนึ่ง</p>
+<div class="table">
+<table>
+<thead>
+<tr>
+<th>เครื่องมือ</th>
+<th>หน้า</th>
+<th>ใช้ทำอะไร</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Dashboard</td>
+<td>/dashboard</td>
+<td>ภาพรวม, Property Review, Market Intel, Ops, QC Accuracy, Content Performance, Quality Gate</td>
+</tr>
+<tr>
+<td>CRM</td>
+<td>/crm</td>
+<td>เพิ่ม/นำเข้า CSV และติดตาม lead; business_unit = consult หรือ list</td>
+</tr>
+<tr>
+<td>AI Content</td>
+<td>/ai-content</td>
+<td>Keyword, Blog, Listing, History, Queue และ Market Intel</td>
+</tr>
+<tr>
+<td>Blog Runner</td>
+<td>/marketing</td>
+<td>จัดคิว/สั่งรันและดู state</td>
+</tr>
+<tr>
+<td>Market Intelligence</td>
+<td>/market-intel</td>
+<td>ส่งข้อมูล, ดู insight / content frame และ human calibration</td>
+</tr>
+<tr>
+<td>Land Analyzer</td>
+<td>/land-analyzer</td>
+<td>Build-to-Sell บันทึก projects</td>
+</tr>
+<tr>
+<td>Deals</td>
+<td>/deals</td>
+<td>Renovate-to-Resell บันทึก reno_deals</td>
+</tr>
+<tr>
+<td>BOQ</td>
+<td>/boq</td>
+<td>รายการปริมาณและต้นทุนผ่าน BOQ API</td>
+</tr>
+<tr>
+<td>Budget เดิม</td>
+<td>/budget</td>
+<td>ปิดบริการ ไม่ใช่แหล่งรับ lead ที่ active</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h2>งานประจำวัน</h2>
+<div class="step">
+<strong>01</strong> · เปิด Dashboard ตรวจสถานะ Blog / FB, รายการค้างและข้อความผิดพลาด แล้วดู execution ที่ตรง run ID ก่อนสั่งซ้ำ</div>
+<div class="step">
+<strong>02</strong> · เปิด CRM ติดต่อ lead และอัปเดต stage/บันทึก; การปิด lead ไม่สร้างสัญญาหรือดีลอัตโนมัติ</div>
+<div class="step">
+<strong>03</strong> · ตรวจเนื้อหาและข้อมูลทรัพย์ก่อนเผยแพร่ ตรวจผลที่ WordPress / Facebook อีกครั้งหลัง API ส่งผล</div>
+<div class="step">
+<strong>04</strong> · เมื่อมีข้อมูลจริงเพิ่ม ให้บันทึกดีล ต้นทุน หรือ human feedback ในหน้าที่เกี่ยวข้อง</div>
+<h2>CRM และ AI Content</h2>
+<div class="grid">
+<article class="card">
+<h3>CRM</h3>
+<div class="step">
+<strong>01</strong> · เพิ่ม lead หรือ import CSV และตรวจหน่วย consult / list ให้ถูกต้อง</div>
+<div class="step">
+<strong>02</strong> · ติดตาม new → followup → qualified → closed พร้อม notes และผลการติดต่อ</div>
+<div class="step">
+<strong>03</strong> · ข้อมูลบันทึกผ่าน /api/leads ไม่ควรตีความชื่อ source เก่า “Budget Tool” ว่าฟอร์มสาธารณะยังทำงาน</div>
+</article>
+<article class="card">
+<h3>Content Studio</h3>
+<div class="step">
+<strong>01</strong> · เลือก Keyword / Blog URL / Listing ตามแหล่งข้อมูลที่มีจริง; Positioned ใช้กลุ่ม resale หรือ inspection ตาม UI</div>
+<div class="step">
+<strong>02</strong> · Generate แล้วตรวจภาษา ราคา รายละเอียดและ CTA; History/Taste เป็นข้อมูลอ้างอิง ไม่ใช่หลักฐานการฝึกโมเดล</div>
+<div class="step">
+<strong>03</strong> · เลือก Copy/Save, Post to Facebook หรือเตรียม Queue; โพสต์ทันทีและโพสต์จาก Queue ใช้คนละเส้นทาง</div>
+</article>
+</div>
+<h2>ดีลรีโนเวทขายและการประเมินที่ดิน</h2>
+<div class="step">
+<strong>01</strong> · ใน Deals เพิ่มชื่อดีล ราคาซื้อ งบรีโนเวท ราคาตั้งขาย และ site ที่เกี่ยวข้อง (ถ้ามี)</div>
+<div class="step">
+<strong>02</strong> · ย้ายขั้น evaluating → renovating → listed → closed; กรอกต้นทุนรีโนเวทและราคาขายจริงเมื่อมีหลักฐาน</div>
+<div class="step">
+<strong>03</strong> · ROI ในโค้ด = (ราคาขาย − ราคาซื้อ − ค่ารีโนเวท) ÷ (ราคาซื้อ + ค่ารีโนเวท) × 100 ยังไม่รวมภาษี ดอกเบี้ย ค่าถือครองหรือค่านายหน้าแยกต่างหาก</div>
+<div class="step">
+<strong>04</strong> · ใช้ Land Analyzer สำหรับซื้อที่ดินพัฒนาเพื่อขายและบันทึก projects แยกจาก reno_deals; ไม่มีการสร้างดีลจาก Land Analyzer ตาม ADR-027</div>
+<h2>ตรวจทรัพย์ก่อนเผยแพร่</h2>
+<div class="step">
+<strong>01</strong> · Dashboard → ทรัพย์รอ Review: ตรวจชื่อ ประเภท ราคา ทำเลและรายละเอียดให้ตรงต้นทาง</div>
+<div class="step">
+<strong>02</strong> · อัปโหลด COVER ให้ได้ media_id มากกว่า 0; gallery ที่ใส่ไว้ต้องอัปโหลดสำเร็จ ไม่ใช่แค่ URL โค้ดไม่ได้บังคับว่าต้องมีครบ 3 รูปเสมอ</div>
+<div class="step">
+<strong>03</strong> · กด Approve แล้วตรวจ URL/ผลตอบกลับ; Dismiss เป็นการเปลี่ยนข้อมูล ไม่ใช่ซ่อนเฉพาะเบราว์เซอร์</div>
+<h2>QC / Quality Gate / Market calibration</h2>
+<p>QC ตรวจภาพงานก่อสร้าง ส่วน Quality Gate ตรวจบทความ เป็นคนละชุดข้อมูลและคนละ feedback อย่ารับรองเวลาตอบคงที่ 15 วินาที</p>
+<p>Quality Gate ใน Dashboard กดยืนยันการตัดสินใจถูก/ผิดได้; QC feedback ผ่าน LINE ตาม workflow ที่ตั้งไว้ และ Market Intel มีหน้า Calibration การกด feedback บันทึกผลประเมิน ไม่ได้ปรับ prompt หรือฝึกโมเดลเอง เกณฑ์ ≥10 feedback เป็นเกณฑ์ UI ไม่ใช่การรับรองทางสถิติ</p>
+<p>ADR-016 แก้ขอบเขต brand แล้วใน PR #3: บทความให้ความรู้สร้างบ้านผ่านได้; บล็อกเมื่ออ้างบริการรับจ้างสร้างบ้านหรือ CTA ที่สื่อเช่นนั้น ยังต้องตรวจภาษา ข้อเท็จจริง โครงสร้างและเนื้อหาซ้ำ</p>
+<p>ยังต้อง export workflow ที่ active เพื่อตรวจ writer / rewriter / gate และรันทดสอบทั้งกรณีผ่านและบล็อก การ merge เอกสารไม่แก้ prompt ใน n8n อัตโนมัติ Policy เดิมใน ADR ยังให้ AI infrastructure/parse error เป็น fail-open ซึ่งต้องแยกจากการตรวจเนื้อหาผ่านจริง</p>
+<h2>Assistant และข้อมูลที่จำได้</h2>
+<p>Assistant ส่งข้อความและประวัติในหน้าเว็บไป <code>/api/assistant</code> ซึ่งเรียก Claude Sonnet 4.6 และเลือก tools อ่าน Hub / Supabase / Brains ได้ คำสั่งเขียนมีเพียงรัน Blog กับ FB queue โดยมีปุ่มยืนยันก่อนเรียก</p>
+<p>ประวัติอยู่ใน React state; reload แล้วไม่กู้แชทจากฐานข้อมูล ไม่มี tool สร้างหรือแก้ดีลจากแชท ข้อมูลสมมติในบทสนทนาจึงไม่ใช่ข้อมูลดีลที่บันทึกแล้ว</p>
+<p>ข้อกำหนดห้ามตอบด้วยข้อมูลนอกระบบอยู่ใน prompt แต่โค้ดยังส่งข้อความที่โมเดลสร้างกลับมา จึงยังไม่ใช่การบังคับคำตอบจากหลักฐานฝั่งเซิร์ฟเวอร์อย่างสมบูรณ์ ปุ่มยืนยันคำสั่งไม่ทดแทนระบบตรวจสิทธิ์ผู้ใช้</p>
+<h2>Market Intel และ Brains</h2>
+<p>ส่งข้อความตลาดพร้อมพื้นที่ผ่าน /market-intel หรือแท็บที่เกี่ยวข้อง แล้วตรวจว่า workflow เขียนข้อมูลสำเร็จ อย่าถือว่ารับ webhook แล้วเท่ากับบันทึกครบทุกตาราง</p>
+<p>Brains เป็นตัวอ่านรวมข้อมูลเดิม ไม่ใช่ฐานข้อมูลใหม่และไม่ได้ฝึกโมเดลเอง อ่าน market insights, summary, area memory, buyer signals, deals, QC และ content frames แต่ไม่อ่านประวัติแชท, projects หรือ BOQ ใน endpoint นี้</p>
+<p>ตัวกรองพื้นที่ใช้กับ market insights, summary, area memory และ deals เท่านั้น ส่วน buyer signals, QC และ content frames ไม่ได้กรองตามพื้นที่ ค่า <code>verified_insights</code> หมายถึง confidence ≥ 4 ไม่ใช่การยืนยันโดยมนุษย์ จำนวนที่คืนเป็นผลค้นจำกัดจำนวนต่อแหล่งข้อมูล ไม่ใช่ยอดรวมทั้งระบบ</p>
+<h2>บำรุงรักษาและแก้ปัญหา</h2>
+<div class="table">
+<table>
+<thead>
+<tr>
+<th>อาการ/งาน</th>
+<th>ตรวจอย่างไร</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Facebook โพสต์ไม่ได้</td>
+<td>อ่านข้อความผิดพลาดจากหน้าเว็บ ตรวจ FB_BACKEND_URL และ backend logs ก่อนสรุปว่า token หมดอายุ ตรวจอายุ/สิทธิ์ token จากบัญชีจริง ไม่ใช้วัน Aug 2 เดิม</td>
+</tr>
+<tr>
+<td>Blog ค้าง</td>
+<td>หา execution/run ID และ callback ว่าไป published, blocked หรือ error; ตรวจว่ารันเดิมหยุดแล้วก่อน reset เพื่อไม่สร้างงานซ้ำ</td>
+</tr>
+<tr>
+<td>ไม่พบข้อมูล</td>
+<td>แยกผลค้นว่างออกจาก API error; ตรวจช่วงวันที่ ตัวกรองและสิทธิ์ของ service อย่าแทน error ด้วยศูนย์</td>
+</tr>
+<tr>
+<td>n8n ไม่รันตามเวลา</td>
+<td>ตรวจ active revision, trigger, timezone, execution ล่าสุดและบริการที่ใช้อยู่ ไม่ยึดเวลา 09:05 หรือรูปแบบ hosting จากคู่มือเก่า</td>
+</tr>
+<tr>
+<td>WordPress ไม่แสดงผลใหม่</td>
+<td>ตรวจ post/media response, URL และ cache ตาม hosting จริง ไม่ถือว่าต้องใช้ cPanel หรือรอ cache 5 นาทีเสมอ</td>
+</tr>
+<tr>
+<td>ทบทวนค่าใช้จ่าย</td>
+<td>ยอดผู้ใช้แจ้ง: OpenAI $5 + Claude $5 + Railway $10–15 = $20–25/เดือน; n8n ฟรี ไม่รวมว่า API AI ฟรีด้วย ยังไม่มี hard cap รวมที่ยืนยันได้</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h2>หลักฐานที่ใช้ตรวจ</h2>
+<ul>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/components/DashboardOS.tsx">components/DashboardOS.tsx</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/components/CRM.tsx">components/CRM.tsx</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/components/AIContent.tsx">components/AIContent.tsx</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/components/Deals.tsx">components/Deals.tsx</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/components/LandAnalyzer.tsx">components/LandAnalyzer.tsx</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/components/PropertyReview.tsx">components/PropertyReview.tsx</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/components/AssistantChat.tsx">components/AssistantChat.tsx</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/app/api/assistant/route.ts">app/api/assistant/route.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/app/api/brains/context/route.ts">app/api/brains/context/route.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/app/api/quality-gate/accuracy/route.ts">app/api/quality-gate/accuracy/route.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/docs/v2/04-decisions/accepted/ADR-027.md">docs/v2/04-decisions/accepted/ADR-027.md</a>
+</li>
+</ul>
+<footer>สถานะตามโค้ด · ข้อมูลจริงต้องตรวจวันที่ แหล่งที่มา และขอบเขตผลค้นทุกครั้ง</footer>
+</main>
+</body>
+</html>

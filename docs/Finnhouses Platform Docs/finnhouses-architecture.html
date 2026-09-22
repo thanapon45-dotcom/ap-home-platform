@@ -1,1 +1,185 @@
-<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>สถาปัตยกรรมระบบ · 22 ก.ย. 2026</title><style>*{box-sizing:border-box}body{margin:0;background:#0d1422;color:#e7edf6;font:16px/1.8 Tahoma,system-ui,sans-serif}main{max-width:1160px;margin:auto;padding:34px 28px 70px}h1{font-size:34px;line-height:1.4;color:#f4d478}h2{font-size:24px;margin-top:38px}h3{font-size:18px;color:#b9e7ed}a{color:#8adbea}code{color:#b9e7ed;overflow-wrap:anywhere;font-size:.88em}header p,.muted{color:#adbacd}.badge{display:inline-block;background:#20344b;color:#acdcd7;border-radius:5px;padding:3px 9px;font-size:12px;letter-spacing:.5px}.note{border-left:3px solid #f4d478;background:#252a31;padding:15px 20px;margin:22px 0}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.card,details{background:#162236;border:1px solid #344158;border-radius:12px;padding:20px;min-width:0}.card h3{margin-top:0}summary{cursor:pointer;font-weight:700;color:#b9e7ed}details{margin:12px 0}table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:13px;text-align:left;vertical-align:top;border-bottom:1px solid #344158;overflow-wrap:anywhere}th{color:#f4d478}.table{overflow-x:auto}nav{display:flex;flex-wrap:wrap;gap:10px;margin:20px 0}nav a,button{background:#20344b;border:1px solid #40516b;border-radius:7px;padding:10px 14px;color:#e7edf6;text-decoration:none;font:inherit;cursor:pointer}button[aria-pressed=true]{background:#f4d478;color:#182235}a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid #f4d478;outline-offset:3px}li{margin:8px 0}footer{border-top:1px solid #344158;margin-top:36px;padding-top:18px;color:#adbacd;font-size:13px}.step{border-left:3px solid #75c4ce;padding:8px 18px;margin:12px 0}.step strong{color:#f4d478}svg{max-width:100%;height:auto}svg text{font-family:Tahoma,system-ui,sans-serif}#detail{min-height:100px}.branch{border-left:2px solid #75c4ce;padding:0 0 0 20px}.branch h3{margin-bottom:5px}@media(max-width:650px){main{padding:22px 16px}h1{font-size:27px}.grid{grid-template-columns:1fr}th,td{padding:9px;min-width:120px}}@media print{body{background:white;color:#111}main{padding:0}.card,details,.note{background:white;border-color:#aaa}h1,h2,h3,a,code,th,.muted,header p,footer{color:#111}nav,button{display:none}.card{break-inside:avoid}details{display:block}}</style></head><body><main><header><span class="badge">AP-HOME PLATFORM · DOCUMENTATION</span><h1>สถาปัตยกรรมระบบ</h1><p>หน้าที่ของแต่ละบริการและ API ที่ใช้จริง โดยแยก Hub v1 / v2</p><p>ทบทวน 22 กันยายน 2026 · อ้างอิง main <code>1dddb46</code></p></header><nav aria-label="เอกสาร"><a href="index.html">เอกสารทั้งหมด</a><a href="ap_home_platform_os_map.html">ภาพรวมสถานะ</a></nav><div class="note">ยืนยันเส้นทางจากโค้ดและ ADR ณ commit ที่ระบุ การมีโค้ดไม่ยืนยันว่า deployment, credentials และ workflow ที่ active ทำงานครบแล้ว รอบนี้ไม่ได้รันงาน production</div><h2>แบ่งหน้าที่ของระบบ</h2><div class="grid"><article class="card"><h3>หน้าจอและ API · Next.js</h3><p>รับคำสั่งเจ้าของระบบ แสดงผลและเลือก backend ให้แต่ละงาน ไม่ใช่แค่ proxy เข้า Hub อย่างเดียว</p></article><article class="card"><h3>Hub v1 · server.cjs</h3><p>จัดการ state, Blog/FB queue, callbacks, QC, Property และ BOQ ตาม route ที่มี เป็นเส้นทางหลักตาม ADR-004; env ที่ deploy ต้องตรวจแยก</p></article><article class="card"><h3>n8n และ FB Backend</h3><p>n8n ทำ workflow หลายขั้นและอาจเรียก AI/ฐานข้อมูลเอง FB Backend เป็นบริการแยกสำหรับการโพสต์ Facebook</p></article><article class="card"><h3>Supabase และผู้ให้บริการ</h3><p>Supabase เก็บข้อมูลธุรกิจ ส่วน WordPress/Facebook เป็นปลายทางเผยแพร่ Telegram/LINE เป็นช่องทางสื่อสารตาม integration</p></article></div><h2>สัญญาระหว่างบริการ</h2><div class="table"><table><thead><tr><th>งาน</th><th>ต้นทาง</th><th>ปลายทาง</th><th>ข้อสังเกต</th></tr></thead><tbody><tr><td>Dashboard state / Blog queue</td><td>Next.js /api/blog/*</td><td>Hub v1 /api/state หรือ /action/blog/queue/*</td><td>x-hub-token</td></tr><tr><td>FB Queue</td><td>Next.js /api/fb/queue/*</td><td>Hub v1 /action/fb/queue/*</td><td>x-hub-token</td></tr><tr><td>Post to Facebook ทันที</td><td>Next.js /api/fb/publish</td><td>FB Backend /api/fb/publish</td><td>x-hub-token; ไม่ผ่าน Hub</td></tr><tr><td>CRM / Land / Deals</td><td>Next.js /api/leads, /api/projects, /api/deals</td><td>Supabase: leads / projects / reno_deals</td><td>service key ฝั่ง server</td></tr><tr><td>Property Review publish</td><td>Next.js /api/property/publish</td><td>Hub /action/property/publish → WordPress</td><td>x-hub-token</td></tr><tr><td>BOQ</td><td>Next.js /api/boq/*</td><td>Hub /api/boq/* ทุก method ตาม implementation</td><td>x-hub-token</td></tr><tr><td>Market Intel submit</td><td>Next.js /api/market-intel</td><td>N8N_MARKET_INTEL_WEBHOOK</td><td>ตรวจ workflow ที่ active</td></tr><tr><td>Assistant</td><td>Next.js /api/assistant</td><td>Claude + tool calls ไป Hub / Supabase / Brains</td><td>ไม่ผ่าน AiGateway v2 ทุกครั้ง</td></tr><tr><td>Brains</td><td>Next.js /api/brains/context</td><td>Supabase หลายตาราง/view แบบอ่านอย่างเดียว</td><td>ไม่มีการเขียนความจำใหม่</td></tr></tbody></table></div><h2>Hub v2 ต่างจาก v1 อย่างไร</h2><p>v2 แยก domain, ports, use cases, adapters, AI gateway และ event bus เพื่อให้ทดสอบและเปลี่ยนผู้ให้บริการง่ายขึ้น แต่การจัดโครงสร้างแบบนี้ไม่ได้ทำให้เป็นผู้วิเคราะห์ธุรกิจครบวงจรเอง</p><div class="table"><table><thead><tr><th>รายการ</th><th>v1</th><th>v2 ใน source</th></tr></thead><tbody><tr><td>Header</td><td>x-hub-token</td><td>x-hub-secret</td></tr><tr><td>Blog queue</td><td>/action/blog/queue/*</td><td>/api/blog/queue/* มีใน blogRoutes.ts</td></tr><tr><td>FB queue</td><td>/action/fb/queue/*</td><td>fbRoutes.ts มี publish/state แต่ไม่มี queue build/clear/run-next</td></tr><tr><td>สถานะ</td><td>เส้นทางหลักตาม ADR</td><td>งานแยก; ยังไม่ถือว่าทดแทน production ได้ครบ</td></tr></tbody></table></div><h2>ขอบเขตการเชื่อมข้อมูล</h2><p>Brains เป็นตัวอ่านรวมข้อมูลเดิม ไม่ใช่ฐานข้อมูลใหม่และไม่ได้ฝึกโมเดลเอง อ่าน market insights, summary, area memory, buyer signals, deals, QC และ content frames แต่ไม่อ่านประวัติแชท, projects หรือ BOQ ใน endpoint นี้</p><p>ตัวกรองพื้นที่ใช้กับ market insights, summary, area memory และ deals เท่านั้น ส่วน buyer signals, QC และ content frames ไม่ได้กรองตามพื้นที่ ค่า <code>verified_insights</code> หมายถึง confidence ≥ 4 ไม่ใช่การยืนยันโดยมนุษย์ จำนวนที่คืนเป็นผลค้นจำกัดจำนวนต่อแหล่งข้อมูล ไม่ใช่ยอดรวมทั้งระบบ</p><p>Assistant ส่งข้อความและประวัติในหน้าเว็บไป <code>/api/assistant</code> ซึ่งเรียก Claude Sonnet 4.6 และเลือก tools อ่าน Hub / Supabase / Brains ได้ คำสั่งเขียนมีเพียงรัน Blog กับ FB queue โดยมีปุ่มยืนยันก่อนเรียก</p><p>ประวัติอยู่ใน React state; reload แล้วไม่กู้แชทจากฐานข้อมูล ไม่มี tool สร้างหรือแก้ดีลจากแชท ข้อมูลสมมติในบทสนทนาจึงไม่ใช่ข้อมูลดีลที่บันทึกแล้ว</p><p>ข้อกำหนดห้ามตอบด้วยข้อมูลนอกระบบอยู่ใน prompt แต่โค้ดยังส่งข้อความที่โมเดลสร้างกลับมา จึงยังไม่ใช่การบังคับคำตอบจากหลักฐานฝั่งเซิร์ฟเวอร์อย่างสมบูรณ์ ปุ่มยืนยันคำสั่งไม่ทดแทนระบบตรวจสิทธิ์ผู้ใช้</p><h2>หลักฐานที่ใช้ตรวจ</h2><ul><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/app/api/fb/publish/route.ts">app/api/fb/publish/route.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/app/api/property/publish/route.ts">app/api/property/publish/route.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/app/api/boq/[...path]/route.ts">app/api/boq/[...path]/route.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/app/api/market-intel/route.ts">app/api/market-intel/route.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/app/api/assistant/route.ts">app/api/assistant/route.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/presentation/routes/blogRoutes.ts">services/backend-hub/src/presentation/routes/blogRoutes.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/presentation/routes/fbRoutes.ts">services/backend-hub/src/presentation/routes/fbRoutes.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/presentation/middleware/auth.ts">services/backend-hub/src/presentation/middleware/auth.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/docs/v2/04-decisions/accepted/ADR-004.md">docs/v2/04-decisions/accepted/ADR-004.md</a></li></ul><footer>สถานะตามโค้ด · ข้อมูลจริงต้องตรวจวันที่ แหล่งที่มา และขอบเขตผลค้นทุกครั้ง</footer></main></body></html>
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>สถาปัตยกรรมระบบ · 22 ก.ย. 2026</title>
+<style>*{box-sizing:border-box}body{margin:0;background:#0d1422;color:#e7edf6;font:16px/1.8 Tahoma,system-ui,sans-serif}main{max-width:1160px;margin:auto;padding:34px 28px 70px}h1{font-size:34px;line-height:1.4;color:#f4d478}h2{font-size:24px;margin-top:38px}h3{font-size:18px;color:#b9e7ed}a{color:#8adbea}code{color:#b9e7ed;overflow-wrap:anywhere;font-size:.88em}header p,.muted{color:#adbacd}.badge{display:inline-block;background:#20344b;color:#acdcd7;border-radius:5px;padding:3px 9px;font-size:12px;letter-spacing:.5px}.note{border-left:3px solid #f4d478;background:#252a31;padding:15px 20px;margin:22px 0}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.card,details{background:#162236;border:1px solid #344158;border-radius:12px;padding:20px;min-width:0}.card h3{margin-top:0}summary{cursor:pointer;font-weight:700;color:#b9e7ed}details{margin:12px 0}table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:13px;text-align:left;vertical-align:top;border-bottom:1px solid #344158;overflow-wrap:anywhere}th{color:#f4d478}.table{overflow-x:auto}nav{display:flex;flex-wrap:wrap;gap:10px;margin:20px 0}nav a,button{background:#20344b;border:1px solid #40516b;border-radius:7px;padding:10px 14px;color:#e7edf6;text-decoration:none;font:inherit;cursor:pointer}button[aria-pressed=true]{background:#f4d478;color:#182235}a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid #f4d478;outline-offset:3px}li{margin:8px 0}footer{border-top:1px solid #344158;margin-top:36px;padding-top:18px;color:#adbacd;font-size:13px}.step{border-left:3px solid #75c4ce;padding:8px 18px;margin:12px 0}.step strong{color:#f4d478}svg{max-width:100%;height:auto}svg text{font-family:Tahoma,system-ui,sans-serif}#detail{min-height:100px}.branch{border-left:2px solid #75c4ce;padding:0 0 0 20px}.branch h3{margin-bottom:5px}@media(max-width:650px){main{padding:22px 16px}h1{font-size:27px}.grid{grid-template-columns:1fr}th,td{padding:9px;min-width:120px}}@media print{body{background:white;color:#111}main{padding:0}.card,details,.note{background:white;border-color:#aaa}h1,h2,h3,a,code,th,.muted,header p,footer{color:#111}nav,button{display:none}.card{break-inside:avoid}details{display:block}}</style>
+</head>
+<body>
+<main>
+<header>
+<span class="badge">AP-HOME PLATFORM · DOCUMENTATION</span>
+<h1>สถาปัตยกรรมระบบ</h1>
+<p>หน้าที่ของแต่ละบริการและ API ที่ใช้จริง โดยแยก Hub v1 / v2</p>
+<p>ทบทวน 22 กันยายน 2026 · อ้างอิง main <code>1dddb46</code>
+</p>
+</header>
+<nav aria-label="เอกสาร">
+<a href="index.html">เอกสารทั้งหมด</a>
+<a href="ap_home_platform_os_map.html">ภาพรวมสถานะ</a>
+</nav>
+<div class="note">ยืนยันเส้นทางจากโค้ดและ ADR ณ commit ที่ระบุ การมีโค้ดไม่ยืนยันว่า deployment, credentials และ workflow ที่ active ทำงานครบแล้ว รอบนี้ไม่ได้รันงาน production</div>
+<h2>แบ่งหน้าที่ของระบบ</h2>
+<div class="grid">
+<article class="card">
+<h3>หน้าจอและ API · Next.js</h3>
+<p>รับคำสั่งเจ้าของระบบ แสดงผลและเลือก backend ให้แต่ละงาน ไม่ใช่แค่ proxy เข้า Hub อย่างเดียว</p>
+</article>
+<article class="card">
+<h3>Hub v1 · server.cjs</h3>
+<p>จัดการ state, Blog/FB queue, callbacks, QC, Property และ BOQ ตาม route ที่มี เป็นเส้นทางหลักตาม ADR-004; env ที่ deploy ต้องตรวจแยก</p>
+</article>
+<article class="card">
+<h3>n8n และ FB Backend</h3>
+<p>n8n ทำ workflow หลายขั้นและอาจเรียก AI/ฐานข้อมูลเอง FB Backend เป็นบริการแยกสำหรับการโพสต์ Facebook</p>
+</article>
+<article class="card">
+<h3>Supabase และผู้ให้บริการ</h3>
+<p>Supabase เก็บข้อมูลธุรกิจ ส่วน WordPress/Facebook เป็นปลายทางเผยแพร่ Telegram/LINE เป็นช่องทางสื่อสารตาม integration</p>
+</article>
+</div>
+<h2>สัญญาระหว่างบริการ</h2>
+<div class="table">
+<table>
+<thead>
+<tr>
+<th>งาน</th>
+<th>ต้นทาง</th>
+<th>ปลายทาง</th>
+<th>ข้อสังเกต</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Dashboard state / Blog queue</td>
+<td>Next.js /api/blog/*</td>
+<td>Hub v1 /api/state หรือ /action/blog/queue/*</td>
+<td>x-hub-token</td>
+</tr>
+<tr>
+<td>FB Queue</td>
+<td>Next.js /api/fb/queue/*</td>
+<td>Hub v1 /action/fb/queue/*</td>
+<td>x-hub-token</td>
+</tr>
+<tr>
+<td>Post to Facebook ทันที</td>
+<td>Next.js /api/fb/publish</td>
+<td>FB Backend /api/fb/publish</td>
+<td>x-hub-token; ไม่ผ่าน Hub</td>
+</tr>
+<tr>
+<td>CRM / Land / Deals</td>
+<td>Next.js /api/leads, /api/projects, /api/deals</td>
+<td>Supabase: leads / projects / reno_deals</td>
+<td>service key ฝั่ง server</td>
+</tr>
+<tr>
+<td>Property Review publish</td>
+<td>Next.js /api/property/publish</td>
+<td>Hub /action/property/publish → WordPress</td>
+<td>x-hub-token</td>
+</tr>
+<tr>
+<td>BOQ</td>
+<td>Next.js /api/boq/*</td>
+<td>Hub /api/boq/* ทุก method ตาม implementation</td>
+<td>x-hub-token</td>
+</tr>
+<tr>
+<td>Market Intel submit</td>
+<td>Next.js /api/market-intel</td>
+<td>N8N_MARKET_INTEL_WEBHOOK</td>
+<td>ตรวจ workflow ที่ active</td>
+</tr>
+<tr>
+<td>Assistant</td>
+<td>Next.js /api/assistant</td>
+<td>Claude + tool calls ไป Hub / Supabase / Brains</td>
+<td>ไม่ผ่าน AiGateway v2 ทุกครั้ง</td>
+</tr>
+<tr>
+<td>Brains</td>
+<td>Next.js /api/brains/context</td>
+<td>Supabase หลายตาราง/view แบบอ่านอย่างเดียว</td>
+<td>ไม่มีการเขียนความจำใหม่</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h2>Hub v2 ต่างจาก v1 อย่างไร</h2>
+<p>v2 แยก domain, ports, use cases, adapters, AI gateway และ event bus เพื่อให้ทดสอบและเปลี่ยนผู้ให้บริการง่ายขึ้น แต่การจัดโครงสร้างแบบนี้ไม่ได้ทำให้เป็นผู้วิเคราะห์ธุรกิจครบวงจรเอง</p>
+<div class="table">
+<table>
+<thead>
+<tr>
+<th>รายการ</th>
+<th>v1</th>
+<th>v2 ใน source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Header</td>
+<td>x-hub-token</td>
+<td>x-hub-secret</td>
+</tr>
+<tr>
+<td>Blog queue</td>
+<td>/action/blog/queue/*</td>
+<td>/api/blog/queue/* มีใน blogRoutes.ts</td>
+</tr>
+<tr>
+<td>FB queue</td>
+<td>/action/fb/queue/*</td>
+<td>fbRoutes.ts มี publish/state แต่ไม่มี queue build/clear/run-next</td>
+</tr>
+<tr>
+<td>สถานะ</td>
+<td>เส้นทางหลักตาม ADR</td>
+<td>งานแยก; ยังไม่ถือว่าทดแทน production ได้ครบ</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h2>ขอบเขตการเชื่อมข้อมูล</h2>
+<p>Brains เป็นตัวอ่านรวมข้อมูลเดิม ไม่ใช่ฐานข้อมูลใหม่และไม่ได้ฝึกโมเดลเอง อ่าน market insights, summary, area memory, buyer signals, deals, QC และ content frames แต่ไม่อ่านประวัติแชท, projects หรือ BOQ ใน endpoint นี้</p>
+<p>ตัวกรองพื้นที่ใช้กับ market insights, summary, area memory และ deals เท่านั้น ส่วน buyer signals, QC และ content frames ไม่ได้กรองตามพื้นที่ ค่า <code>verified_insights</code> หมายถึง confidence ≥ 4 ไม่ใช่การยืนยันโดยมนุษย์ จำนวนที่คืนเป็นผลค้นจำกัดจำนวนต่อแหล่งข้อมูล ไม่ใช่ยอดรวมทั้งระบบ</p>
+<p>Assistant ส่งข้อความและประวัติในหน้าเว็บไป <code>/api/assistant</code> ซึ่งเรียก Claude Sonnet 4.6 และเลือก tools อ่าน Hub / Supabase / Brains ได้ คำสั่งเขียนมีเพียงรัน Blog กับ FB queue โดยมีปุ่มยืนยันก่อนเรียก</p>
+<p>ประวัติอยู่ใน React state; reload แล้วไม่กู้แชทจากฐานข้อมูล ไม่มี tool สร้างหรือแก้ดีลจากแชท ข้อมูลสมมติในบทสนทนาจึงไม่ใช่ข้อมูลดีลที่บันทึกแล้ว</p>
+<p>ข้อกำหนดห้ามตอบด้วยข้อมูลนอกระบบอยู่ใน prompt แต่โค้ดยังส่งข้อความที่โมเดลสร้างกลับมา จึงยังไม่ใช่การบังคับคำตอบจากหลักฐานฝั่งเซิร์ฟเวอร์อย่างสมบูรณ์ ปุ่มยืนยันคำสั่งไม่ทดแทนระบบตรวจสิทธิ์ผู้ใช้</p>
+<h2>หลักฐานที่ใช้ตรวจ</h2>
+<ul>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/app/api/fb/publish/route.ts">app/api/fb/publish/route.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/app/api/property/publish/route.ts">app/api/property/publish/route.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/app/api/boq/[...path]/route.ts">app/api/boq/[...path]/route.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/app/api/market-intel/route.ts">app/api/market-intel/route.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/app/api/assistant/route.ts">app/api/assistant/route.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/presentation/routes/blogRoutes.ts">services/backend-hub/src/presentation/routes/blogRoutes.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/presentation/routes/fbRoutes.ts">services/backend-hub/src/presentation/routes/fbRoutes.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/services/backend-hub/src/presentation/middleware/auth.ts">services/backend-hub/src/presentation/middleware/auth.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/docs/v2/04-decisions/accepted/ADR-004.md">docs/v2/04-decisions/accepted/ADR-004.md</a>
+</li>
+</ul>
+<footer>สถานะตามโค้ด · ข้อมูลจริงต้องตรวจวันที่ แหล่งที่มา และขอบเขตผลค้นทุกครั้ง</footer>
+</main>
+</body>
+</html>

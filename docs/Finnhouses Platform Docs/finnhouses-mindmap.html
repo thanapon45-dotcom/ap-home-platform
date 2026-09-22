@@ -1,1 +1,93 @@
-<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Mind Map ของ Platform · 22 ก.ย. 2026</title><style>*{box-sizing:border-box}body{margin:0;background:#0d1422;color:#e7edf6;font:16px/1.8 Tahoma,system-ui,sans-serif}main{max-width:1160px;margin:auto;padding:34px 28px 70px}h1{font-size:34px;line-height:1.4;color:#f4d478}h2{font-size:24px;margin-top:38px}h3{font-size:18px;color:#b9e7ed}a{color:#8adbea}code{color:#b9e7ed;overflow-wrap:anywhere;font-size:.88em}header p,.muted{color:#adbacd}.badge{display:inline-block;background:#20344b;color:#acdcd7;border-radius:5px;padding:3px 9px;font-size:12px;letter-spacing:.5px}.note{border-left:3px solid #f4d478;background:#252a31;padding:15px 20px;margin:22px 0}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.card,details{background:#162236;border:1px solid #344158;border-radius:12px;padding:20px;min-width:0}.card h3{margin-top:0}summary{cursor:pointer;font-weight:700;color:#b9e7ed}details{margin:12px 0}table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:13px;text-align:left;vertical-align:top;border-bottom:1px solid #344158;overflow-wrap:anywhere}th{color:#f4d478}.table{overflow-x:auto}nav{display:flex;flex-wrap:wrap;gap:10px;margin:20px 0}nav a,button{background:#20344b;border:1px solid #40516b;border-radius:7px;padding:10px 14px;color:#e7edf6;text-decoration:none;font:inherit;cursor:pointer}button[aria-pressed=true]{background:#f4d478;color:#182235}a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid #f4d478;outline-offset:3px}li{margin:8px 0}footer{border-top:1px solid #344158;margin-top:36px;padding-top:18px;color:#adbacd;font-size:13px}.step{border-left:3px solid #75c4ce;padding:8px 18px;margin:12px 0}.step strong{color:#f4d478}svg{max-width:100%;height:auto}svg text{font-family:Tahoma,system-ui,sans-serif}#detail{min-height:100px}.branch{border-left:2px solid #75c4ce;padding:0 0 0 20px}.branch h3{margin-bottom:5px}@media(max-width:650px){main{padding:22px 16px}h1{font-size:27px}.grid{grid-template-columns:1fr}th,td{padding:9px;min-width:120px}}@media print{body{background:white;color:#111}main{padding:0}.card,details,.note{background:white;border-color:#aaa}h1,h2,h3,a,code,th,.muted,header p,footer{color:#111}nav,button{display:none}.card{break-inside:avoid}details{display:block}}</style></head><body><main><header><span class="badge">AP-HOME PLATFORM · DOCUMENTATION</span><h1>Mind Map ของ Platform</h1><p>แผนที่หน้าที่ธุรกิจ เครื่องมือ ข้อมูล และงานที่เหลือ</p><p>ทบทวน 22 กันยายน 2026 · อ้างอิง main <code>1dddb46</code></p></header><nav aria-label="เอกสาร"><a href="index.html">เอกสารทั้งหมด</a><a href="ap_home_platform_os_map.html">ภาพรวมสถานะ</a></nav><div class="note">ยืนยันเส้นทางจากโค้ดและ ADR ณ commit ที่ระบุ การมีโค้ดไม่ยืนยันว่า deployment, credentials และ workflow ที่ active ทำงานครบแล้ว รอบนี้ไม่ได้รันงาน production</div><h2>ธุรกิจเป็นศูนย์กลาง</h2><p>Fix &amp; Flip / Develop 60% · ที่ปรึกษาและตรวจสอบ 30% · นายหน้า 10% เป็นสัดส่วนธุรกิจตามเอกสาร ไม่ใช่ยอดรายได้ที่ดึงจากฐานข้อมูล</p><p>ให้ความรู้เรื่องสร้างบ้านได้ แต่ห้ามอ้างว่า Finnhouses รับจ้างสร้างบ้านให้ลูกค้า การพัฒนาทรัพย์ของบริษัทเพื่อขายเป็นอีกกรณีหนึ่ง</p><div class="grid"><article class="card"><h3>การตลาดและขาย</h3><ul><li>CRM — lead และการติดตาม</li><li>Content / Blog / FB — สร้าง ตรวจ และเผยแพร่</li><li>Properties — รับทรัพย์และตรวจข้อมูล</li><li>Market Intel — ข้อมูลตลาดและ calibration</li></ul></article><article class="card"><h3>การลงทุนและก่อสร้าง</h3><ul><li>Land Analyzer — Build-to-Sell → projects</li><li>Deals — Renovate-to-Resell → reno_deals</li><li>BOQ — ปริมาณและต้นทุน</li><li>QC — ผลตรวจ + feedback; เชื่อม site/deal เมื่อมี ID</li></ul></article><article class="card"><h3>ข้อมูลและผู้ช่วย</h3><ul><li>Supabase — records และ views</li><li>Brains — รวมข้อมูลเดิมแบบอ่านอย่างเดียว</li><li>Assistant — เลือก tools และสรุป; ยังไม่มีความจำแชทถาวร</li><li>Human feedback — ประเมินความถูกต้อง ไม่ใช่ retraining</li></ul></article><article class="card"><h3>บริการที่ทำให้ระบบเดิน</h3><ul><li>Next.js — UI + API หลายปลายทาง</li><li>Hub v1 — orchestration / queues / QC / BOQ</li><li>FB Backend — โพสต์ตรงจาก Content Studio</li><li>n8n — workflows; active revision ต้องตรวจ</li><li>Hub v2 — โครงสร้างแยก; ยังไม่ cutover ครบ</li></ul></article></div><h2>สิ่งที่ยังต้องพัฒนา</h2><ul><li>ยืนยัน active WF1 ใช้ policy ที่แก้แล้วและวัดผลก่อน/หลัง</li><li>บังคับ Assistant ตอบจากหลักฐานภายในให้ครบ; ไม่พึ่ง prompt อย่างเดียว</li><li>ความจำถาวรที่แยกดีลจริงจากสมมติฐาน</li><li>บัญชี usage และเพดานงบ AI ร่วมทุก provider/เส้นทาง</li><li>ทดสอบ API compatibility ก่อนย้าย v2</li></ul><h2>ค่าใช้จ่าย</h2><p>ยอดผู้ใช้แจ้ง $20–25/เดือน (OpenAI $5, Claude $5, Railway $10–15); n8n แบบฟรี ไม่ใช่ยอดที่ตรวจ billing หรือ hard cap ปัจจุบัน</p><h2>หลักฐานที่ใช้ตรวจ</h2><ul><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/docs/BUSINESS_MODEL.md">docs/BUSINESS_MODEL.md</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/app/api/brains/context/route.ts">app/api/brains/context/route.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/app/api/assistant/route.ts">app/api/assistant/route.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/docs/v2/04-decisions/accepted/ADR-027.md">docs/v2/04-decisions/accepted/ADR-027.md</a></li></ul><footer>สถานะตามโค้ด · ข้อมูลจริงต้องตรวจวันที่ แหล่งที่มา และขอบเขตผลค้นทุกครั้ง</footer></main></body></html>
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mind Map ของ Platform · 22 ก.ย. 2026</title>
+<style>*{box-sizing:border-box}body{margin:0;background:#0d1422;color:#e7edf6;font:16px/1.8 Tahoma,system-ui,sans-serif}main{max-width:1160px;margin:auto;padding:34px 28px 70px}h1{font-size:34px;line-height:1.4;color:#f4d478}h2{font-size:24px;margin-top:38px}h3{font-size:18px;color:#b9e7ed}a{color:#8adbea}code{color:#b9e7ed;overflow-wrap:anywhere;font-size:.88em}header p,.muted{color:#adbacd}.badge{display:inline-block;background:#20344b;color:#acdcd7;border-radius:5px;padding:3px 9px;font-size:12px;letter-spacing:.5px}.note{border-left:3px solid #f4d478;background:#252a31;padding:15px 20px;margin:22px 0}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.card,details{background:#162236;border:1px solid #344158;border-radius:12px;padding:20px;min-width:0}.card h3{margin-top:0}summary{cursor:pointer;font-weight:700;color:#b9e7ed}details{margin:12px 0}table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:13px;text-align:left;vertical-align:top;border-bottom:1px solid #344158;overflow-wrap:anywhere}th{color:#f4d478}.table{overflow-x:auto}nav{display:flex;flex-wrap:wrap;gap:10px;margin:20px 0}nav a,button{background:#20344b;border:1px solid #40516b;border-radius:7px;padding:10px 14px;color:#e7edf6;text-decoration:none;font:inherit;cursor:pointer}button[aria-pressed=true]{background:#f4d478;color:#182235}a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid #f4d478;outline-offset:3px}li{margin:8px 0}footer{border-top:1px solid #344158;margin-top:36px;padding-top:18px;color:#adbacd;font-size:13px}.step{border-left:3px solid #75c4ce;padding:8px 18px;margin:12px 0}.step strong{color:#f4d478}svg{max-width:100%;height:auto}svg text{font-family:Tahoma,system-ui,sans-serif}#detail{min-height:100px}.branch{border-left:2px solid #75c4ce;padding:0 0 0 20px}.branch h3{margin-bottom:5px}@media(max-width:650px){main{padding:22px 16px}h1{font-size:27px}.grid{grid-template-columns:1fr}th,td{padding:9px;min-width:120px}}@media print{body{background:white;color:#111}main{padding:0}.card,details,.note{background:white;border-color:#aaa}h1,h2,h3,a,code,th,.muted,header p,footer{color:#111}nav,button{display:none}.card{break-inside:avoid}details{display:block}}</style>
+</head>
+<body>
+<main>
+<header>
+<span class="badge">AP-HOME PLATFORM · DOCUMENTATION</span>
+<h1>Mind Map ของ Platform</h1>
+<p>แผนที่หน้าที่ธุรกิจ เครื่องมือ ข้อมูล และงานที่เหลือ</p>
+<p>ทบทวน 22 กันยายน 2026 · อ้างอิง main <code>1dddb46</code>
+</p>
+</header>
+<nav aria-label="เอกสาร">
+<a href="index.html">เอกสารทั้งหมด</a>
+<a href="ap_home_platform_os_map.html">ภาพรวมสถานะ</a>
+</nav>
+<div class="note">ยืนยันเส้นทางจากโค้ดและ ADR ณ commit ที่ระบุ การมีโค้ดไม่ยืนยันว่า deployment, credentials และ workflow ที่ active ทำงานครบแล้ว รอบนี้ไม่ได้รันงาน production</div>
+<h2>ธุรกิจเป็นศูนย์กลาง</h2>
+<p>Fix &amp; Flip / Develop 60% · ที่ปรึกษาและตรวจสอบ 30% · นายหน้า 10% เป็นสัดส่วนธุรกิจตามเอกสาร ไม่ใช่ยอดรายได้ที่ดึงจากฐานข้อมูล</p>
+<p>ให้ความรู้เรื่องสร้างบ้านได้ แต่ห้ามอ้างว่า Finnhouses รับจ้างสร้างบ้านให้ลูกค้า การพัฒนาทรัพย์ของบริษัทเพื่อขายเป็นอีกกรณีหนึ่ง</p>
+<div class="grid">
+<article class="card">
+<h3>การตลาดและขาย</h3>
+<ul>
+<li>CRM — lead และการติดตาม</li>
+<li>Content / Blog / FB — สร้าง ตรวจ และเผยแพร่</li>
+<li>Properties — รับทรัพย์และตรวจข้อมูล</li>
+<li>Market Intel — ข้อมูลตลาดและ calibration</li>
+</ul>
+</article>
+<article class="card">
+<h3>การลงทุนและก่อสร้าง</h3>
+<ul>
+<li>Land Analyzer — Build-to-Sell → projects</li>
+<li>Deals — Renovate-to-Resell → reno_deals</li>
+<li>BOQ — ปริมาณและต้นทุน</li>
+<li>QC — ผลตรวจ + feedback; เชื่อม site/deal เมื่อมี ID</li>
+</ul>
+</article>
+<article class="card">
+<h3>ข้อมูลและผู้ช่วย</h3>
+<ul>
+<li>Supabase — records และ views</li>
+<li>Brains — รวมข้อมูลเดิมแบบอ่านอย่างเดียว</li>
+<li>Assistant — เลือก tools และสรุป; ยังไม่มีความจำแชทถาวร</li>
+<li>Human feedback — ประเมินความถูกต้อง ไม่ใช่ retraining</li>
+</ul>
+</article>
+<article class="card">
+<h3>บริการที่ทำให้ระบบเดิน</h3>
+<ul>
+<li>Next.js — UI + API หลายปลายทาง</li>
+<li>Hub v1 — orchestration / queues / QC / BOQ</li>
+<li>FB Backend — โพสต์ตรงจาก Content Studio</li>
+<li>n8n — workflows; active revision ต้องตรวจ</li>
+<li>Hub v2 — โครงสร้างแยก; ยังไม่ cutover ครบ</li>
+</ul>
+</article>
+</div>
+<h2>สิ่งที่ยังต้องพัฒนา</h2>
+<ul>
+<li>ยืนยัน active WF1 ใช้ policy ที่แก้แล้วและวัดผลก่อน/หลัง</li>
+<li>บังคับ Assistant ตอบจากหลักฐานภายในให้ครบ; ไม่พึ่ง prompt อย่างเดียว</li>
+<li>ความจำถาวรที่แยกดีลจริงจากสมมติฐาน</li>
+<li>บัญชี usage และเพดานงบ AI ร่วมทุก provider/เส้นทาง</li>
+<li>ทดสอบ API compatibility ก่อนย้าย v2</li>
+</ul>
+<h2>ค่าใช้จ่าย</h2>
+<p>ยอดผู้ใช้แจ้ง $20–25/เดือน (OpenAI $5, Claude $5, Railway $10–15); n8n แบบฟรี ไม่ใช่ยอดที่ตรวจ billing หรือ hard cap ปัจจุบัน</p>
+<h2>หลักฐานที่ใช้ตรวจ</h2>
+<ul>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/docs/BUSINESS_MODEL.md">docs/BUSINESS_MODEL.md</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/app/api/brains/context/route.ts">app/api/brains/context/route.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/app/api/assistant/route.ts">app/api/assistant/route.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/docs/v2/04-decisions/accepted/ADR-027.md">docs/v2/04-decisions/accepted/ADR-027.md</a>
+</li>
+</ul>
+<footer>สถานะตามโค้ด · ข้อมูลจริงต้องตรวจวันที่ แหล่งที่มา และขอบเขตผลค้นทุกครั้ง</footer>
+</main>
+</body>
+</html>

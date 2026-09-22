@@ -1,1 +1,102 @@
-<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Intelligence Loop Roadmap · 22 ก.ย. 2026</title><style>*{box-sizing:border-box}body{margin:0;background:#0d1422;color:#e7edf6;font:16px/1.8 Tahoma,system-ui,sans-serif}main{max-width:1160px;margin:auto;padding:34px 28px 70px}h1{font-size:34px;line-height:1.4;color:#f4d478}h2{font-size:24px;margin-top:38px}h3{font-size:18px;color:#b9e7ed}a{color:#8adbea}code{color:#b9e7ed;overflow-wrap:anywhere;font-size:.88em}header p,.muted{color:#adbacd}.badge{display:inline-block;background:#20344b;color:#acdcd7;border-radius:5px;padding:3px 9px;font-size:12px;letter-spacing:.5px}.note{border-left:3px solid #f4d478;background:#252a31;padding:15px 20px;margin:22px 0}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.card,details{background:#162236;border:1px solid #344158;border-radius:12px;padding:20px;min-width:0}.card h3{margin-top:0}summary{cursor:pointer;font-weight:700;color:#b9e7ed}details{margin:12px 0}table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:13px;text-align:left;vertical-align:top;border-bottom:1px solid #344158;overflow-wrap:anywhere}th{color:#f4d478}.table{overflow-x:auto}nav{display:flex;flex-wrap:wrap;gap:10px;margin:20px 0}nav a,button{background:#20344b;border:1px solid #40516b;border-radius:7px;padding:10px 14px;color:#e7edf6;text-decoration:none;font:inherit;cursor:pointer}button[aria-pressed=true]{background:#f4d478;color:#182235}a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid #f4d478;outline-offset:3px}li{margin:8px 0}footer{border-top:1px solid #344158;margin-top:36px;padding-top:18px;color:#adbacd;font-size:13px}.step{border-left:3px solid #75c4ce;padding:8px 18px;margin:12px 0}.step strong{color:#f4d478}svg{max-width:100%;height:auto}svg text{font-family:Tahoma,system-ui,sans-serif}#detail{min-height:100px}.branch{border-left:2px solid #75c4ce;padding:0 0 0 20px}.branch h3{margin-bottom:5px}@media(max-width:650px){main{padding:22px 16px}h1{font-size:27px}.grid{grid-template-columns:1fr}th,td{padding:9px;min-width:120px}}@media print{body{background:white;color:#111}main{padding:0}.card,details,.note{background:white;border-color:#aaa}h1,h2,h3,a,code,th,.muted,header p,footer{color:#111}nav,button{display:none}.card{break-inside:avoid}details{display:block}}</style></head><body><main><header><span class="badge">AP-HOME PLATFORM · DOCUMENTATION</span><h1>Intelligence Loop Roadmap</h1><p>แผนพัฒนาตามช่องว่างจริง โดยไม่ถือว่า roadmap เดิมเสร็จแล้ว</p><p>ทบทวน 22 กันยายน 2026 · อ้างอิง main <code>1dddb46</code></p></header><nav aria-label="เอกสาร"><a href="index.html">เอกสารทั้งหมด</a><a href="ap_home_platform_os_map.html">ภาพรวมสถานะ</a></nav><div class="note">ยืนยันเส้นทางจากโค้ดและ ADR ณ commit ที่ระบุ การมีโค้ดไม่ยืนยันว่า deployment, credentials และ workflow ที่ active ทำงานครบแล้ว รอบนี้ไม่ได้รันงาน production</div><h2>ฐานที่มีอยู่และสิ่งที่ยังขาด</h2><p>Fix &amp; Flip / Develop 60% · ที่ปรึกษาและตรวจสอบ 30% · นายหน้า 10% เป็นสัดส่วนธุรกิจตามเอกสาร ไม่ใช่ยอดรายได้ที่ดึงจากฐานข้อมูล</p><p>ให้ความรู้เรื่องสร้างบ้านได้ แต่ห้ามอ้างว่า Finnhouses รับจ้างสร้างบ้านให้ลูกค้า การพัฒนาทรัพย์ของบริษัทเพื่อขายเป็นอีกกรณีหนึ่ง</p><div class="table"><table><thead><tr><th>ลำดับ</th><th>มีในโค้ด/เอกสารแล้ว</th><th>งานถัดไป</th><th>หลักฐานก่อนปิดงาน</th></tr></thead><tbody><tr><td>1 · ข้อมูลและ workflow</td><td>CRUD, queue, Quality Gate/QC feedback</td><td>ยืนยัน active workflow และแก้ผลบล็อกผิด</td><td>export revision + execution + ผลตรวจบทความเต็ม</td></tr><tr><td>2 · เชื่อมบริบท</td><td>Brains รวม market/deals/QC/content</td><td>เติมความสัมพันธ์เฉพาะเมื่อมี ID จริง</td><td>ไม่เดา project↔deal; ทดสอบ filter และข้อมูลว่าง</td></tr><tr><td>3 · ผู้ช่วยวิเคราะห์</td><td>Assistant อ่าน tools; กฎ internal-only ใน prompt</td><td>บังคับหลักฐาน คำนวณที่ตรวจย้อนกลับได้ แยก what-if</td><td>คำตอบอ้าง record/เวลาได้; ไม่เติมตัวเลขนอกระบบ</td></tr><tr><td>4 · ความจำและต้นทุน</td><td>ประวัติชั่วคราว; usage เฉพาะบางระบบ</td><td>ออกแบบ memory และ budget accounting ร่วม</td><td>reload กู้ได้ตามสิทธิ์; usage ครอบคลุม retry/ภาพ/n8n</td></tr><tr><td>5 · วงจรปรับปรุง</td><td>มี human feedback และ actual deal fields</td><td>ใช้ชุดประเมินก่อนเปลี่ยน prompt/model</td><td>ผลก่อน/หลัง ชุดทดสอบที่แยกจากชุดปรับ และ rollback</td></tr></tbody></table></div><h2>ความหมายของ Intelligence Loop</h2><p>เก็บข้อมูลจริง → ตรวจคุณภาพและความสัมพันธ์ → วิเคราะห์ด้วยหลักฐาน → มนุษย์ตัดสินใจ → เก็บผลจริงเพื่อประเมินรอบต่อไป ขณะนี้มีชิ้นส่วนของวงจร แต่ยังไม่ควรระบุว่าระบบปรับตัวเองอัตโนมัติครบสาย</p><h2>Hub v2 เป็นงานอีกด้านหนึ่ง</h2><p>การเปลี่ยนโครงสร้าง backend ช่วยบำรุงรักษา แต่ไม่ใช่เงื่อนไขว่าต้องย้าย v2 ก่อนจึงทำผู้ช่วยวิเคราะห์ได้ ต้องประเมินงานด้านหลักฐาน ข้อมูล สิทธิ์และต้นทุนแยกจากงานย้าย API</p><h2>ข้อกำหนดที่ต้องรักษา</h2><ul><li>ไม่กลับไปอ้างว่าธุรกิจรับจ้างสร้างบ้าน; Content ให้ความรู้ยังทำได้</li><li>ไม่รวม Land Project กับ Fix & Flip Deal เอง</li><li>ไม่ถือ feedback เป็นคำสั่ง retrain หรือ publish อัตโนมัติ</li><li>ไม่มีเปอร์เซ็นต์ความพร้อม วันที่เสร็จ หรือต้นทุนประหยัดที่ยังไม่ได้วัด</li></ul><h2>หลักฐานที่ใช้ตรวจ</h2><ul><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/app/api/assistant/route.ts">app/api/assistant/route.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/app/api/brains/context/route.ts">app/api/brains/context/route.ts</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/components/Deals.tsx">components/Deals.tsx</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/docs/v2/04-decisions/accepted/ADR-027.md">docs/v2/04-decisions/accepted/ADR-027.md</a></li><li><a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/docs/v2/04-decisions/accepted/ADR-016.md">docs/v2/04-decisions/accepted/ADR-016.md</a></li></ul><footer>สถานะตามโค้ด · ข้อมูลจริงต้องตรวจวันที่ แหล่งที่มา และขอบเขตผลค้นทุกครั้ง</footer></main></body></html>
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Intelligence Loop Roadmap · 22 ก.ย. 2026</title>
+<style>*{box-sizing:border-box}body{margin:0;background:#0d1422;color:#e7edf6;font:16px/1.8 Tahoma,system-ui,sans-serif}main{max-width:1160px;margin:auto;padding:34px 28px 70px}h1{font-size:34px;line-height:1.4;color:#f4d478}h2{font-size:24px;margin-top:38px}h3{font-size:18px;color:#b9e7ed}a{color:#8adbea}code{color:#b9e7ed;overflow-wrap:anywhere;font-size:.88em}header p,.muted{color:#adbacd}.badge{display:inline-block;background:#20344b;color:#acdcd7;border-radius:5px;padding:3px 9px;font-size:12px;letter-spacing:.5px}.note{border-left:3px solid #f4d478;background:#252a31;padding:15px 20px;margin:22px 0}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.card,details{background:#162236;border:1px solid #344158;border-radius:12px;padding:20px;min-width:0}.card h3{margin-top:0}summary{cursor:pointer;font-weight:700;color:#b9e7ed}details{margin:12px 0}table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:13px;text-align:left;vertical-align:top;border-bottom:1px solid #344158;overflow-wrap:anywhere}th{color:#f4d478}.table{overflow-x:auto}nav{display:flex;flex-wrap:wrap;gap:10px;margin:20px 0}nav a,button{background:#20344b;border:1px solid #40516b;border-radius:7px;padding:10px 14px;color:#e7edf6;text-decoration:none;font:inherit;cursor:pointer}button[aria-pressed=true]{background:#f4d478;color:#182235}a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid #f4d478;outline-offset:3px}li{margin:8px 0}footer{border-top:1px solid #344158;margin-top:36px;padding-top:18px;color:#adbacd;font-size:13px}.step{border-left:3px solid #75c4ce;padding:8px 18px;margin:12px 0}.step strong{color:#f4d478}svg{max-width:100%;height:auto}svg text{font-family:Tahoma,system-ui,sans-serif}#detail{min-height:100px}.branch{border-left:2px solid #75c4ce;padding:0 0 0 20px}.branch h3{margin-bottom:5px}@media(max-width:650px){main{padding:22px 16px}h1{font-size:27px}.grid{grid-template-columns:1fr}th,td{padding:9px;min-width:120px}}@media print{body{background:white;color:#111}main{padding:0}.card,details,.note{background:white;border-color:#aaa}h1,h2,h3,a,code,th,.muted,header p,footer{color:#111}nav,button{display:none}.card{break-inside:avoid}details{display:block}}</style>
+</head>
+<body>
+<main>
+<header>
+<span class="badge">AP-HOME PLATFORM · DOCUMENTATION</span>
+<h1>Intelligence Loop Roadmap</h1>
+<p>แผนพัฒนาตามช่องว่างจริง โดยไม่ถือว่า roadmap เดิมเสร็จแล้ว</p>
+<p>ทบทวน 22 กันยายน 2026 · อ้างอิง main <code>1dddb46</code>
+</p>
+</header>
+<nav aria-label="เอกสาร">
+<a href="index.html">เอกสารทั้งหมด</a>
+<a href="ap_home_platform_os_map.html">ภาพรวมสถานะ</a>
+</nav>
+<div class="note">ยืนยันเส้นทางจากโค้ดและ ADR ณ commit ที่ระบุ การมีโค้ดไม่ยืนยันว่า deployment, credentials และ workflow ที่ active ทำงานครบแล้ว รอบนี้ไม่ได้รันงาน production</div>
+<h2>ฐานที่มีอยู่และสิ่งที่ยังขาด</h2>
+<p>Fix &amp; Flip / Develop 60% · ที่ปรึกษาและตรวจสอบ 30% · นายหน้า 10% เป็นสัดส่วนธุรกิจตามเอกสาร ไม่ใช่ยอดรายได้ที่ดึงจากฐานข้อมูล</p>
+<p>ให้ความรู้เรื่องสร้างบ้านได้ แต่ห้ามอ้างว่า Finnhouses รับจ้างสร้างบ้านให้ลูกค้า การพัฒนาทรัพย์ของบริษัทเพื่อขายเป็นอีกกรณีหนึ่ง</p>
+<div class="table">
+<table>
+<thead>
+<tr>
+<th>ลำดับ</th>
+<th>มีในโค้ด/เอกสารแล้ว</th>
+<th>งานถัดไป</th>
+<th>หลักฐานก่อนปิดงาน</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1 · ข้อมูลและ workflow</td>
+<td>CRUD, queue, Quality Gate/QC feedback</td>
+<td>ยืนยัน active workflow และแก้ผลบล็อกผิด</td>
+<td>export revision + execution + ผลตรวจบทความเต็ม</td>
+</tr>
+<tr>
+<td>2 · เชื่อมบริบท</td>
+<td>Brains รวม market/deals/QC/content</td>
+<td>เติมความสัมพันธ์เฉพาะเมื่อมี ID จริง</td>
+<td>ไม่เดา project↔deal; ทดสอบ filter และข้อมูลว่าง</td>
+</tr>
+<tr>
+<td>3 · ผู้ช่วยวิเคราะห์</td>
+<td>Assistant อ่าน tools; กฎ internal-only ใน prompt</td>
+<td>บังคับหลักฐาน คำนวณที่ตรวจย้อนกลับได้ แยก what-if</td>
+<td>คำตอบอ้าง record/เวลาได้; ไม่เติมตัวเลขนอกระบบ</td>
+</tr>
+<tr>
+<td>4 · ความจำและต้นทุน</td>
+<td>ประวัติชั่วคราว; usage เฉพาะบางระบบ</td>
+<td>ออกแบบ memory และ budget accounting ร่วม</td>
+<td>reload กู้ได้ตามสิทธิ์; usage ครอบคลุม retry/ภาพ/n8n</td>
+</tr>
+<tr>
+<td>5 · วงจรปรับปรุง</td>
+<td>มี human feedback และ actual deal fields</td>
+<td>ใช้ชุดประเมินก่อนเปลี่ยน prompt/model</td>
+<td>ผลก่อน/หลัง ชุดทดสอบที่แยกจากชุดปรับ และ rollback</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h2>ความหมายของ Intelligence Loop</h2>
+<p>เก็บข้อมูลจริง → ตรวจคุณภาพและความสัมพันธ์ → วิเคราะห์ด้วยหลักฐาน → มนุษย์ตัดสินใจ → เก็บผลจริงเพื่อประเมินรอบต่อไป ขณะนี้มีชิ้นส่วนของวงจร แต่ยังไม่ควรระบุว่าระบบปรับตัวเองอัตโนมัติครบสาย</p>
+<h2>Hub v2 เป็นงานอีกด้านหนึ่ง</h2>
+<p>การเปลี่ยนโครงสร้าง backend ช่วยบำรุงรักษา แต่ไม่ใช่เงื่อนไขว่าต้องย้าย v2 ก่อนจึงทำผู้ช่วยวิเคราะห์ได้ ต้องประเมินงานด้านหลักฐาน ข้อมูล สิทธิ์และต้นทุนแยกจากงานย้าย API</p>
+<h2>ข้อกำหนดที่ต้องรักษา</h2>
+<ul>
+<li>ไม่กลับไปอ้างว่าธุรกิจรับจ้างสร้างบ้าน; Content ให้ความรู้ยังทำได้</li>
+<li>ไม่รวม Land Project กับ Fix & Flip Deal เอง</li>
+<li>ไม่ถือ feedback เป็นคำสั่ง retrain หรือ publish อัตโนมัติ</li>
+<li>ไม่มีเปอร์เซ็นต์ความพร้อม วันที่เสร็จ หรือต้นทุนประหยัดที่ยังไม่ได้วัด</li>
+</ul>
+<h2>หลักฐานที่ใช้ตรวจ</h2>
+<ul>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/app/api/assistant/route.ts">app/api/assistant/route.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/app/api/brains/context/route.ts">app/api/brains/context/route.ts</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/components/Deals.tsx">components/Deals.tsx</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/docs/v2/04-decisions/accepted/ADR-027.md">docs/v2/04-decisions/accepted/ADR-027.md</a>
+</li>
+<li>
+<a href="https://github.com/thanapon45-dotcom/ap-home-platform/blob/1dddb46f69c07519dd18dd980c17b149e14d2c9f/docs/v2/04-decisions/accepted/ADR-016.md">docs/v2/04-decisions/accepted/ADR-016.md</a>
+</li>
+</ul>
+<footer>สถานะตามโค้ด · ข้อมูลจริงต้องตรวจวันที่ แหล่งที่มา และขอบเขตผลค้นทุกครั้ง</footer>
+</main>
+</body>
+</html>
