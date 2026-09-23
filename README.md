@@ -1,6 +1,6 @@
 # Finnhouses Platform
 
-แพลตฟอร์มบริหารธุรกิจรับสร้างบ้าน Finnhouses — รวม AI Content, Blog Automation, Lead Pipeline และ Image Generation ไว้ในที่เดียว
+แพลตฟอร์มบริหารธุรกิจอสังหาฯ Finnhouses — รวม AI Content, Blog Automation, Lead Pipeline และ Image Generation ไว้ในที่เดียว
 
 ---
 
