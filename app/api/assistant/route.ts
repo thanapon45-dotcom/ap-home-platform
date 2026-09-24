@@ -37,6 +37,7 @@ const SYSTEM_PROMPT = `คุณคือ AP-Home Assistant ผู้ช่ว�
 หน้าที่:
 - ตอบคำถามเกี่ยวกับสถานะ platform, leads, market intel, QC, Deals และภาพรวมข้ามโมดูลโดยดึงข้อมูลจริงผ่าน tools เท่านั้น ห้ามเดาตัวเลขหรือสถานะ
 - สำหรับคำถามที่ต้องใช้บริบทหลายฝ่าย ให้เรียก get_brains_context ก่อน แล้วจึงเจาะ tool เฉพาะโมดูลเมื่อจำเป็น
+- สำหรับ Land Analyzer / โครงการสร้างบ้านขาย / งบที่บันทึกในโปรเจกต์ ให้เรียก get_brains_context และอ่าน land_analysis เท่านั้น: projects คือ Build-to-Sell แยกจาก investment.deals ที่เป็น Fix & Flip ห้ามรวมเป็นดีลเดียวกัน งบและ ROI ใน projects เป็นประมาณการที่ผู้ใช้บันทึก ไม่ใช่ต้นทุนจริงหรือราคาตลาดที่ยืนยันแล้ว ถ้า status=unavailable ให้แจ้งว่าดึงข้อมูลไม่ได้ ไม่ใช่ไม่มีโครงการ หน้า /budget เดิมปิดแล้ว
 - สั่งงาน (run_fb_queue_next, run_blog_now) ได้เมื่อผู้ใช้ขอ แต่ระบบจะบังคับให้ผู้ใช้กด confirm เองก่อน execute จริงเสมอ — คุณแค่เรียก tool ตามปกติ ไม่ต้องกังวลเรื่อง gate
 
 กฎการตอบ:
@@ -98,7 +99,7 @@ const TOOLS = [
   {
     name: "get_brains_context",
     description:
-      "ดึง Shared Business Context จาก /api/brains/context — รวม Market, Investment/Deals, QC และ Content ในคำขอเดียว. ใช้เป็นตัวอ่านข้ามโมดูลสำหรับคำถามเชิงภาพรวม/ความสัมพันธ์ข้ามฝ่าย และต้องถือข้อมูลว่างเป็นว่าง ห้ามสร้าง relationship ที่ไม่มีหลักฐาน",
+      "ดึง Shared Business Context จาก /api/brains/context — รวม Market, Investment/Deals, Land Analyzer/projects พร้อมงบประมาณที่บันทึก, QC และ Content ในคำขอเดียว. projects (Build-to-Sell) แยกจาก reno_deals (Fix & Flip). land_analysis.status=unavailable คือดึงไม่ได้ ไม่ใช่ไม่มีโครงการ. ใช้สำหรับข้อมูลโปรเจกต์ที่ดิน/งบและคำถามข้ามโมดูล ห้ามสร้าง relationship ที่ไม่มีหลักฐาน",
     input_schema: {
       type: "object",
       properties: {

@@ -1,6 +1,7 @@
 "use client";
 import { useState, useMemo, useCallback, useEffect } from "react";
 import dynamic from "next/dynamic";
+import LandBusinessContext from "./LandBusinessContext";
 // NOTE (session 25, Jul 16 2026): projects CRUD moved server-side to /api/projects
 // — direct supabase.from("projects") calls with the public anon key were removed
 // here because RLS on `projects` is now locked down (deny anon entirely).
@@ -240,6 +241,7 @@ export default function LandAnalyzer() {
 
         {/* Results */}
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <LandBusinessContext area={areaName} />
           <div style={{ background: "rgba(15,20,40,.85)", border: "1px solid rgba(255,255,255,.07)", borderRadius: 20, padding: 24 }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: "#22d3ee", textTransform: "uppercase", letterSpacing: ".12em", marginBottom: 14 }}>📊 ผลการวิเคราะห์</div>
             <Row label="พื้นที่ขาย (Sellable)" value={`${fmt(c.sa)} ตร.ว.`} />
