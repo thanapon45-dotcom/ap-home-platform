@@ -42,7 +42,15 @@ export async function GET(req: NextRequest) {
   try {
     const areaFilter = area ? `&area=eq.${encodeURIComponent(area)}` : "";
 
-    const [marketInsights, marketSummary, areaMemory, buyerSignals, deals, qc, content] =
+    // Keep Build-to-Sell projects separate from Fix & Flip (ADR-027).
+    // A failed new source must not hide the existing seven context sources.
+    const projectContext = select(
+      "projects",
+      `select=id,name,type,area_name,land_price,land_size,dev_cost,plots,area,build_cost,profit_per_plot,market_price,roi,result,created_at&order=created_at.desc&limit=${limit}${area ? `&area_name=eq.${encodeURIComponent(area)}` : ""}`
+    ).then(projects => ({ available: true, projects }))
+      .catch(() => ({ available: false, projects: [] }));
+
+    const [marketInsights, marketSummary, areaMemory, buyerSignals, deals, qc, content, land] =
       await Promise.all([
         select(
           "market_insights",
@@ -72,6 +80,7 @@ export async function GET(req: NextRequest) {
           "content_frames",
           `select=id,frame_type,target_segment,keyword,channel,engagement_score,collector_version,created_at&order=created_at.desc&limit=${limit}`
         ),
+        projectContext,
       ]);
 
     const qcFeedback = qc.filter((r: any) => r.human_feedback != null);
@@ -96,6 +105,14 @@ export async function GET(req: NextRequest) {
         deals,
         closed_deals: dealsClosed,
         count: deals.length,
+      },
+      land_analysis: {
+        source: "projects",
+        business_model: "build_to_sell",
+        status: land.available ? "available" : "unavailable",
+        projects: land.projects,
+        count: land.available ? land.projects.length : null,
+        note: "Saved user estimates, not verified market prices or actual costs. Separate from investment.deals; no project-to-deal identity is inferred. The legacy /budget page remains closed.",
       },
       construction: {
         qc_recent: qc,
