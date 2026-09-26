@@ -2161,7 +2161,39 @@ async function runHealthMonitor() {
     if (state.blog?.status === "running" && state.blog?.startedAt) {
       const stuckMs = Date.now() - new Date(state.blog.startedAt).getTime();
       if (stuckMs > BLOG_STUCK_MS) {
-        issues.push(`🔴 Blog Runner ค้าง ${Math.round(stuckMs / 60000)} นาที (runId: ${state.blog.runId || "-"})`);
+        const staleRunId = String(state.blog.runId || "");
+        const staleKeyword = String(state.blog.keyword || "");
+        const stuckMinutes = Math.round(stuckMs / 60000);
+        const errMsg = `Blog Runner auto-failed after ${stuckMinutes} minutes without terminal callback`;
+
+        // Fail closed: a workflow/runtime error must never leave the Hub in "running" forever.
+        // Only mutate the same run we just observed, so a newer run cannot be clobbered.
+        const latest = await readState();
+        if (latest.blog?.status === "running" && String(latest.blog?.runId || "") === staleRunId) {
+          if (Array.isArray(latest.content_queue)) {
+            const qi = latest.content_queue.find(i => i.runId === staleRunId && i.status === "running");
+            if (qi) {
+              qi.status = "failed";
+              qi.updatedAt = nowIso();
+            }
+          }
+          latest.blog.status = "failed";
+          latest.blog.failed = 1;
+          latest.blog.message = errMsg;
+          latest.blog.finishedAt = nowIso();
+          latest.blog.updatedAt = nowIso();
+          latest.system.lastError = errMsg;
+          pushHistory(latest, {
+            type: "blog_stale_auto_failed",
+            engine: "blog",
+            runId: staleRunId,
+            keyword: staleKeyword,
+            status: "failed",
+            message: errMsg,
+          });
+          await writeState(latest);
+          issues.push(`🔴 Blog Runner auto-failed ${stuckMinutes} นาที (runId: ${staleRunId || "-"})`);
+        }
       }
     }
 
