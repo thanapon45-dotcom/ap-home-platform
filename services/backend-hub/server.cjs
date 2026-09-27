@@ -1,5 +1,6 @@
 const express = require("express");
 const crypto = require("crypto");
+const { normalizeKeyword, historyEvidence, findDuplicate, loadPublishedEvidence } = require("./blog-dedupe.cjs");
 
 const app = express();
 app.use(express.json({ limit: "2mb" }));
@@ -369,8 +370,9 @@ function stateCredentialsAvailable() {
   return Boolean(SUPABASE_URL && SUPABASE_REST_KEY);
 }
 
-async function readState() {
+async function readState(strict = false) {
   if (!stateCredentialsAvailable()) {
+    if (strict) throw new Error("Supabase state credentials missing");
     if (!stateCache) {
       stateCache = normalizeState({
         ...baseState(),
@@ -400,6 +402,7 @@ async function readState() {
     return state;
   } catch (e) {
     console.error("[hub] readState Supabase error:", e.message);
+    if (strict) throw e;
     if (!stateCache) stateCache = baseState();
     stateCache.system.lastError = `Supabase hub_state read failed: ${e.message}`;
     stateCache.system.updatedAt = nowIso();
@@ -525,7 +528,9 @@ async function sendTelegram(text) {
       disable_web_page_preview: false,
     }),
   });
-  return res.ok;
+  const result = await res.json().catch(() => ({}));
+  if (!res.ok || !result.ok) throw new Error(`Telegram delivery failed: ${result.description || res.status}`);
+  return true;
 }
 
 function formatBlogMessage(payload) {
@@ -710,8 +715,37 @@ app.post("/api/ops/dlq/:id/retry", async (req, res) => {
   });
 });
 
+let blogActionBusy = false;
+app.use('/action/blog', (_req, res, next) => {
+  if (blogActionBusy) return res.status(409).json({ ok: false, error: 'Blog action in progress' });
+  blogActionBusy = true;
+  let released = false;
+  const release = () => { if (!released) { released = true; blogActionBusy = false; } };
+  res.once('finish', release);
+  res.once('close', release);
+  next();
+});
+
+async function publishedEvidence() {
+  return loadPublishedEvidence({ supabaseUrl: SUPABASE_URL, supabaseKey: SUPABASE_REST_KEY, wpUrl: WP_URL });
+}
+async function persistQueueState(state) {
+  const result = await writeState(state);
+  if (!result.ok) throw new Error('Queue state was not persisted');
+}
+function archiveDedupe(state) {
+  const unique = new Map(historyEvidence(state).map(r => [normalizeKeyword(r.keyword), r]));
+  state.blog_dedupe = [...unique.values()].map(r => ({
+    keyword: r.keyword, status: r.status, message: r.message || r.failureReason || '',
+    runId: r.runId || '', postId: r.postId || '', postUrl: r.postUrl || '',
+  }));
+}
+
 app.post("/action/blog/reset", async (req, res) => {
-  const state = await readState();
+  try {
+  const state = await readState(true);
+  if (req.body?.dryRun === true) return res.json({ ok: true, dryRun: true, status: state.blog.status, runId: state.blog.runId });
+  if (req.body?.expectedRunId !== undefined && req.body?.expectedRunId !== state.blog.runId) return res.status(409).json({ ok: false, error: "Run changed; reset cancelled" });
   const oldRunId = state.blog.runId || "";
   const oldKeyword = state.blog.keyword || "";
   state.blog = {
@@ -728,6 +762,11 @@ app.post("/action/blog/reset", async (req, res) => {
     finishedAt: nowIso(),
     updatedAt: nowIso(),
   };
+  for (const item of state.content_queue) {
+    if (item.status === 'running' && item.runId === oldRunId) {
+      item.status = 'failed'; item.failureReason = 'Run manually reset'; item.updatedAt = nowIso();
+    }
+  }
   state.system.lastError = "";
   pushHistory(state, {
     type: "blog_manual_reset",
@@ -737,8 +776,9 @@ app.post("/action/blog/reset", async (req, res) => {
     status: "idle",
     message: "Manual reset",
   });
-  await writeState(state);
+  await persistQueueState(state);
   res.json({ ok: true });
+  } catch (error) { res.status(503).json({ ok: false, error: error.message }); }
 });
 
 app.post("/action/blog/run", async (req, res) => {
@@ -914,6 +954,7 @@ app.post("/webhook/n8n", async (req, res) => {
     const qi = state.content_queue.find(i => i.id === payload.queue_item_id);
     if (qi) {
       qi.status = normalizedStatus;
+      qi.failureReason = normalizedStatus === "failed" ? state.blog.message : "";
       qi.postUrl = String(payload.postUrl || "");
       qi.runId = String(payload.runId || qi.runId || "");
       qi.updatedAt = nowIso();
@@ -930,6 +971,7 @@ app.post("/webhook/n8n", async (req, res) => {
     postUrl: state.blog.postUrl,
     message: state.blog.message,
   });
+  archiveDedupe(state);
   await writeState(state);
 
   try {
@@ -1321,25 +1363,71 @@ app.post("/action/fb/queue/run-next", async (req, res) => {
 
 app.post("/action/blog/queue/build", async (req, res) => {
   const items = req.body.items;
-  if (!Array.isArray(items) || items.length === 0) {
-    return res.status(400).json({ ok: false, error: "items array required" });
+  if (!Array.isArray(items) || items.length === 0 || items.length > 100) {
+    return res.status(400).json({ ok: false, error: "items array required (1–100 items)" });
   }
-  const state = await readState();
-  state.content_queue = items.map(item => ({
-    id: String(item.id || crypto.randomUUID()),
-    date: String(item.date || ""),
-    slot: String(item.slot || "morning"),
-    keyword: String(item.keyword || ""),
-    category: Number(item.category || 13),
-    visual_hint: String(item.visual_hint || "contemporary"),
-    status: "pending",
-    runId: "",
-    postUrl: "",
-    createdAt: nowIso(),
-    updatedAt: nowIso(),
-  }));
-  await writeState(state);
-  res.json({ ok: true, count: state.content_queue.length, queue: state.content_queue });
+  try {
+    const state = await readState(true);
+    if (state.blog.status === 'running' || state.content_queue.some(i => i.status === 'running')) {
+      return res.status(409).json({ ok: false, error: 'Cannot replace a running queue' });
+    }
+    const { posts, wordpress } = await publishedEvidence();
+    const seen = new Set(), ids = new Set(), rejected = [], accepted = [];
+    for (const item of items) {
+      if (!item || typeof item !== 'object') return res.status(400).json({ ok: false, error: 'Invalid queue item' });
+      const key = normalizeKeyword(item.keyword);
+      const duplicate = findDuplicate(item, state, posts, wordpress) ||
+        (seen.has(key) ? { reason: 'duplicate_keyword_in_batch' } : null) ||
+        (item.id && ids.has(String(item.id)) ? { reason: 'duplicate_id_in_batch' } : null);
+      if (duplicate) { rejected.push({ keyword: item.keyword, ...duplicate }); continue; }
+      seen.add(key); if (item.id) ids.add(String(item.id));
+      accepted.push({
+        id: String(item.id || crypto.randomUUID()), date: String(item.date || ''),
+        slot: String(item.slot || 'morning'), keyword: String(item.keyword || '').trim(),
+        category: Number(item.category || 13), visual_hint: String(item.visual_hint || 'contemporary'),
+        slug: String(item.slug || ''), status: 'pending', runId: '', postUrl: '',
+        createdAt: nowIso(), updatedAt: nowIso(),
+      });
+    }
+    // An all-duplicate request must not erase the current queue.
+    if (!accepted.length) return res.status(409).json({ ok: false, error: 'All keywords already published or duplicated', rejected });
+    if (req.body.dryRun === true) return res.json({ ok: true, dryRun: true, count: accepted.length, rejected, queue: accepted });
+    archiveDedupe(state);
+    state.content_queue = accepted;
+    pushHistory(state, { type: 'blog_queue_built', engine: 'blog', status: 'completed',
+      message: `Accepted ${accepted.length}; rejected ${rejected.length}`, correlationId: req.correlationId });
+    await persistQueueState(state);
+    res.json({ ok: true, count: accepted.length, rejected, queue: accepted });
+  } catch (error) {
+    res.status(503).json({ ok: false, error: error.message });
+  }
+});
+
+// Inspect/repair pending duplicates without starting WF1 or publishing any content.
+app.post('/action/blog/queue/audit', async (req, res) => {
+  try {
+    const state = await readState(true);
+    if (state.blog.status === 'running') return res.status(409).json({ ok: false, error: 'Blog is running' });
+    const { posts, wordpress } = await publishedEvidence();
+    const seen = new Set();
+    const results = state.content_queue.filter(i => i.status === 'pending').map(item => {
+      const key = normalizeKeyword(item.keyword);
+      const duplicate = findDuplicate(item, state, posts, wordpress) || (seen.has(key) ? { reason: 'duplicate_keyword_in_queue' } : null);
+      seen.add(key);
+      if (duplicate && req.body.apply === true) {
+        item.status = 'failed'; item.failureReason = duplicate.reason;
+        item.dedupeEvidence = duplicate; item.updatedAt = nowIso();
+      }
+      return { id: item.id, date: item.date, keyword: item.keyword, duplicate };
+    });
+    if (req.body.apply === true) {
+      archiveDedupe(state);
+      pushHistory(state, { type: 'blog_queue_audit', engine: 'blog', status: 'completed',
+        message: `Quarantined ${results.filter(r => r.duplicate).length} duplicates` });
+      await persistQueueState(state);
+    }
+    res.json({ ok: true, applied: req.body.apply === true, publicationCount: wordpress.length, results });
+  } catch (error) { res.status(503).json({ ok: false, error: error.message }); }
 });
 
 app.post("/action/blog/queue/clear", async (req, res) => {
@@ -1350,17 +1438,29 @@ app.post("/action/blog/queue/clear", async (req, res) => {
 });
 
 app.post("/action/blog/queue/run-next", async (req, res) => {
-  const state = await readState();
-  if (!Array.isArray(state.content_queue) || state.content_queue.length === 0) {
-    return res.json({ ok: true, skipped: true, message: "Queue is empty" });
-  }
-  const todayStr = new Date().toISOString().split("T")[0];
-  const nextItem = state.content_queue.find(
-    item => item.status === "pending" && item.date <= todayStr
-  );
-  if (!nextItem) {
-    return res.json({ ok: true, skipped: true, message: "No pending items due today or earlier" });
-  }
+  let state, nextItem;
+  try {
+    state = await readState(true);
+    if (state.blog.status === 'running' || state.content_queue.some(i => i.status === 'running')) {
+      return res.status(409).json({ ok: false, error: 'Blog already running' });
+    }
+    const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok' }).format(new Date());
+    const due = state.content_queue.filter(i => i.status === 'pending' && i.date <= todayStr);
+    if (!due.length) return res.json({ ok: true, skipped: true, message: 'No pending items due today or earlier' });
+    const { posts, wordpress } = await publishedEvidence();
+    for (const item of due) {
+      const duplicate = findDuplicate(item, state, posts, wordpress);
+      if (!duplicate) { nextItem = item; break; }
+      item.status = 'failed'; item.failureReason = duplicate.reason;
+      item.dedupeEvidence = duplicate; item.updatedAt = nowIso();
+      pushHistory(state, { type: 'blog_queue_duplicate_blocked', engine: 'blog', status: 'failed',
+        keyword: item.keyword, message: duplicate.reason, evidence: duplicate });
+    }
+    if (!nextItem) {
+      await persistQueueState(state);
+      return res.json({ ok: true, skipped: true, message: 'All due items blocked as duplicates before WF1' });
+    }
+  } catch (error) { return res.status(503).json({ ok: false, error: error.message }); }
 
   const runId = makeId("blog");
   const callbackToken = signRunToken(runId);
@@ -1394,7 +1494,8 @@ app.post("/action/blog/queue/run-next", async (req, res) => {
     runId, keyword: nextItem.keyword,
     status: "running", message: `Queue: ${nextItem.date} item started`,
   });
-  await writeState(state);
+  try { await persistQueueState(state); }
+  catch (error) { return res.status(503).json({ ok: false, error: error.message }); }
 
   res.json({ ok: true, runId, item: nextItem });
 
@@ -2208,12 +2309,13 @@ async function runHealthMonitor() {
 
     const alertHash = [...issues].sort().join("|");
     if (alertHash === _lastAlertHash) return; // same as last alert, skip
-    _lastAlertHash = alertHash;
 
     const ts = new Date().toLocaleString("th-TH", { timeZone: "Asia/Bangkok" });
     const msg = [`🚨 Hub Health Alert — ${ts}`, ...issues].join("\n");
-    await sendTelegram(msg);
-    logEvent("warn", "health_monitor_alert", { issues });
+    if (await sendTelegram(msg)) {
+      _lastAlertHash = alertHash;
+      logEvent("warn", "health_monitor_alert", { issues });
+    }
   } catch (e) {
     logEvent("error", "health_monitor_error", { message: e.message });
   }
@@ -2224,7 +2326,7 @@ async function runHealthMonitor() {
 const boqRouter = require('./boq.routes');
 app.use('/api/boq', boqRouter);
 
-app.listen(PORT, HUB_HOST, async () => {
+if (require.main === module) app.listen(PORT, HUB_HOST, async () => {
   const state = await readState();
   await writeState(state);
   const validation = getEnvValidation();
@@ -2245,3 +2347,5 @@ app.listen(PORT, HUB_HOST, async () => {
   console.log(`Health monitor: every ${HEALTH_INTERVAL_MS / 60000} min → Telegram`);
 });
  
+
+module.exports = { app };

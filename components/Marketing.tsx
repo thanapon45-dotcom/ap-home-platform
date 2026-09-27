@@ -317,7 +317,7 @@ export default function Marketing() {
           site_url: "https://www.finnhouses.com",
           internal_links: [
             { url: "https://www.finnhouses.com/contact",   anchor: "ติดต่อ Finnhouses" },
-            { url: "https://www.finnhouses.com/service",   anchor: "บริการรับสร้างบ้าน" },
+            { url: "https://www.finnhouses.com/service",   anchor: "บริการของ Finnhouses" },
             { url: "https://www.finnhouses.com/blog",      anchor: "บทความสร้างบ้าน" },
             { url: "https://www.finnhouses.com/about",     anchor: "เกี่ยวกับ Finnhouses" },
           ],
@@ -359,7 +359,7 @@ export default function Marketing() {
     const shuffled = [...all].sort(() => Math.random() - 0.5).slice(0, 7);
     const INTERNAL_LINKS = [
       { url: "https://www.finnhouses.com/contact",   anchor: "ติดต่อ Finnhouses" },
-      { url: "https://www.finnhouses.com/service",   anchor: "บริการรับสร้างบ้าน" },
+      { url: "https://www.finnhouses.com/service",   anchor: "บริการของ Finnhouses" },
       { url: "https://www.finnhouses.com/blog",      anchor: "บทความสร้างบ้าน" },
       { url: "https://www.finnhouses.com/about",     anchor: "เกี่ยวกับ Finnhouses" },
     ];
@@ -392,7 +392,7 @@ export default function Marketing() {
       });
       const j = await safeJson(r);
       if (!j.ok) throw new Error(j.error ?? "Queue build failed");
-      showToast(`📅 Queue ${j.count} วัน สร้างสำเร็จ`, "success");
+      showToast(`📅 Queue ${j.count} วัน สร้างสำเร็จ${j.rejected?.length ? ` — ข้ามหัวข้อซ้ำ ${j.rejected.length} รายการ` : ""}`, "success");
       await poll();
     } catch (e: unknown) {
       showToast(e instanceof Error ? e.message : "Error", "error");

@@ -37,7 +37,7 @@ export class TelegramNotifier implements INotifier {
 
   async sendStructured(msg: NotifierMessage): Promise<void> {
     const prefix = msg.level === "alert" ? "🚨" : msg.level === "warn" ? "⚠️" : "ℹ️";
-    const text = `${prefix} *${msg.title}*\n${msg.body}`;
+    const text = `${prefix} ${msg.title}\n${msg.body}`;
     await this.postWithRetry(text);
   }
 
@@ -60,7 +60,6 @@ export class TelegramNotifier implements INotifier {
       const payload = JSON.stringify({
         chat_id: this.chatId,
         text,
-        parse_mode: "Markdown",
       });
 
       const options: https.RequestOptions = {
@@ -90,6 +89,7 @@ export class TelegramNotifier implements INotifier {
         });
       });
 
+      req.setTimeout(10_000, () => req.destroy(new Error("Telegram request timed out")));
       req.on("error", (err: Error) => {
         reject(new AppError("TELEGRAM_NETWORK_ERROR", err.message));
       });

@@ -109,10 +109,9 @@ export class HealthMonitor {
       return;
     }
 
-    this.lastAlertAt[key] = now;
-
     try {
       await this.notifier.sendStructured({ title, body, level });
+      this.lastAlertAt[key] = now;
       logger.warn("[HealthMonitor] alert sent", { key, title });
     } catch (err) {
       logger.error("[HealthMonitor] failed to send alert", { key, error: String(err) });

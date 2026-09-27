@@ -12,10 +12,11 @@ export async function POST(req: NextRequest) {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-hub-token": process.env.HUB_SECRET ?? "" },
       body: JSON.stringify(body),
-      signal: AbortSignal.timeout(8000),
+      signal: AbortSignal.timeout(60000),
     });
     if (!r.ok) {
-      return NextResponse.json({ ok: false, error: `Hub returned ${r.status}` }, { status: r.status });
+      const failure = await r.json().catch(() => ({ ok: false, error: `Hub returned ${r.status}` }));
+      return NextResponse.json(failure, { status: r.status });
     }
     const data = await r.json().catch(() => ({ ok: false, error: "Hub ตอบกลับผิดรูปแบบ" }));
     return NextResponse.json(data);
