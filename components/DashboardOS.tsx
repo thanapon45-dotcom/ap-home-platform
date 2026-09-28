@@ -453,9 +453,9 @@ export default function DashboardOS() {
   });
 
   return (
-    <div style={{ padding: 24, display: "flex", flexDirection: "column", gap: 20 }}>
+    <div className="dashboard-shell" style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       {/* TAB BAR */}
-      <div style={{ display: "flex", gap: 4, borderBottom: "1px solid rgba(255,255,255,.07)", paddingBottom: 0 }}>
+      <div className="dashboard-tabs" style={{ paddingBottom: 0 }}>
         <button style={TAB_STYLE(activeTab === "overview")} onClick={() => setActiveTab("overview")}>
           📊 Overview
         </button>
@@ -522,7 +522,7 @@ export default function DashboardOS() {
             </div>
           </div>
         </div>
-        <div style={{ marginTop: 20, display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12 }}>
+        <div className="dashboard-status-grid" style={{ marginTop: 20, display: "grid", gap: 12 }}>
           {[
             { label: "FB Engine",   value: fb?.status  ?? "—", color: "#22d3ee" },
             { label: "Blog Engine", value: blog?.status ?? "—", color: "#10b981" },
@@ -538,7 +538,7 @@ export default function DashboardOS() {
       </div>
 
       {/* ENGINES */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+      <div className="dashboard-two-col" style={{ display: "grid", gap: 20 }}>
         <EngineCard
           title="FB Content Engine" subtitle="Web App / VS Code"
           statusText={fb?.status ?? "—"}
@@ -586,13 +586,13 @@ export default function DashboardOS() {
       </div>
 
       {/* BIZ CARDS — เฉพาะ 2 หน่วยที่รับ lead ผ่าน CRM (consult/list); Fix & Flip ดูที่ "/deals" */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 20 }}>
+      <div className="dashboard-two-col" style={{ display: "grid", gap: 20 }}>
         <BizCard id="consult" count={leads.byBusiness.consult} />
         <BizCard id="list"    count={leads.byBusiness.list}    />
       </div>
 
       {/* ALERTS + CONNECTIONS */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+      <div className="dashboard-two-col" style={{ display: "grid", gap: 20 }}>
         <div style={{ background: "rgba(15,20,40,.85)", border: "1px solid rgba(255,255,255,.06)", borderRadius: 20, padding: 24 }}>
           <div style={{ fontSize: 11, letterSpacing: ".18em", textTransform: "uppercase", color: "#f43f5e", fontWeight: 600, marginBottom: 4 }}>ALERTS</div>
           <div style={{ fontSize: 16, fontWeight: 700, color: "#f1f5f9", marginBottom: 16 }}>สิ่งที่ต้องรีบดู</div>
