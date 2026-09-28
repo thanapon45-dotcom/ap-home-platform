@@ -20,7 +20,7 @@ export default function Sidebar() {
   const path = usePathname();
 
   return (
-    <aside style={{
+    <aside className="platform-sidebar" style={{
       width: "var(--sidebar-w)",
       minHeight: "100vh",
       background: "rgba(8,12,28,0.95)",
@@ -36,11 +36,11 @@ export default function Sidebar() {
       backdropFilter: "blur(12px)",
     }}>
       {/* Logo */}
-      <div style={{ padding: "8px 12px 24px" }}>
-        <div style={{ fontSize: 11, letterSpacing: ".25em", textTransform: "uppercase", color: "#22d3ee", fontWeight: 700 }}>
+      <div className="platform-sidebar-logo" style={{ padding: "8px 12px 24px" }}>
+        <div className="platform-sidebar-logo-name" style={{ fontSize: 11, letterSpacing: ".25em", textTransform: "uppercase", color: "#22d3ee", fontWeight: 700 }}>
           Finnhouses
         </div>
-        <div style={{ fontSize: 14, fontWeight: 800, color: "#f1f5f9", marginTop: 2, fontFamily: "'DM Serif Display', serif" }}>
+        <div className="platform-sidebar-logo-sub" style={{ fontSize: 14, fontWeight: 800, color: "#f1f5f9", marginTop: 2, fontFamily: "'DM Serif Display', serif" }}>
           Platform
         </div>
       </div>
@@ -51,7 +51,7 @@ export default function Sidebar() {
           const active = path.startsWith(href);
           return (
             <Link key={href} href={href} style={{ textDecoration: "none" }}>
-              <div style={{
+              <div className="platform-nav-item" style={{
                 display: "flex",
                 alignItems: "center",
                 gap: 10,
@@ -63,7 +63,7 @@ export default function Sidebar() {
                 cursor: "pointer",
               }}>
                 <span style={{ fontSize: 18, flexShrink: 0 }}>{icon}</span>
-                <div>
+                <div className="platform-nav-copy">
                   <div style={{
                     fontSize: 13, fontWeight: 600,
                     color: active ? "#22d3ee" : "#cbd5e1",
@@ -77,7 +77,7 @@ export default function Sidebar() {
       </nav>
 
       {/* Footer */}
-      <div style={{ padding: "12px", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+      <div className="platform-sidebar-footer" style={{ padding: "12px", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
         <div style={{ fontSize: 10, color: "#334155", textAlign: "center" }}>
           Finnhouses<br/>v1.0.0
         </div>
