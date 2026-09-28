@@ -37,6 +37,11 @@ const SYSTEM_PROMPT = `คุณคือ AP-Home Assistant ผู้ช่ว�
 หน้าที่:
 - ตอบคำถามเกี่ยวกับสถานะ platform, leads, market intel, QC, Deals และภาพรวมข้ามโมดูลโดยดึงข้อมูลจริงผ่าน tools เท่านั้น ห้ามเดาตัวเลขหรือสถานะ
 - สำหรับคำถามที่ต้องใช้บริบทหลายฝ่าย ให้เรียก get_brains_context ก่อน แล้วจึงเจาะ tool เฉพาะโมดูลเมื่อจำเป็น
+- ทุกครั้งที่ถามสถานะ Blog Runner, คิว keyword, คิวถัดไป หรือคิวในวันข้างหน้า (รวมคำถามต่อเนื่อง) ต้องเรียก get_dashboard_summary ใหม่ในรอบคำถามนั้น ห้ามใช้ผล tool เก่าหรือคำตอบก่อนหน้าแทนข้อมูลปัจจุบัน
+- คิว Blog ใช้ content_queue จาก Hub /api/state ซึ่งเป็นแหล่งเดียวกับหน้า Blog Runner อ่าน keyword/date/slot/status จากรายการจริง และใช้ today_bangkok สำหรับคำว่า วันนี้/พรุ่งนี้/อีก N วัน ห้ามถือว่าเลขลำดับรายการคือจำนวนวันจากวันนี้
+- blog_queue_status=unavailable หรือ tool error หมายถึงตรวจคิวไม่ได้ ไม่ใช่คิวว่าง; empty เท่านั้นคืออ่านสำเร็จและไม่มีรายการ blog_queue_length คือจำนวนรายการทั้งหมด ไม่ใช่จำนวนที่รอ ให้ดู status=pending แยกจาก running/published/failed
+- ระบบมี Content Queue ที่บันทึกวันล่วงหน้าได้ คิวว่างหรือคุณไม่มี tool สั่งตั้งเวลาไม่ได้แปลว่าระบบไม่มี schedule; automatic_trigger_status=unverified หมายถึงยังไม่ได้ตรวจว่า n8n Schedule Trigger เปิดใช้งานอยู่ ห้ามรับรองว่าจะรันอัตโนมัติ
+- Blog status=failed จากการไม่รับ terminal callback เป็นสถานะที่ Hub รายงาน ไม่ใช่หลักฐานว่า WordPress ไม่ได้เผยแพร่ ห้ามสรุปผลเผยแพร่หรือสั่งรันซ้ำจากสถานะนี้อย่างเดียว
 - สำหรับ Land Analyzer / โครงการสร้างบ้านขาย / งบที่บันทึกในโปรเจกต์ ให้เรียก get_brains_context และอ่าน land_analysis เท่านั้น: projects คือ Build-to-Sell แยกจาก investment.deals ที่เป็น Fix & Flip ห้ามรวมเป็นดีลเดียวกัน งบและ ROI ใน projects เป็นประมาณการที่ผู้ใช้บันทึก ไม่ใช่ต้นทุนจริงหรือราคาตลาดที่ยืนยันแล้ว ถ้า status=unavailable ให้แจ้งว่าดึงข้อมูลไม่ได้ ไม่ใช่ไม่มีโครงการ หน้า /budget เดิมปิดแล้ว
 - สั่งงาน (run_fb_queue_next, run_blog_now) ได้เมื่อผู้ใช้ขอ แต่ระบบจะบังคับให้ผู้ใช้กด confirm เองก่อน execute จริงเสมอ — คุณแค่เรียก tool ตามปกติ ไม่ต้องกังวลเรื่อง gate
 
@@ -53,7 +58,7 @@ const TOOLS = [
   {
     name: "get_dashboard_summary",
     description:
-      "ดึงสถานะรวมของ Hub ผ่าน GET /api/state — FB engine, Blog engine, ความยาว queue, error ล่าสุด",
+      "ดึงสถานะสดของ Hub ผ่าน GET /api/state — FB/Blog engine และ content_queue จริงพร้อม keyword/date/slot/status, blog_queue_status, จำนวนรายการ และวันที่ไทย ต้องเรียกใหม่ทุกครั้งที่ถามคิวหรือสถานะ Blog รวมคำถามต่อเนื่อง; unavailable ไม่ใช่คิวว่าง ไม่ยืนยันสถานะ n8n Schedule Trigger",
     input_schema: { type: "object", properties: {} },
   },
   {
@@ -197,11 +202,41 @@ async function executeTool(name: string, input: Record<string, unknown>) {
   switch (name) {
     case "get_dashboard_summary": {
       const state = await hubGet("/api/state");
+      if (!state || typeof state !== "object" || Array.isArray(state) || state.error || state.ok === false) {
+        throw new Error("Hub state unavailable; cannot verify the Blog queue");
+      }
+      // Marketing.tsx reads this same field. Missing/malformed data is unknown, not zero.
+      const queueAvailable = Array.isArray(state.content_queue) && state.content_queue.every(
+        (item: unknown) => {
+          if (!item || typeof item !== "object" || Array.isArray(item)) return false;
+          const row = item as Record<string, unknown>;
+          return typeof row.id === "string" && typeof row.keyword === "string" &&
+            typeof row.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(row.date) &&
+            (row.slot === "morning" || row.slot === "evening") && typeof row.status === "string";
+        }
+      );
+      // Only expose queue fields needed to answer questions, not arbitrary payload metadata.
+      const queue = queueAvailable ? state.content_queue.map((item: Record<string, unknown>) => ({
+        id: item.id, keyword: item.keyword, date: item.date, slot: item.slot,
+        status: item.status, category: item.category ?? null,
+        runId: item.runId ?? null, postUrl: item.postUrl ?? null,
+      })) : null;
+      const fetchedAt = new Date();
       return {
         fb: state.fb,
         blog: state.blog,
         fb_queue_length: Array.isArray(state.fb_queue) ? state.fb_queue.length : 0,
-        blog_queue_length: Array.isArray(state.blog_queue) ? state.blog_queue.length : 0,
+        blog_queue_length: queue === null ? null : queue.length,
+        blog_queue_status: queue === null ? "unavailable" : queue.length === 0 ? "empty" : "available",
+        blog_queue_error: queue === null ? "Hub content_queue is missing or malformed; queue contents are unknown" : null,
+        content_queue: queue,
+        blog_queue_source: "Hub GET /api/state -> content_queue (same as Blog Runner)",
+        automatic_trigger_status: "unverified",
+        fetched_at: fetchedAt.toISOString(),
+        timezone: "Asia/Bangkok",
+        today_bangkok: new Intl.DateTimeFormat("en-CA", {
+          timeZone: "Asia/Bangkok", year: "numeric", month: "2-digit", day: "2-digit",
+        }).format(fetchedAt),
         system: state.system,
       };
     }
