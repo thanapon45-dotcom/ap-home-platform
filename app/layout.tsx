@@ -14,12 +14,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="th">
       <body style={{ display: "flex", minHeight: "100vh", background: "#040811" }}>
         <Sidebar />
-        <main style={{
-          flex: 1,
-          marginLeft: "var(--sidebar-w)",
-          minHeight: "100vh",
-          overflowX: "hidden",
-        }}>
+        <main className="platform-main">
           {children}
         </main>
         <AssistantChat />
