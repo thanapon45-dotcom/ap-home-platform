@@ -43,6 +43,7 @@ const SYSTEM_PROMPT = `คุณคือ AP-Home Assistant ผู้ช่ว�
 กฎการตอบ:
 - ภาษาไทย กระชับ ตรงประเด็น ไม่ใส่ header ยาวเกินจำเป็น
 - ถ้า tool คืนค่าว่างเปล่าหรือ error ให้บอกตามจริง เช่น "ไม่พบ lead ที่ตรงเงื่อนไข" ห้าม hallucinate
+- สำหรับ Blog queue ให้ใช้ข้อมูลจาก content_queue เท่านั้น ถ้า queue_read_status="unavailable" ต้องตอบว่า "ตรวจข้อมูลคิวไม่ได้" ห้ามตีความเป็นคิวว่างหรือจำนวน 0; ถ้า queue_read_status="ok" และ content_queue_length=0 จึงสรุปได้ว่าคิวว่าง
 - ก่อนสั่ง run_blog_now ต้องมี keyword ชัดเจน ถ้าผู้ใช้ไม่ได้ระบุ ให้ถามก่อนเรียก tool
 - ⚠️ ห้ามตอบด้วยข้อมูล/สมมติฐานที่มาจากความรู้ทั่วไปนอกระบบเด็ดขาด (เช่น เปอร์เซ็นต์ค่าธรรมเนียมโอน, ค่าคอมมิชชั่นทั่วไป, ราคาตลาดที่ไม่ได้มาจาก get_market_intel_recent) แม้จะดูสมเหตุสมผลก็ตาม — ถ้าคำนวณอะไรต้องใช้ตัวเลขจาก tools หรือจากที่ผู้ใช้ระบุมาเองในข้อความเท่านั้น ถ้าขาดตัวเลขที่จำเป็น ให้ถามผู้ใช้ก่อน อย่าเติมให้เองจากความรู้ทั่วไป และห้ามนำเสนอ deal ที่ผู้ใช้พิมพ์มาเองราวกับเป็นข้อมูลที่ยืนยันแล้วในระบบ — ต้องบอกชัดว่า "ตัวเลขนี้มาจากที่คุณระบุ ยังไม่มีบันทึกใน /deals จริง"`;
 
@@ -53,7 +54,7 @@ const TOOLS = [
   {
     name: "get_dashboard_summary",
     description:
-      "ดึงสถานะรวมของ Hub ผ่าน GET /api/state — FB engine, Blog engine, ความยาว queue, error ล่าสุด",
+      "ดึงสถานะรวมของ Hub ผ่าน GET /api/state — FB engine, Blog engine และ Blog queue จาก content_queue พร้อม keyword/date/status. แยกคิวว่างออกจากกรณีอ่าน queue ไม่ได้",
     input_schema: { type: "object", properties: {} },
   },
   {
@@ -197,11 +198,36 @@ async function executeTool(name: string, input: Record<string, unknown>) {
   switch (name) {
     case "get_dashboard_summary": {
       const state = await hubGet("/api/state");
+
+      // Blog Runner's source of truth is content_queue. Do not silently turn a
+      // missing/malformed queue into 0: "empty" and "unavailable" mean different things.
+      const hasContentQueue = Object.prototype.hasOwnProperty.call(state, "content_queue");
+      const contentQueueValid = hasContentQueue && Array.isArray(state.content_queue);
+      const contentQueue = contentQueueValid
+        ? state.content_queue.map((item: any) => ({
+            id: item?.id ?? null,
+            date: item?.date ?? null,
+            slot: item?.slot ?? null,
+            keyword: item?.keyword ?? null,
+            status: item?.status ?? null,
+            category: item?.category ?? null,
+          }))
+        : null;
+
       return {
         fb: state.fb,
         blog: state.blog,
-        fb_queue_length: Array.isArray(state.fb_queue) ? state.fb_queue.length : 0,
-        blog_queue_length: Array.isArray(state.blog_queue) ? state.blog_queue.length : 0,
+        fb_queue_length: Array.isArray(state.fb_queue) ? state.fb_queue.length : null,
+        queue_read_status: contentQueueValid ? "ok" : "unavailable",
+        queue_read_error: contentQueueValid
+          ? null
+          : hasContentQueue
+            ? "content_queue is not an array"
+            : "content_queue field is missing from Hub state",
+        content_queue_length: contentQueueValid ? contentQueue.length : null,
+        // Compatibility field for existing Assistant wording; sourced from content_queue.
+        blog_queue_length: contentQueueValid ? contentQueue.length : null,
+        content_queue: contentQueue,
         system: state.system,
       };
     }
