@@ -68,7 +68,7 @@ body {
 .dashboard-status-grid { grid-template-columns: repeat(4,minmax(0,1fr)); }
 .dashboard-two-col { grid-template-columns: repeat(2,minmax(0,1fr)); }
 
-@media (min-width: 768px) and (max-width: 1023px) {
+@media (min-width: 768px) and (max-width: 1279px) {
   :root { --sidebar-w: 76px; }
   .platform-sidebar { padding-left: 8px !important; padding-right: 8px !important; }
   .platform-sidebar-logo { padding-left: 4px !important; padding-right: 4px !important; text-align: center; }
