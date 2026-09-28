@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
+import { keywordToSlug } from "../lib/blogSlug";
 
 // Use Vercel server-side routes to avoid CORS/browser→Railway issues
 const HUB = "ap-home-platform-production.up.railway.app";
@@ -347,7 +348,17 @@ export default function Marketing() {
   }
 
   // ── Content Queue ─────────────────────────────────────────────────────────
-  function generateQueueItems(): QueueItem[] {
+  // Fetch slugs already published on WordPress (via server route). null = check failed.
+  async function fetchPublishedSlugs(): Promise<Set<string> | null> {
+    try {
+      const r = await fetch("/api/blog/published-slugs", { signal: AbortSignal.timeout(12000) });
+      const j = await r.json();
+      if (!r.ok || !j.ok || !Array.isArray(j.slugs)) return null;
+      return new Set<string>(j.slugs);
+    } catch { return null; }
+  }
+
+  function generateQueueItems(publishedSlugs: Set<string> | null) {
     // Collect all keywords from all pools
     const all: { keyword: string; category: number; visual_hint: string }[] = [];
     Object.entries(KEYWORD_POOLS).forEach(([catId, cat]) => {
@@ -355,15 +366,20 @@ export default function Marketing() {
         keyword: kw, category: Number(catId), visual_hint: "contemporary",
       }));
     });
+    // Drop keywords whose slug is already published (skip filter if WP check failed)
+    const fresh = publishedSlugs
+      ? all.filter(x => !publishedSlugs.has(keywordToSlug(x.keyword)))
+      : all;
+    const skipped = all.length - fresh.length;
     // Shuffle and pick 7
-    const shuffled = [...all].sort(() => Math.random() - 0.5).slice(0, 7);
+    const shuffled = [...fresh].sort(() => Math.random() - 0.5).slice(0, 7);
     const INTERNAL_LINKS = [
       { url: "https://www.finnhouses.com/contact",   anchor: "ติดต่อ Finnhouses" },
       { url: "https://www.finnhouses.com/service",   anchor: "บริการของ Finnhouses" },
       { url: "https://www.finnhouses.com/blog",      anchor: "บทความสร้างบ้าน" },
       { url: "https://www.finnhouses.com/about",     anchor: "เกี่ยวกับ Finnhouses" },
     ];
-    return shuffled.map((item, i) => {
+    const items = shuffled.map((item, i) => {
       const d = new Date();
       d.setDate(d.getDate() + 1 + i); // start tomorrow
       return {
@@ -379,12 +395,17 @@ export default function Marketing() {
         internal_links: INTERNAL_LINKS,
       };
     });
+    return { items, skipped, remaining: fresh.length };
   }
 
   async function handleBuildQueue() {
     try {
       setQueueBusy(true);
-      const items = generateQueueItems();
+      const publishedSlugs = await fetchPublishedSlugs();
+      const { items, skipped, remaining } = generateQueueItems(publishedSlugs);
+      if (items.length === 0) {
+        throw new Error("keyword ทุกตัวใน pool เคย publish แล้ว — เพิ่ม keyword ใหม่ใน KEYWORD_POOLS ก่อน");
+      }
       const r = await fetch("/api/blog/queue/build", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -392,7 +413,11 @@ export default function Marketing() {
       });
       const j = await safeJson(r);
       if (!j.ok) throw new Error(j.error ?? "Queue build failed");
-      showToast(`📅 Queue ${j.count} วัน สร้างสำเร็จ${j.rejected?.length ? ` — ข้ามหัวข้อซ้ำ ${j.rejected.length} รายการ` : ""}`, "success");
+      const note =
+        publishedSlugs === null ? " ⚠️ เช็ค WordPress ไม่ได้ — ไม่ได้กรอง keyword ซ้ำ"
+        : skipped > 0 ? ` (ข้าม ${skipped} keyword ที่เคย publish แล้ว, เหลือใน pool ${remaining})`
+        : "";
+      showToast(`📅 Queue ${j.count} วัน สร้างสำเร็จ${note}${j.rejected?.length ? ` — ข้ามหัวข้อซ้ำ ${j.rejected.length} รายการ` : ""}`, publishedSlugs === null ? "error" : "success");
       await poll();
     } catch (e: unknown) {
       showToast(e instanceof Error ? e.message : "Error", "error");
