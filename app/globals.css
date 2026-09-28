@@ -44,3 +44,49 @@ body {
 
 /* Leaflet overrides */
 .leaflet-container { border-radius: 14px; }
+
+
+/* Platform responsive shell */
+.platform-main {
+  flex: 1;
+  margin-left: var(--sidebar-w);
+  min-width: 0;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+.platform-sidebar { width: var(--sidebar-w); }
+.platform-nav-copy { min-width: 0; }
+.dashboard-shell { padding: 24px; }
+.dashboard-tabs {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  border-bottom: 1px solid rgba(255,255,255,.07);
+}
+.dashboard-tabs > button { flex: 0 0 auto; white-space: nowrap; }
+.dashboard-status-grid { grid-template-columns: repeat(4,minmax(0,1fr)); }
+.dashboard-two-col { grid-template-columns: repeat(2,minmax(0,1fr)); }
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  :root { --sidebar-w: 76px; }
+  .platform-sidebar { padding-left: 8px !important; padding-right: 8px !important; }
+  .platform-sidebar-logo { padding-left: 4px !important; padding-right: 4px !important; text-align: center; }
+  .platform-sidebar-logo-name { font-size: 8px !important; letter-spacing: .08em !important; }
+  .platform-sidebar-logo-sub { display: none; }
+  .platform-nav-item { justify-content: center; padding: 11px 8px !important; }
+  .platform-nav-copy { display: none; }
+  .platform-sidebar-footer { display: none; }
+  .dashboard-shell { padding: 16px; }
+  .dashboard-status-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .dashboard-two-col { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 767px) {
+  :root { --sidebar-w: 0px; }
+  .platform-sidebar { display: none !important; }
+  .platform-main { margin-left: 0; }
+  .dashboard-shell { padding: 12px; }
+  .dashboard-status-grid,
+  .dashboard-two-col { grid-template-columns: 1fr; }
+}
