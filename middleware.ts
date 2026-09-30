@@ -29,10 +29,10 @@ export async function middleware(req: NextRequest) {
 
   const enforce = process.env.AUTH_ENFORCE === "true";
   const secret = process.env.SESSION_SECRET;
-  const serviceToken = process.env.SERVICE_TOKEN;
+  const serviceToken = (process.env.SERVICE_TOKEN ?? "").trim();
 
   // 2. machine caller
-  const presented = req.headers.get("x-service-token");
+  const presented = req.headers.get("x-service-token")?.trim();
   if (
     presented &&
     serviceToken &&
@@ -63,6 +63,9 @@ export async function middleware(req: NextRequest) {
       method: req.method,
       path: pathname,
       reason,
+      // lengths only (never the values) to diagnose token mismatches
+      presentedLen: presented ? presented.length : undefined,
+      expectedLen: presented ? serviceToken.length : undefined,
       ua: (req.headers.get("user-agent") ?? "").slice(0, 80),
     })
   );
