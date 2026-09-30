@@ -48,7 +48,11 @@ export async function middleware(req: NextRequest) {
 
   // 4. would deny
   const reason = presented
-    ? "service_token_rejected_or_route_not_allowed"
+    ? !serviceToken
+      ? "service_token_missing_server"
+      : MACHINE_ALLOWED.includes(pathname)
+        ? "service_token_mismatch"
+        : "service_token_route_not_allowed"
     : cookie
       ? "invalid_or_expired_session"
       : "no_credentials";
