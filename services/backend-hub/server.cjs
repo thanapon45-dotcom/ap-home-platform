@@ -2139,7 +2139,7 @@ async function qcCallGemini({ submitted, refs, caption, stage, siteCode }) {
   parts.push({ text: "ภาพงานที่ต้องตรวจ:" });
   parts.push({ inline_data: { mime_type: submitted.mimeType, data: submitted.base64 } });
 
-  const model = process.env.GEMINI_QC_MODEL || "gemini-2.5-flash";
+  const model = process.env.GEMINI_QC_MODEL || "gemini-3.8-flash";
   const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(process.env.GEMINI_API_KEY)}`, {
     method: "POST", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
