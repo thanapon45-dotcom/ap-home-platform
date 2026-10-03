@@ -38,6 +38,7 @@ type Row = {
   human_feedback_at: string | null;
   human_feedback_reason: string | null;
   ai_model: string | null;
+  engine_version: string | null;
 };
 
 export async function GET() {
@@ -46,7 +47,7 @@ export async function GET() {
   }
   try {
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/qc_inspections?select=id,created_at,severity,pass,human_feedback,human_feedback_at,human_feedback_reason,ai_model&order=created_at.desc`,
+      `${SUPABASE_URL}/rest/v1/qc_inspections?select=id,created_at,severity,pass,human_feedback,human_feedback_at,human_feedback_reason,ai_model,engine_version&order=created_at.desc`,
       { headers: headers() }
     );
     const rows = (await res.json()) as Row[];
@@ -80,7 +81,11 @@ export async function GET() {
 
     // Accuracy v2: keep the currently deployed Gemini engine separate from
     // historical GPT-era results so the headline cannot hide regressions.
-    const currentRows = rows.filter(r => r.ai_model === "gemini:gemini-3.8-flash");
+    const currentEngineVersion = "qc-v2.1-deterministic-refbudget-feedback";
+    const versionedCurrentRows = rows.filter(r => r.engine_version === currentEngineVersion);
+    const currentRows = versionedCurrentRows.length
+      ? versionedCurrentRows
+      : rows.filter(r => r.ai_model === "gemini:gemini-3.8-flash");
     const currentFeedback = currentRows.filter(r => !!r.human_feedback);
     const currentCorrect = currentFeedback.filter(r => r.human_feedback === "correct").length;
     const currentIncorrect = currentFeedback.filter(r => r.human_feedback === "incorrect").length;
@@ -124,6 +129,7 @@ export async function GET() {
         threshold: RELIABILITY_THRESHOLD,
         current_engine: {
           model: "gemini:gemini-3.8-flash",
+          engine_version: versionedCurrentRows.length ? currentEngineVersion : null,
           total: currentRows.length,
           with_feedback: currentFeedback.length,
           correct: currentCorrect,
