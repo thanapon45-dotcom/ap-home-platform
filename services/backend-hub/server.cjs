@@ -1939,8 +1939,51 @@ C) ก่อนเทคอนกรีต (Pre-pour — เห็นเหล�
 7. ถ้า defect severity เป็น high หรือ critical อย่างน้อย 1 รายการ → pass=false
 8. ให้ประโยชน์ของข้อสงสัยแก่งานที่อยู่ระหว่างก่อสร้าง — ถ้าไม่แน่ใจว่า defect จริง ให้เป็นปกติ
 
+=== Evidence Gate (สำคัญ) ===
+- ห้ามใช้ภาพนิ่งยืนยันสิ่งที่ต้องอาศัย measurement, functional test, drawing หรือ test report
+- ถ้าหลักฐานไม่พอ: ห้ามสร้าง defect จากการคาดเดา และตั้ง review_required=true
+- ระบุ evidence_gaps ว่าต้องการหลักฐานอะไรเพิ่มอย่างสั้นและเฉพาะเจาะจง
+- confidence ต้องสะท้อนเฉพาะสิ่งที่มองเห็น/พิสูจน์ได้จริง
+- การที่มองไม่เห็น defect ไม่ได้แปลว่าผ่านเกณฑ์ที่ภาพไม่สามารถพิสูจน์ได้
+
 Schema ที่ต้องตอบ:
-{"pass":boolean,"severity":"none|low|medium|high|critical","confidence":0.0-1.0,"ai_summary":"1-2 ประโยคภาษาไทย สรุปคุณภาพงาน","defects":[{"category":"concrete","description":"...","severity":"...","location_hint":"...","suggested_action":"..."}]}`;
+{"pass":boolean,"severity":"none|low|medium|high|critical","confidence":0.0-1.0,"review_required":boolean,"evidence_gaps":["..."],"rules_applied":["RULE-ID"],"ai_summary":"1-2 ประโยคภาษาไทย สรุปคุณภาพงาน","defects":[{"category":"concrete","description":"...","severity":"...","location_hint":"...","suggested_action":"..."}]}`;
+
+const QC_EVIDENCE_RULES = {
+  electrical: [
+    { id: "ELEC-V01", evidence: "visual", rule: "สายไฟเหนือฝ้าเพดานต้องร้อยท่อและจัดแนวเรียบร้อย" },
+    { id: "ELEC-V02", evidence: "visual", rule: "จุดต่อสายที่ junction ต้องใส่ Wire nut ครบ เมื่อจุดต่อนั้นมองเห็นได้ชัด" },
+    { id: "ELEC-V03", evidence: "visual", rule: "วงจรต้องมีสติกเกอร์/ป้ายกำกับ เมื่อบริเวณดังกล่าวอยู่ในภาพ" },
+    { id: "ELEC-T01", evidence: "functional_test", rule: "การมีกระแสไฟและการตัดการช็อต ต้องมีผลการทดสอบ ไม่อนุมานจากภาพนิ่ง" },
+    { id: "ELEC-D01", evidence: "visual_or_document", rule: "การเชื่อมสาย G กับ Ground Bar และ Ground Rod ต้องเห็นเส้นทาง/จุดเชื่อมเพียงพอ" }
+  ],
+  plumbing: [
+    { id: "PLMB-V01", evidence: "visual", rule: "การยึดท่อน้ำทิ้งและ Hanger ประเมินได้เมื่อเห็นแนวท่อและจุดยึดเพียงพอ" },
+    { id: "PLMB-D01", evidence: "drawing_or_measurement", rule: "Slope ท่อน้ำทิ้ง/พื้นตามแบบ ต้องมีแบบหรือหลักฐานการวัด" },
+    { id: "PLMB-T01", evidence: "functional_test", rule: "Pressure Test น้ำดี 100 psi ต้องเห็น gauge/ผลทดสอบที่ยืนยัน 100 psi" },
+    { id: "PLMB-T02", evidence: "functional_test", rule: "การรั่วซึมท่อน้ำทิ้งโดยขังน้ำ ต้องมีหลักฐานขณะทดสอบ/ผลทดสอบ" },
+    { id: "PLMB-M01", evidence: "measurement", rule: "Sleeve ท่อส้วม 30–31 ซม. ต้องมี scale/measurement ที่อ่านค่าได้" },
+    { id: "PLMB-T03", evidence: "functional_test", rule: "การระบายน้ำและการไหลของก๊อก/สุขภัณฑ์ ต้องมีหลักฐานการทดสอบการไหล" }
+  ],
+  concrete: [
+    { id: "CONC-V01", evidence: "visual", rule: "โพรง/honeycomb หรือคอนกรีตหลุดร่อนให้ตัดสินเฉพาะเมื่อเห็นตำหนิชัดเจน" },
+    { id: "CONC-M01", evidence: "measurement", rule: "ระยะ cover เหล็กที่เป็นค่าตัวเลขต้องมี scale/measurement ที่อ่านได้" },
+    { id: "CONC-T01", evidence: "test_report", rule: "กำลังคอนกรีตอายุ 28 วันเป็นผลทดสอบวัสดุ ไม่สามารถยืนยันจากภาพถ่ายผิวคอนกรีต" },
+    { id: "CONC-D01", evidence: "drawing_or_measurement", rule: "ค่าการแอ่น/ระยะตามแบบต้องมีแบบและ/หรือผลวัด" }
+  ],
+  level: [{ id: "LVL-M01", evidence: "measurement", rule: "ความได้ระดับ/ดิ่งที่ต้องการค่าความคลาดเคลื่อน ต้องเห็นเครื่องมือหรือผลวัด" }],
+  plaster: [
+    { id: "PLAS-V01", evidence: "visual", rule: "รอยร้าว ผิวฉาบ และความเรียบร้อยประเมินได้จากภาพเมื่อรายละเอียดชัด" },
+    { id: "PLAS-M01", evidence: "measurement", rule: "ความดิ่ง/ฉากเชิงตัวเลขต้องมีเครื่องมือหรือผลวัด" }
+  ],
+  finishing: [
+    { id: "FIN-V01", evidence: "visual", rule: "แนวติดตั้ง รอยต่อ และความเรียบร้อยตัดสินได้เฉพาะส่วนที่มองเห็นชัด" },
+    { id: "FIN-D01", evidence: "drawing_or_measurement", rule: "Slope/ระยะ/ตำแหน่งที่อ้างว่าตามแบบต้องมีแบบหรือ measurement ประกอบ" }
+  ],
+  paint: [{ id: "PAINT-V01", evidence: "visual", rule: "ความสม่ำเสมอ รอยแปรง ขอบสี และตำหนิผิวประเมินได้เมื่อแสงและความละเอียดภาพเพียงพอ" }]
+};
+
+function qcEvidenceRules(category) { return QC_EVIDENCE_RULES[category] || []; }
 
 function qcExtractSiteCode(caption = "") {
   const m = caption.match(/\b[A-Z]{2,4}-\d{2,4}\b/);
@@ -2056,7 +2099,7 @@ function qcNormalizeAiResult(parsed, meta = {}) {
   parsed.severity   = parsed.severity || "none";
   parsed.confidence = typeof parsed.confidence === "number" ? parsed.confidence : 0.7;
   parsed.ai_summary = parsed.ai_summary || "";
-  parsed.defects    = Array.isArray(parsed.defects) ? parsed.defects.slice(0, 5) : [];
+  parsed.defects    = Array.isArray(parsed.defects) ? parsed.defects.slice(0, 5) : [];\n  parsed.review_required = !!parsed.review_required;\n  parsed.evidence_gaps = Array.isArray(parsed.evidence_gaps) ? parsed.evidence_gaps.slice(0, 5).map(String) : [];\n  parsed.rules_applied = Array.isArray(parsed.rules_applied) ? parsed.rules_applied.slice(0, 10).map(String) : [];
   return { ...parsed, ...meta };
 }
 
