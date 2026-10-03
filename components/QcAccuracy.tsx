@@ -23,6 +23,9 @@ type Data = {
   feedback_adoption_pct: number;
   reliable: boolean;
   threshold: number;
+  current_engine: { model: string; total: number; with_feedback: number; correct: number; incorrect: number; accuracy_pct: number | null; reliable: boolean };
+  by_model: { model: string; total: number; withFeedback: number; correct: number; incorrect: number; accuracy_pct: number | null }[];
+  feedback_reasons: { reason: string; count: number }[];
   by_severity: { severity: string; total: number; withFeedback: number; correct: number; incorrect: number }[];
   window: { first: string; last: string } | null;
   recent: { id: string; created_at: string; severity: string | null; pass: boolean | null; human_feedback: string | null }[];
@@ -117,6 +120,50 @@ export default function QcAccuracy() {
               ถูก {data.correct} / ผิด {data.incorrect} จากที่มีคนยืนยันแล้ว {data.with_feedback} ครั้ง
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ACCURACY V2 — CURRENT ENGINE VS HISTORICAL */}
+      <div style={card}>
+        <div style={{ fontSize: 11, letterSpacing: ".18em", textTransform: "uppercase", color: "#22d3ee", fontWeight: 600, marginBottom: 12 }}>
+          Accuracy v2 — Current Engine
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12 }}>
+          <div><div style={{ fontSize: 10, color: "#64748b" }}>MODEL</div><div style={{ fontSize: 13, color: "#f1f5f9", marginTop: 4 }}>{data.current_engine.model}</div></div>
+          <div><div style={{ fontSize: 10, color: "#64748b" }}>ยืนยันแล้ว</div><div style={{ fontSize: 22, fontWeight: 800, color: "#f1f5f9" }}>{data.current_engine.with_feedback}</div></div>
+          <div><div style={{ fontSize: 10, color: "#64748b" }}>ถูก / ผิด</div><div style={{ fontSize: 22, fontWeight: 800, color: "#f1f5f9" }}>{data.current_engine.correct} / {data.current_engine.incorrect}</div></div>
+          <div><div style={{ fontSize: 10, color: "#64748b" }}>CURRENT ACCURACY</div><div style={{ fontSize: 22, fontWeight: 800, color: data.current_engine.reliable ? "#34d399" : "#f59e0b" }}>{data.current_engine.accuracy_pct === null ? "—" : `${data.current_engine.accuracy_pct}%`}</div></div>
+        </div>
+        {!data.current_engine.reliable && (
+          <div style={{ marginTop: 12, fontSize: 11, color: "#f59e0b" }}>
+            Current Engine ยังมี feedback น้อยกว่า {data.threshold} ครั้ง — แสดงค่าจริงเพื่อเฝ้าดู แต่ยังไม่ถือว่าเป็นค่าความแม่นยำที่เชื่อถือได้
+          </div>
+        )}
+      </div>
+
+      {data.by_model.length > 0 && (
+        <div style={card}>
+          <div style={{ fontSize: 11, letterSpacing: ".18em", textTransform: "uppercase", color: "#6366f1", fontWeight: 600, marginBottom: 12 }}>Current vs Historical Models</div>
+          {data.by_model.map(m => (
+            <div key={m.model} style={{ display: "grid", gridTemplateColumns: "2fr repeat(4,1fr)", gap: 10, padding: "9px 12px", borderBottom: "1px solid rgba(255,255,255,.05)", fontSize: 12 }}>
+              <span style={{ color: "#cbd5e1" }}>{m.model}</span>
+              <span style={{ color: "#94a3b8" }}>ทั้งหมด {m.total}</span>
+              <span style={{ color: "#94a3b8" }}>ยืนยัน {m.withFeedback}</span>
+              <span style={{ color: "#34d399" }}>ถูก {m.correct}</span>
+              <span style={{ color: m.incorrect ? "#fb7185" : "#64748b" }}>{m.accuracy_pct === null ? "—" : `${m.accuracy_pct}%`} · ผิด {m.incorrect}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {data.feedback_reasons.length > 0 && (
+        <div style={{ ...card, border: "1px solid rgba(244,63,94,.2)" }}>
+          <div style={{ fontSize: 11, letterSpacing: ".18em", textTransform: "uppercase", color: "#fb7185", fontWeight: 600, marginBottom: 12 }}>Incorrect Feedback Breakdown</div>
+          {data.feedback_reasons.map(r => (
+            <div key={r.reason} style={{ display: "flex", justifyContent: "space-between", padding: "8px 12px", fontSize: 12, borderBottom: "1px solid rgba(255,255,255,.04)" }}>
+              <span style={{ color: "#cbd5e1" }}>{r.reason}</span><b style={{ color: "#fb7185" }}>{r.count}</b>
+            </div>
+          ))}
         </div>
       )}
 
