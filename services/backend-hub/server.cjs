@@ -2119,10 +2119,13 @@ async function qcPrepareImages({ photoUrl, refs }) {
 }
 
 function qcContextText({ caption, stage, siteCode, hasRefs }) {
+  const category = qcGuessCategory(caption || "");
+  const evidenceRules = qcEvidenceRules(category);
   return [
     siteCode ? `Site: ${siteCode}` : "",
     stage ? `Stage: ${stage}` : "",
     caption ? `Caption: ${caption}` : "",
+    evidenceRules.length ? `เกณฑ์หลักฐานจาก QC checklist ที่เกี่ยวข้อง:\n${evidenceRules.map(r => `- [${r.id}] (${r.evidence}) ${r.rule}`).join("\n")}` : "",
     hasRefs
       ? "🔍 ภาพงานที่ต้องตรวจ — เปรียบเทียบกับมาตรฐานข้างต้นและตอบ JSON"
       : "โปรดตรวจรูปนี้และตอบ JSON ตาม schema"
@@ -2283,7 +2286,7 @@ app.post("/api/qc/ingest", async (req, res) => {
   await qcBumpDailyUsage(ai._tokens_in, ai._tokens_out, costThb);
 
   sendTelegram(
-    `🏗️ QC ${ai.pass ? "✅ ผ่าน" : "❌ ไม่ผ่าน"} [${site?.code || "?"}]\n` +
+    `🏗️ QC ${ai.review_required ? "🟡 ต้องเพิ่มหลักฐาน" : ai.pass ? "✅ ผ่าน" : "❌ ไม่ผ่าน"} [${site?.code || "?"}]\n` +
     `Severity: ${ai.severity} | ${ai.defects.length} defect(s)\n${ai.ai_summary}`
   ).catch(() => {});
 
@@ -2292,6 +2295,7 @@ app.post("/api/qc/ingest", async (req, res) => {
     site_code: site?.code || null,
     deal_id: deal?.id || null,
     pass: ai.pass, severity: ai.severity, confidence: ai.confidence,
+    review_required: ai.review_required, evidence_gaps: ai.evidence_gaps, rules_applied: ai.rules_applied,
     ai_summary: ai.ai_summary, defects: ai.defects,
     latency_ms: Date.now() - started
   });
