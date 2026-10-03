@@ -2265,6 +2265,8 @@ async function qcCallAI({ photoUrl, caption, stage, siteCode }) {
   }
 }
 
+const QC_ENGINE_VERSION = process.env.QC_ENGINE_VERSION || "qc-v2.1-deterministic-refbudget-feedback";
+
 // ── POST /api/qc/ingest ────────────────────────────────────────────────────
 app.post("/api/qc/ingest", async (req, res) => {
   if (!HUB_SECRET || !timingSafeEq(req.headers["x-hub-token"] || "", HUB_SECRET))
@@ -2291,6 +2293,7 @@ app.post("/api/qc/ingest", async (req, res) => {
     caption: caption || null,
     site_id: site?.id || null,
     deal_id: deal?.id || null,
+    engine_version: QC_ENGINE_VERSION,
     status: "processing"
   });
   if (!ins.ok) return res.status(500).json({ error: "db_error", detail: ins.error });
@@ -2310,7 +2313,7 @@ app.post("/api/qc/ingest", async (req, res) => {
   await supabaseUpdate("qc_inspections", { id: `eq.${inspection.id}` }, {
     ai_summary: ai.ai_summary, pass: ai.pass, severity: ai.severity,
     confidence: ai.confidence, defects_json: ai.defects,
-    ai_model: `${ai._provider || "unknown"}:${ai._model}`, ai_raw: ai._raw, status: "done",
+    ai_model: `${ai._provider || "unknown"}:${ai._model}`, engine_version: QC_ENGINE_VERSION, ai_raw: ai._raw, status: "done",
     latency_ms: Date.now() - started
   });
 
@@ -2337,6 +2340,7 @@ app.post("/api/qc/ingest", async (req, res) => {
     deal_id: deal?.id || null,
     pass: ai.pass, severity: ai.severity, confidence: ai.confidence,
     qc_decision: ai.qc_decision,
+    engine_version: QC_ENGINE_VERSION,
     review_required: ai.review_required, evidence_gaps: ai.evidence_gaps, rules_applied: ai.rules_applied,
     ai_summary: ai.ai_summary, defects: ai.defects,
     latency_ms: Date.now() - started
