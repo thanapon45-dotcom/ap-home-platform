@@ -2243,8 +2243,14 @@ async function qcCallGemini({ submitted, refs, caption, stage, siteCode }) {
 async function qcCallAI({ photoUrl, caption, stage, siteCode }) {
   const standards = await qcGetStandards();
   const guessed = qcGuessCategory(caption);
-  const selectedRefs = (guessed ? standards.filter(s => s.category === guessed) : standards)
-    .filter(s => s.photo_url);
+  const refLimit = Math.max(0, Math.min(Number(process.env.QC_REFERENCE_IMAGE_LIMIT || 2), 3));
+  // Unknown category used to attach every active reference image (14 at present),
+  // which dominated vision tokens. Keep a small deterministic reference budget;
+  // checklist rules remain in the text prompt and human feedback remains ground truth.
+  const candidateRefs = guessed ? standards.filter(s => s.category === guessed) : [];
+  const selectedRefs = candidateRefs
+    .filter(s => s.photo_url)
+    .slice(0, refLimit);
   const prepared = await qcPrepareImages({ photoUrl, refs: selectedRefs });
   const args = { submitted: prepared.submitted, refs: prepared.refs, caption, stage, siteCode };
   try {
