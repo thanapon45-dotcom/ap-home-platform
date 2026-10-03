@@ -2029,78 +2029,153 @@ function qcGuessCategory(caption = "") {
   return null; // unknown → pass all references
 }
 
-async function qcCallOpenAI({ photoUrl, caption, stage, siteCode }) {
-  // Fetch reference standards
-  const standards   = await qcGetStandards();
-  const guessed     = qcGuessCategory(caption);
-  const refs        = guessed
-    ? standards.filter(s => s.category === guessed)
-    : standards; // pass all if unknown
+async function qcFetchImageAsDataUrl(url, label = "image") {
+  if (!url || typeof url !== "string") throw new Error(`${label}_url_missing`);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 12_000);
+  let res;
+  try {
+    res = await fetch(url, { signal: controller.signal, redirect: "follow" });
+  } catch (err) {
+    throw new Error(`${label}_fetch_failed: ${err?.name === "AbortError" ? "timeout" : err?.message || err}`);
+  } finally {
+    clearTimeout(timer);
+  }
+  if (!res.ok) throw new Error(`${label}_fetch_failed: HTTP ${res.status}`);
+  const contentType = (res.headers.get("content-type") || "").split(";")[0].trim().toLowerCase();
+  if (!contentType.startsWith("image/")) throw new Error(`${label}_invalid_content_type: ${contentType || "missing"}`);
+  const bytes = Buffer.from(await res.arrayBuffer());
+  if (!bytes.length) throw new Error(`${label}_empty`);
+  if (bytes.length > 12 * 1024 * 1024) throw new Error(`${label}_too_large`);
+  return { dataUrl: `data:${contentType};base64,${bytes.toString("base64")}`, mimeType: contentType, base64: bytes.toString("base64") };
+}
 
-  // Build system prompt — add comparison instruction if references exist
+function qcNormalizeAiResult(parsed, meta = {}) {
+  parsed = parsed && typeof parsed === "object" ? parsed : {};
+  parsed.pass       = !!parsed.pass;
+  parsed.severity   = parsed.severity || "none";
+  parsed.confidence = typeof parsed.confidence === "number" ? parsed.confidence : 0.7;
+  parsed.ai_summary = parsed.ai_summary || "";
+  parsed.defects    = Array.isArray(parsed.defects) ? parsed.defects.slice(0, 5) : [];
+  return { ...parsed, ...meta };
+}
+
+async function qcPrepareImages({ photoUrl, refs }) {
+  // Submitted photo is mandatory. Fetching it here avoids provider-side URL
+  // timeouts and gives us a precise error when LINE/storage is unreachable.
+  const submitted = await qcFetchImageAsDataUrl(photoUrl, "submitted_photo");
+  const preparedRefs = [];
+  for (const ref of refs) {
+    try {
+      preparedRefs.push({ ...ref, image: await qcFetchImageAsDataUrl(ref.photo_url, "reference_photo") });
+    } catch (err) {
+      console.warn(JSON.stringify({ event: "qc_reference_skipped", photo_url: ref.photo_url, error: String(err.message) }));
+    }
+  }
+  return { submitted, refs: preparedRefs };
+}
+
+function qcContextText({ caption, stage, siteCode, hasRefs }) {
+  return [
+    siteCode ? `Site: ${siteCode}` : "",
+    stage ? `Stage: ${stage}` : "",
+    caption ? `Caption: ${caption}` : "",
+    hasRefs
+      ? "🔍 ภาพงานที่ต้องตรวจ — เปรียบเทียบกับมาตรฐานข้างต้นและตอบ JSON"
+      : "โปรดตรวจรูปนี้และตอบ JSON ตาม schema"
+  ].filter(Boolean).join("\n");
+}
+
+async function qcCallOpenAI({ submitted, refs, caption, stage, siteCode }) {
+  if (!process.env.OPENAI_API_KEY) throw new Error("OpenAI unavailable: OPENAI_API_KEY missing");
   const hasRefs = refs.length > 0;
   const systemPrompt = hasRefs
     ? QC_SYSTEM_PROMPT + `\n\nโหมด: เปรียบเทียบกับภาพมาตรฐาน
 คุณจะได้รับภาพมาตรฐาน (reference) ก่อน แล้วตามด้วยภาพงานจริงที่ต้องตรวจ
 ให้ระบุว่างานตรงกับมาตรฐานมากน้อยแค่ไหน และอธิบายความแตกต่างที่เห็นเป็น defects`
     : QC_SYSTEM_PROMPT;
-
-  // Build user message content
   const userContent = [];
-
-  // Add reference images first
-  if (hasRefs) {
-    refs.forEach(ref => {
-      userContent.push({ type: "text", text: `📐 ภาพมาตรฐาน${ref.label_th ? ` (${ref.label_th})` : ""}: ${ref.description || ""}` });
-      userContent.push({ type: "image_url", image_url: { url: ref.photo_url, detail: "low" } });
-    });
-    userContent.push({ type: "text", text: "─────────────────────" });
+  for (const ref of refs) {
+    userContent.push({ type: "text", text: `📐 ภาพมาตรฐาน${ref.label_th ? ` (${ref.label_th})` : ""}: ${ref.description || ""}` });
+    userContent.push({ type: "image_url", image_url: { url: ref.image.dataUrl, detail: "low" } });
   }
-
-  // Add submitted photo
-  const contextText = [
-    siteCode ? `Site: ${siteCode}` : "",
-    stage    ? `Stage: ${stage}`   : "",
-    caption  ? `Caption: ${caption}` : "",
-    hasRefs
-      ? "🔍 ภาพงานที่ต้องตรวจ — เปรียบเทียบกับมาตรฐานข้างต้นและตอบ JSON"
-      : "โปรดตรวจรูปนี้และตอบ JSON ตาม schema"
-  ].filter(Boolean).join("\n");
-  userContent.push({ type: "text",      text: contextText });
-  userContent.push({ type: "image_url", image_url: { url: photoUrl, detail: "high" } });
+  if (hasRefs) userContent.push({ type: "text", text: "─────────────────────" });
+  userContent.push({ type: "text", text: qcContextText({ caption, stage, siteCode, hasRefs }) });
+  userContent.push({ type: "image_url", image_url: { url: submitted.dataUrl, detail: "high" } });
 
   const body = {
     model: process.env.OPENAI_MODEL || "gpt-4o",
-    temperature: 0,
-    max_tokens: 800,
-    response_format: { type: "json_object" },
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user",   content: userContent }
-    ]
+    temperature: 0, max_tokens: 800, response_format: { type: "json_object" },
+    messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userContent }]
   };
-
   const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
-    headers: { "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`, "Content-Type": "application/json" },
+    headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}`, "Content-Type": "application/json" },
     body: JSON.stringify(body)
   });
   if (!res.ok) throw new Error(`OpenAI ${res.status}: ${await res.text()}`);
-
-  const data  = await res.json();
-  const raw   = data.choices?.[0]?.message?.content || "{}";
+  const data = await res.json();
+  const raw = data.choices?.[0]?.message?.content || "{}";
   let parsed;
-  try { parsed = JSON.parse(raw); } catch { throw new Error(`AI non-JSON: ${raw.slice(0, 200)}`); }
+  try { parsed = JSON.parse(raw); } catch { throw new Error(`OpenAI non-JSON: ${raw.slice(0, 200)}`); }
+  return qcNormalizeAiResult(parsed, {
+    _provider: "openai", _model: body.model, _raw: data,
+    _tokens_in: data.usage?.prompt_tokens || 0, _tokens_out: data.usage?.completion_tokens || 0
+  });
+}
 
-  parsed.pass       = !!parsed.pass;
-  parsed.severity   = parsed.severity   || "none";
-  parsed.confidence = typeof parsed.confidence === "number" ? parsed.confidence : 0.7;
-  parsed.ai_summary = parsed.ai_summary || "";
-  parsed.defects    = Array.isArray(parsed.defects) ? parsed.defects.slice(0, 5) : [];
+async function qcCallGemini({ submitted, refs, caption, stage, siteCode }) {
+  if (!process.env.GEMINI_API_KEY) throw new Error("Gemini unavailable: GEMINI_API_KEY missing");
+  const hasRefs = refs.length > 0;
+  const prompt = hasRefs
+    ? QC_SYSTEM_PROMPT + `\n\nโหมด: เปรียบเทียบกับภาพมาตรฐานก่อนภาพงานจริง แล้วตอบ JSON เท่านั้น\n` +
+      qcContextText({ caption, stage, siteCode, hasRefs })
+    : QC_SYSTEM_PROMPT + "\n\n" + qcContextText({ caption, stage, siteCode, hasRefs });
+  const parts = [{ text: prompt }];
+  for (const ref of refs) {
+    parts.push({ text: `ภาพมาตรฐาน${ref.label_th ? ` (${ref.label_th})` : ""}: ${ref.description || ""}` });
+    parts.push({ inline_data: { mime_type: ref.image.mimeType, data: ref.image.base64 } });
+  }
+  parts.push({ text: "ภาพงานที่ต้องตรวจ:" });
+  parts.push({ inline_data: { mime_type: submitted.mimeType, data: submitted.base64 } });
 
-  return { ...parsed, _model: body.model, _raw: data,
-    _tokens_in:  data.usage?.prompt_tokens     || 0,
-    _tokens_out: data.usage?.completion_tokens || 0 };
+  const model = process.env.GEMINI_QC_MODEL || "gemini-2.5-flash";
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(process.env.GEMINI_API_KEY)}`, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      contents: [{ role: "user", parts }],
+      generationConfig: { temperature: 0, responseMimeType: "application/json", maxOutputTokens: 1200 }
+    })
+  });
+  if (!res.ok) throw new Error(`Gemini ${res.status}: ${await res.text()}`);
+  const data = await res.json();
+  const raw = data.candidates?.[0]?.content?.parts?.map(p => p.text || "").join("") || "{}";
+  let parsed;
+  try { parsed = JSON.parse(raw); } catch { throw new Error(`Gemini non-JSON: ${raw.slice(0, 200)}`); }
+  return qcNormalizeAiResult(parsed, {
+    _provider: "gemini", _model: model, _raw: data,
+    _tokens_in: data.usageMetadata?.promptTokenCount || 0,
+    _tokens_out: data.usageMetadata?.candidatesTokenCount || 0
+  });
+}
+
+async function qcCallAI({ photoUrl, caption, stage, siteCode }) {
+  const standards = await qcGetStandards();
+  const guessed = qcGuessCategory(caption);
+  const selectedRefs = (guessed ? standards.filter(s => s.category === guessed) : standards)
+    .filter(s => s.photo_url);
+  const prepared = await qcPrepareImages({ photoUrl, refs: selectedRefs });
+  const args = { submitted: prepared.submitted, refs: prepared.refs, caption, stage, siteCode };
+  try {
+    return await qcCallOpenAI(args);
+  } catch (openaiErr) {
+    console.warn(JSON.stringify({ event: "qc_provider_failed", provider: "openai", error: String(openaiErr.message).slice(0, 1000) }));
+    try {
+      return await qcCallGemini(args);
+    } catch (geminiErr) {
+      throw new Error(`all_ai_providers_failed; openai=${String(openaiErr.message).slice(0, 500)}; gemini=${String(geminiErr.message).slice(0, 500)}`);
+    }
+  }
 }
 
 // ── POST /api/qc/ingest ────────────────────────────────────────────────────
@@ -2136,7 +2211,7 @@ app.post("/api/qc/ingest", async (req, res) => {
 
   let ai;
   try {
-    ai = await qcCallOpenAI({ photoUrl: photo_url, caption, stage: site?.stage, siteCode: site?.code });
+    ai = await qcCallAI({ photoUrl: photo_url, caption, stage: site?.stage, siteCode: site?.code });
   } catch (err) {
     await supabaseUpdate("qc_inspections", { id: `eq.${inspection.id}` }, {
       status: "failed", error_message: String(err.message).slice(0, 500),
@@ -2148,7 +2223,7 @@ app.post("/api/qc/ingest", async (req, res) => {
   await supabaseUpdate("qc_inspections", { id: `eq.${inspection.id}` }, {
     ai_summary: ai.ai_summary, pass: ai.pass, severity: ai.severity,
     confidence: ai.confidence, defects_json: ai.defects,
-    ai_model: ai._model, ai_raw: ai._raw, status: "done",
+    ai_model: `${ai._provider || "unknown"}:${ai._model}`, ai_raw: ai._raw, status: "done",
     latency_ms: Date.now() - started
   });
 
