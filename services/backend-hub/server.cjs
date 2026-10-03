@@ -2099,7 +2099,10 @@ function qcNormalizeAiResult(parsed, meta = {}) {
   parsed.severity   = parsed.severity || "none";
   parsed.confidence = typeof parsed.confidence === "number" ? parsed.confidence : 0.7;
   parsed.ai_summary = parsed.ai_summary || "";
-  parsed.defects    = Array.isArray(parsed.defects) ? parsed.defects.slice(0, 5) : [];\n  parsed.review_required = !!parsed.review_required;\n  parsed.evidence_gaps = Array.isArray(parsed.evidence_gaps) ? parsed.evidence_gaps.slice(0, 5).map(String) : [];\n  parsed.rules_applied = Array.isArray(parsed.rules_applied) ? parsed.rules_applied.slice(0, 10).map(String) : [];
+  parsed.defects    = Array.isArray(parsed.defects) ? parsed.defects.slice(0, 5) : [];
+  parsed.review_required = !!parsed.review_required;
+  parsed.evidence_gaps = Array.isArray(parsed.evidence_gaps) ? parsed.evidence_gaps.slice(0, 5).map(String) : [];
+  parsed.rules_applied = Array.isArray(parsed.rules_applied) ? parsed.rules_applied.slice(0, 10).map(String) : [];
   return { ...parsed, ...meta };
 }
 
