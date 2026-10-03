@@ -36,6 +36,8 @@ type Row = {
   pass: boolean | null;
   human_feedback: string | null;
   human_feedback_at: string | null;
+  human_feedback_reason: string | null;
+  ai_model: string | null;
 };
 
 export async function GET() {
@@ -44,7 +46,7 @@ export async function GET() {
   }
   try {
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/qc_inspections?select=id,created_at,severity,pass,human_feedback,human_feedback_at&order=created_at.desc`,
+      `${SUPABASE_URL}/rest/v1/qc_inspections?select=id,created_at,severity,pass,human_feedback,human_feedback_at,human_feedback_reason,ai_model&order=created_at.desc`,
       { headers: headers() }
     );
     const rows = (await res.json()) as Row[];
@@ -76,6 +78,38 @@ export async function GET() {
     const accuracyPct = withFeedback.length > 0 ? Math.round((correct / withFeedback.length) * 1000) / 10 : null;
     const reliable = withFeedback.length >= RELIABILITY_THRESHOLD;
 
+    // Accuracy v2: keep the currently deployed Gemini engine separate from
+    // historical GPT-era results so the headline cannot hide regressions.
+    const currentRows = rows.filter(r => r.ai_model === "gemini:gemini-3.8-flash");
+    const currentFeedback = currentRows.filter(r => !!r.human_feedback);
+    const currentCorrect = currentFeedback.filter(r => r.human_feedback === "correct").length;
+    const currentIncorrect = currentFeedback.filter(r => r.human_feedback === "incorrect").length;
+    const currentAccuracyPct = currentFeedback.length
+      ? Math.round((currentCorrect / currentFeedback.length) * 1000) / 10
+      : null;
+
+    const feedbackReasons = new Map<string, number>();
+    for (const r of withFeedback) {
+      if (r.human_feedback === "incorrect") {
+        const key = r.human_feedback_reason || "unclassified";
+        feedbackReasons.set(key, (feedbackReasons.get(key) || 0) + 1);
+      }
+    }
+
+    const byModelMap = new Map<string, { total: number; withFeedback: number; correct: number; incorrect: number }>();
+    for (const r of rows) {
+      const key = r.ai_model || "unknown";
+      const entry = byModelMap.get(key) || { total: 0, withFeedback: 0, correct: 0, incorrect: 0 };
+      entry.total++;
+      if (r.human_feedback === "correct") { entry.withFeedback++; entry.correct++; }
+      else if (r.human_feedback === "incorrect") { entry.withFeedback++; entry.incorrect++; }
+      byModelMap.set(key, entry);
+    }
+    const byModel = Array.from(byModelMap.entries()).map(([model, v]) => ({
+      model, ...v,
+      accuracy_pct: v.withFeedback ? Math.round((v.correct / v.withFeedback) * 1000) / 10 : null
+    }));
+
     return NextResponse.json({
       ok: true,
       data: {
@@ -88,6 +122,17 @@ export async function GET() {
         feedback_adoption_pct: feedbackAdoptionPct,
         reliable,
         threshold: RELIABILITY_THRESHOLD,
+        current_engine: {
+          model: "gemini:gemini-3.8-flash",
+          total: currentRows.length,
+          with_feedback: currentFeedback.length,
+          correct: currentCorrect,
+          incorrect: currentIncorrect,
+          accuracy_pct: currentAccuracyPct,
+          reliable: currentFeedback.length >= RELIABILITY_THRESHOLD,
+        },
+        by_model: byModel,
+        feedback_reasons: Array.from(feedbackReasons.entries()).map(([reason, count]) => ({ reason, count })),
         by_severity: bySeverity,
         window,
         recent: rows.slice(0, 15),
