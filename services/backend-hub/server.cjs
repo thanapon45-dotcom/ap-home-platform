@@ -2193,14 +2193,14 @@ async function qcCallGemini({ submitted, refs, caption, stage, siteCode }) {
     method: "POST", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       contents: [{ role: "user", parts }],
-      generationConfig: { temperature: 0, responseMimeType: "application/json", maxOutputTokens: 1200 }
+      generationConfig: { responseMimeType: "application/json", maxOutputTokens: 4096, thinkingConfig: { thinkingLevel: "low" } }
     })
   });
   if (!res.ok) throw new Error(`Gemini ${res.status}: ${await res.text()}`);
   const data = await res.json();
   const raw = data.candidates?.[0]?.content?.parts?.map(p => p.text || "").join("") || "{}";
   let parsed;
-  try { parsed = JSON.parse(raw); } catch { throw new Error(`Gemini non-JSON: ${raw.slice(0, 200)}`); }
+  try { parsed = JSON.parse(raw); } catch { throw new Error(`Gemini non-JSON (finish=${data.candidates?.[0]?.finishReason || "unknown"}): ${raw.slice(0, 500)}`); }
   return qcNormalizeAiResult(parsed, {
     _provider: "gemini", _model: model, _raw: data,
     _tokens_in: data.usageMetadata?.promptTokenCount || 0,
