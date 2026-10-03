@@ -2103,6 +2103,38 @@ function qcNormalizeAiResult(parsed, meta = {}) {
   parsed.review_required = !!parsed.review_required;
   parsed.evidence_gaps = Array.isArray(parsed.evidence_gaps) ? parsed.evidence_gaps.slice(0, 5).map(String) : [];
   parsed.rules_applied = Array.isArray(parsed.rules_applied) ? parsed.rules_applied.slice(0, 10).map(String) : [];
+
+  // Deterministic decision normalization: the provider identifies evidence/defects,
+  // while Hub owns the final QC state so pass cannot contradict severity/defects.
+  const severityRank = { none: 0, low: 1, medium: 2, high: 3, critical: 4 };
+  const normalizedDefects = parsed.defects.map((d) => ({
+    ...d,
+    severity: severityRank[d?.severity] == null ? "medium" : d.severity,
+  }));
+  parsed.defects = normalizedDefects;
+  const maxDefectSeverity = normalizedDefects.reduce(
+    (max, d) => severityRank[d.severity] > severityRank[max] ? d.severity : max,
+    "none"
+  );
+  const declaredSeverity = severityRank[parsed.severity] == null ? "none" : parsed.severity;
+  parsed.severity = severityRank[maxDefectSeverity] > severityRank[declaredSeverity]
+    ? maxDefectSeverity
+    : declaredSeverity;
+
+  if (parsed.review_required || parsed.evidence_gaps.length > 0) {
+    parsed.qc_decision = "NEED_EVIDENCE";
+    parsed.pass = false;
+  } else if (severityRank[parsed.severity] >= severityRank.medium) {
+    parsed.qc_decision = "FAIL";
+    parsed.pass = false;
+  } else if (normalizedDefects.length > 0 || parsed.severity === "low") {
+    parsed.qc_decision = "PASS_WITH_PUNCHLIST";
+    parsed.pass = true;
+  } else {
+    parsed.qc_decision = "PASS";
+    parsed.pass = true;
+  }
+
   return { ...parsed, ...meta };
 }
 
@@ -2298,6 +2330,7 @@ app.post("/api/qc/ingest", async (req, res) => {
     site_code: site?.code || null,
     deal_id: deal?.id || null,
     pass: ai.pass, severity: ai.severity, confidence: ai.confidence,
+    qc_decision: ai.qc_decision,
     review_required: ai.review_required, evidence_gaps: ai.evidence_gaps, rules_applied: ai.rules_applied,
     ai_summary: ai.ai_summary, defects: ai.defects,
     latency_ms: Date.now() - started
