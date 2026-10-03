@@ -2351,20 +2351,30 @@ app.post("/api/qc/feedback", async (req, res) => {
   if (!HUB_SECRET || !timingSafeEq(req.headers["x-hub-token"] || "", HUB_SECRET))
     return res.status(401).json({ error: "unauthorized" });
 
-  const { line_message_id, feedback } = req.body || {};
+  const { line_message_id, feedback, reason = null, note = null } = req.body || {};
+  const feedbackReasons = [
+    "wrong_pass_fail", "missed_defect", "false_defect", "wrong_severity",
+    "wrong_category", "wrong_location_action", "insufficient_evidence", "other"
+  ];
   if (!line_message_id || !["correct", "incorrect"].includes(feedback))
     return res.status(400).json({ error: "line_message_id and feedback (correct|incorrect) required" });
+  if (reason !== null && !feedbackReasons.includes(reason))
+    return res.status(400).json({ error: "invalid_feedback_reason", allowed: feedbackReasons });
+  if (feedback === "correct" && reason !== null)
+    return res.status(400).json({ error: "feedback_reason_only_allowed_for_incorrect" });
 
   const existing = await qcFindExisting(line_message_id);
   if (!existing) return res.status(404).json({ error: "inspection_not_found" });
 
   const upd = await supabaseUpdate("qc_inspections", { id: `eq.${existing.id}` }, {
     human_feedback: feedback,
+    human_feedback_reason: feedback === "incorrect" ? reason : null,
+    human_feedback_note: feedback === "incorrect" && note ? String(note).slice(0, 500) : null,
     human_feedback_at: new Date().toISOString()
   });
   if (!upd.ok) return res.status(500).json({ error: "db_error", detail: upd.error });
 
-  res.json({ ok: true, inspection_id: existing.id, feedback });
+  res.json({ ok: true, inspection_id: existing.id, feedback, reason: feedback === "incorrect" ? reason : null });
 });
 
 // ── GET /api/qc/list ───────────────────────────────────────────────────────
